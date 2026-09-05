@@ -1,0 +1,35 @@
+{
+  "kpis": {
+    "ordenes_hoy": { "total": 42, "detalle": "32 en curso · 10 completas" },
+    "estudios_pendientes": { "total": 128, "detalle": "Asignados a profesionales" },
+    "empresas_activas": { "total": 87, "detalle": "En padrón" },
+    "personas_registradas": { "total": 4216, "detalle": "Total en el sistema" }
+  },
+  "actividad_7_dias": [
+    { "dia": "24/05", "ordenes_creadas": 38, "estudios_cargados": 20 },
+    { "dia": "25/05", "ordenes_creadas": 42, "estudios_cargados": 24 },
+    { "dia": "26/05", "ordenes_creadas": 40, "estudios_cargados": 22 },
+    { "dia": "27/05", "ordenes_creadas": 55, "estudios_cargados": 30 },
+    { "dia": "28/05", "ordenes_creadas": 50, "estudios_cargados": 34 },
+    { "dia": "29/05", "ordenes_creadas": 58, "estudios_cargados": 36 },
+    { "dia": "30/05", "ordenes_creadas": 62, "estudios_cargados": 40 }
+  ],
+  "ordenes_por_tipo": [
+    { "tipo": "Prelaboral", "cantidad": 24, "porcentaje": 58 },
+    { "tipo": "Periódico", "cantidad": 15, "porcentaje": 35 },
+    { "tipo": "Egreso", "cantidad": 3, "porcentaje": 7 }
+  ],
+  "pendientes_por_area": [
+    { "area": "Laboratorio", "pendientes": 48 },
+    { "area": "Rayos", "pendientes": 26 },
+    { "area": "Audiometría", "pendientes": 12 },
+    { "area": "Psicología", "pendientes": 18 },
+    { "area": "Clínica Médica", "pendientes": 24 }
+  ],
+  "alertas_sistema": [
+    { "id": "al-s-01", "tipo": "vigencia", "texto": "15 exámenes vencen en 30 días", "accion": "Ver" },
+    { "id": "al-s-02", "tipo": "devuelto", "texto": "3 estudios devueltos sin revisar", "accion": "Ver" },
+    { "id": "al-s-03", "tipo": "firma", "texto": "2 profesionales sin firma cargada", "accion": "Completar" },
+    { "id": "al-s-04", "tipo": "backup", "texto": "Respaldos automáticos al día — último 30/05 · 02:00", "accion": null }
+  ]
+}

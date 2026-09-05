@@ -1,0 +1,42 @@
+[
+  {
+    "id": "u-001",
+    "usuario": "admin",
+    "contrasena": "admin",
+    "nombre_completo": "Administrador",
+    "rol": "administrador",
+    "debe_cambiar_contrasena": false,
+    "avatar_iniciales": "AD"
+  },
+  {
+    "id": "u-002",
+    "usuario": "mlopez",
+    "contrasena": "1234",
+    "nombre_completo": "Dr. Martín López",
+    "rol": "medico_laboral",
+    "especialidad": "Médico Laboral",
+    "matricula_provincial": "12345",
+    "matricula_nacional": "MN 67890",
+    "debe_cambiar_contrasena": true,
+    "avatar_iniciales": "ML"
+  },
+  {
+    "id": "u-003",
+    "usuario": "recepcion1",
+    "contrasena": "1234",
+    "nombre_completo": "Ana Recepción",
+    "rol": "recepcion",
+    "debe_cambiar_contrasena": false,
+    "avatar_iniciales": "AR"
+  },
+  {
+    "id": "u-004",
+    "usuario": "laboratorio1",
+    "contrasena": "1234",
+    "nombre_completo": "Bioq. Carla Suárez",
+    "rol": "laboratorio",
+    "especialidad": "Laboratorio",
+    "debe_cambiar_contrasena": false,
+    "avatar_iniciales": "CS"
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "ord-2026-0142",
+    "persona_id": "per-001",
+    "empresa_id": "emp-001",
+    "tipo_examen": "prelaboral",
+    "estudios_pendientes": 3,
+    "estado": "pendiente",
+    "ultima_actividad": "2026-05-30T09:15:00"
+  },
+  {
+    "id": "ord-2026-0143",
+    "persona_id": "per-002",
+    "empresa_id": "emp-002",
+    "tipo_examen": "periodico",
+    "estudios_pendientes": 1,
+    "estado": "en_curso",
+    "ultima_actividad": "2026-05-30T08:40:00"
+  },
+  {
+    "id": "ord-2026-0144",
+    "persona_id": "per-003",
+    "empresa_id": "emp-003",
+    "tipo_examen": "prelaboral",
+    "estudios_pendientes": 2,
+    "estado": "pendiente",
+    "ultima_actividad": "2026-05-30T08:20:00"
+  },
+  {
+    "id": "ord-2026-0139",
+    "persona_id": "per-004",
+    "empresa_id": "emp-001",
+    "tipo_examen": "egreso",
+    "estudios_pendientes": 0,
+    "estado": "completo",
+    "ultima_actividad": "2026-05-29T17:30:00"
+  },
+  {
+    "id": "ord-2026-0138",
+    "persona_id": "per-005",
+    "empresa_id": "emp-004",
+    "tipo_examen": "periodico",
+    "estudios_pendientes": 1,
+    "estado": "en_curso",
+    "ultima_actividad": "2026-05-29T16:10:00"
+  }
+]
