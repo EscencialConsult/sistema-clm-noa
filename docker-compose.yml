@@ -1,0 +1,16 @@
+services:
+  kaplan-front:
+    build:
+      context: ./maqueta-react
+    container_name: kaplan-front
+    restart: unless-stopped
+    ports:
+      - "8082:80" # acceso LAN/Tailscale directo — puerto 8082 libre en la tabla de servidor-local
+
+  kaplan-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: kaplan-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://kaplan-front:80
+    depends_on:
+      - kaplan-front
