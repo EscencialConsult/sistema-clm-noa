@@ -16,7 +16,7 @@ const PRESET_INSTITUCIONAL = {
   rotation: 20,
   proportion: 50,
   scale: 0.8, // más grande = manchas más anchas, no un filamento fino
-  speed: 8, // bien lento — "suave", no un efecto de producto de consumo
+  speed: 3, // bien lento — "suave", no un efecto de producto de consumo (bajado de 8 a 3, seguía sintiéndose rápido)
   distortion: 4,
   swirl: 25,
   swirlIterations: 6,
