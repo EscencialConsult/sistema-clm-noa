@@ -63,7 +63,7 @@ export default function Login() {
           tinte de color. Se sacó el shader animado: no valía la vuelta que
           costaba, se veía mal/inconsistente y ya se probó varias veces. ── */}
       {fondo.src ? (
-        <img src={fondo.src} alt="" className="absolute inset-0 h-full w-full object-cover blur-md" />
+        <img src={fondo.src} alt="" className="absolute inset-0 h-full w-full object-cover blur-xs" />
       ) : (
         <div className="absolute inset-0 bg-primary-deep" />
       )}
