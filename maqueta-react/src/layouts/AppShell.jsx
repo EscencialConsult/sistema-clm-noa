@@ -93,33 +93,36 @@ export default function AppShell({ children, titulo, subtitulo }) {
         </div>
 
         <div className="border-t border-white/10 pt-4">
-          {/* Botón de ocultar/desocultar la barra — al lado del perfil */}
-          <button
-            onClick={alternarColapso}
-            title={colapsado ? "Mostrar barra lateral" : "Ocultar barra lateral"}
-            className={`mb-3 flex items-center gap-2 rounded-md border border-white/15 px-2 py-1.5 text-xs text-white/60 hover:border-white/40 hover:text-white ${
-              colapsado ? "justify-center" : ""
-            }`}
-          >
-            {colapsado ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-            {!colapsado && "Ocultar barra"}
-          </button>
-
-          <div className={`mb-2 flex items-center gap-2.5 ${colapsado ? "justify-center" : ""}`}>
+          {/* Perfil + botón de ocultar en la MISMA fila cuando está expandido
+              (no una fila propia arriba de todo). Colapsado: columna
+              centrada, avatar arriba, ícono de ocultar debajo — mismo ancho
+              (w-full) para que justify-center centre de verdad. */}
+          <div className={`mb-3 flex items-center gap-2.5 ${colapsado ? "flex-col" : ""}`}>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent/25 text-accent">
               <IconoRol size={22} strokeWidth={1.75} />
             </div>
             {!colapsado && (
-              <div className="text-sm leading-tight">
+              <div className="flex-1 text-sm leading-tight">
                 <p className="font-medium">{sesion.nombre_completo}</p>
                 <p className="text-xs text-white/50">{sesion.especialidad ?? sesion.rol}</p>
               </div>
             )}
+            <button
+              onClick={alternarColapso}
+              title={colapsado ? "Mostrar barra lateral" : "Ocultar barra lateral"}
+              className={`flex items-center justify-center gap-2 rounded-md border border-white/15 py-1.5 text-xs text-white/60 hover:border-white/40 hover:text-white ${
+                colapsado ? "w-full" : "shrink-0 px-2"
+              }`}
+            >
+              {colapsado ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+              {!colapsado && "Ocultar"}
+            </button>
           </div>
+
           <button
             onClick={handleCerrarSesion}
             title={colapsado ? "Cerrar sesión" : undefined}
-            className={`flex items-center gap-2 rounded-md px-1 py-1.5 text-sm text-white/60 hover:text-white ${
+            className={`flex w-full items-center gap-2 rounded-md px-1 py-1.5 text-sm text-white/60 hover:text-white ${
               colapsado ? "justify-center" : ""
             }`}
           >
