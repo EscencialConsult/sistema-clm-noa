@@ -50,7 +50,11 @@ export default function SelectorFondoDev({ fondos, indiceActual, onCambiar }) {
               i === indiceActual ? "border-accent" : "border-transparent hover:border-white/50"
             }`}
           >
-            <img src={f.src} alt={f.label} className="h-11 w-16 object-cover" />
+            {f.src ? (
+              <img src={f.src} alt={f.label} className="h-11 w-16 object-cover" />
+            ) : (
+              <div className="h-11 w-16 bg-linear-to-br from-primary-deep to-primary" />
+            )}
           </button>
         ))}
       </div>
