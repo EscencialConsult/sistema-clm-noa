@@ -61,25 +61,29 @@ export default function Login() {
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* ── Fondo — UNA sola capa detrás de toda la interfaz (las dos mitades
-          son solo layout de contenido encima, transparentes). ── */}
-      {fondo.animado ? (
-        <FondoAnimado className="absolute inset-0 h-full w-full bg-primary-deep" />
-      ) : (
-        <>
-          <img
-            src={fondo.src}
-            alt=""
-            className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-md"
-          />
-          <div className="absolute inset-0 bg-primary-deep/45 mix-blend-multiply" />
-        </>
+          son solo layout de contenido encima, transparentes). Siempre 3
+          capas apiladas, en todas las opciones (foto o no): foto → tinte de
+          color → shader animado encima. No es "una u otra", es una sola
+          composición. ── */}
+      {fondo.src && (
+        <img
+          src={fondo.src}
+          alt=""
+          className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-md"
+        />
       )}
+      <div className="absolute inset-0 bg-primary-deep/45 mix-blend-multiply" />
+      <FondoAnimado
+        className={`absolute inset-0 h-full w-full ${
+          fondo.src ? "opacity-45 mix-blend-screen" : "bg-primary-deep"
+        }`}
+      />
       <div className="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-black/15" />
 
       {/* ── Contenido — mitad y mitad, ambas transparentes sobre el fondo ── */}
       <div className="relative z-10 flex min-h-screen">
         {/* Mitad izquierda — marca */}
-        <div className="relative hidden w-1/2 flex-col justify-center gap-10 p-14 text-white md:flex">
+        <div className="relative hidden w-1/2 flex-col justify-end gap-10 p-14 pb-24 text-white md:flex">
           {/* Logo — cambia de color al pasar el mouse (mask-image: el logo es
               monocromático, el color sale de un token real). */}
           <div

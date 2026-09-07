@@ -22,15 +22,15 @@ export default function SelectorFondoDev({ fondos, indiceActual, onCambiar }) {
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-md bg-primary-deep px-3 py-2 text-xs font-medium text-white shadow-lg hover:bg-primary-deep/80"
+        className="flex w-full items-center gap-2 rounded-md bg-primary-deep px-4 py-3 text-sm font-medium text-white shadow-lg hover:bg-primary-deep/80"
         title="Solo dev — elegir fondo candidato"
       >
-        <ImageIcon size={15} />
+        <ImageIcon size={18} />
         dev · fondo {indiceActual + 1}/{fondos.length}
       </button>
 
       <div
-        className="absolute right-0 top-full z-30 mt-1.5 flex origin-top-right gap-1.5 rounded-md border border-dashed border-white/40 bg-black/85 p-1.5 backdrop-blur-md transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
+        className="absolute right-0 top-full z-30 mt-2 flex origin-top-right gap-2 rounded-md border border-dashed border-white/40 bg-black/85 p-2 backdrop-blur-md transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
         style={{
           transform: abierto ? "scale(1)" : "scale(0.95)",
           opacity: abierto ? 1 : 0,
@@ -51,9 +51,9 @@ export default function SelectorFondoDev({ fondos, indiceActual, onCambiar }) {
             }`}
           >
             {f.src ? (
-              <img src={f.src} alt={f.label} className="h-11 w-16 object-cover" />
+              <img src={f.src} alt={f.label} className="h-16 w-24 object-cover" />
             ) : (
-              <div className="h-11 w-16 bg-linear-to-br from-primary-deep to-primary" />
+              <div className="h-16 w-24 bg-linear-to-br from-primary-deep to-primary" />
             )}
           </button>
         ))}
