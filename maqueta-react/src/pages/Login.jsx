@@ -73,9 +73,13 @@ export default function Login() {
         />
       )}
       <div className="absolute inset-0 bg-primary-deep/45 mix-blend-multiply" />
+      {/* Sin foto: base sólida propia. El shader va ENCIMA a baja opacidad
+          en los dos casos — así se nota que se mueve sin dominar la
+          pantalla, en cualquiera de las 6 opciones. */}
+      {!fondo.src && <div className="absolute inset-0 bg-primary-deep" />}
       <FondoAnimado
         className={`absolute inset-0 h-full w-full ${
-          fondo.src ? "opacity-45 mix-blend-screen" : "bg-primary-deep"
+          fondo.src ? "opacity-20 mix-blend-screen" : "opacity-35 mix-blend-screen"
         }`}
       />
       <div className="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-black/15" />
