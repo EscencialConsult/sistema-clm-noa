@@ -39,7 +39,11 @@ Los estados clínicos/operativos (fuera de rango, devuelto, vencido, completo, a
 
 ## La Regla Plana por Defecto
 
-Sin sombras decorativas porque sí. Un `shadow` solo aparece si el elemento realmente flota sobre otro (un modal, la card de login sobre la foto de fondo, un dropdown) — nunca en una card de contenido dentro del flujo normal de la página. Se usa `border` con `--color-ink-soft` al 15-20% de opacidad para separar secciones, no sombra.
+Sin sombras decorativas porque sí. Un `shadow` solo aparece si el elemento realmente flota sobre otro (un modal, la card de login sobre la foto de fondo, un dropdown) — nunca en una card de contenido dentro del flujo normal de la página. Se usa `border` con `--color-ink-soft` al 15-20% de opacidad para separar secciones, no sombra — subido a `border-2`/20% en el Dashboard (2026-09) porque con 1px/10% se leía "vacío/genérico"; el borde se refuerza, no se agrega sombra.
+
+## La Regla de la Textura, No el Color, Contra el Vacío
+
+Cuando una pantalla se siente "muy blanca", la solución **no** es teñir el fondo (`surface` sigue siendo blanco puro, ver tokens) — es agregar una textura sutil e invisible a simple vista (grilla de puntos al 10-12% de opacidad de `--color-ink-soft`, `background-size` chico) sobre el `<main>` del `AppShell`. Dilatación cero de la paleta, cero gradientes — sigue siendo blanco, solo deja de sentirse estéril.
 
 ## La Regla de la Tipografía Única
 
@@ -52,6 +56,8 @@ Inter en toda la interfaz operativa, variando peso (400 cuerpo, 500-600 énfasis
 ## La Regla del Sidebar por Rol
 
 El sidebar de navegación no es un menú único — cambia su contenido según el rol de la sesión activa (Administrador ve Usuarios/Catálogo/Auditoría; un profesional de carga ve solo Bandeja/Pacientes/Legajos de su especialidad; RNF-17: 0 opciones ajenas visibles). Es un solo componente `Sidebar`, pero su lista de items sale de una config por rol, nunca hardcodeada por pantalla.
+
+Es además colapsable: al ocultar, **se esconden las etiquetas de texto, los íconos quedan exactamente en el mismo lugar** (no se centran ni se reacomodan) — es la única transición permitida (`width`, con excepción explícita a "transform/opacity únicamente" porque no hay equivalente de transform para un sidebar que cambia de ancho). El logo también cambia: completo cuando está expandido, isotipo solo cuando está colapsado — nunca se deja el logo completo apretado en una barra angosta.
 
 ---
 

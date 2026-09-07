@@ -41,13 +41,13 @@ const ACCESOS_RAPIDOS = [
 
 function TarjetaKpi({ icon: Icon, label, valor, detalle }) {
   return (
-    <div className="flex-1 rounded-card border border-ink-soft/10 bg-white p-5">
-      <div className="mb-2 flex items-center gap-2 text-ink-soft">
-        <Icon size={17} strokeWidth={1.75} />
-        <span className="text-xs">{label}</span>
+    <div className="flex-1 rounded-card border-2 border-ink-soft/15 bg-white p-6">
+      <div className="mb-2.5 flex items-center gap-2 text-ink-soft">
+        <Icon size={19} strokeWidth={1.75} />
+        <span className="text-sm">{label}</span>
       </div>
-      <p className="text-2xl font-semibold text-ink">{valor}</p>
-      <p className="mt-1 text-xs text-ink-soft">{detalle}</p>
+      <p className="text-3xl font-semibold text-ink">{valor}</p>
+      <p className="mt-1 text-sm text-ink-soft">{detalle}</p>
     </div>
   )
 }
@@ -61,7 +61,7 @@ export default function DashboardAdmin() {
 
   if (!datos) {
     return (
-      <AppShell titulo="Inicio" subtitulo="Resumen general del sistema">
+      <AppShell titulo="Hola, Administrador" subtitulo="Resumen general del sistema">
         <p className="text-sm text-ink-soft">Cargando…</p>
       </AppShell>
     )
@@ -79,22 +79,22 @@ export default function DashboardAdmin() {
       </div>
 
       <div className="mb-6 grid grid-cols-3 gap-4">
-        <div className="col-span-2 rounded-card border border-ink-soft/10 bg-white p-5">
-          <p className="mb-3 text-sm font-medium text-ink">Actividad del Sistema — últimos 7 días</p>
+        <div className="col-span-2 rounded-card border-2 border-ink-soft/15 bg-white p-6">
+          <p className="mb-3 text-base font-medium text-ink">Actividad del Sistema — últimos 7 días</p>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={actividad_7_dias}>
-              <XAxis dataKey="dia" tick={{ fontSize: 11, fill: "var(--color-ink-soft)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: "var(--color-ink-soft)" }} axisLine={false} tickLine={false} />
+              <XAxis dataKey="dia" tick={{ fontSize: 12, fill: "var(--color-ink-soft)" }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 12, fill: "var(--color-ink-soft)" }} axisLine={false} tickLine={false} />
               <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Legend wrapperStyle={{ fontSize: 13 }} />
               <Line type="monotone" dataKey="ordenes_creadas" name="Órdenes creadas" stroke="var(--color-primary)" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="estudios_cargados" name="Estudios cargados" stroke="var(--color-success)" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-card border border-ink-soft/10 bg-white p-5">
-          <p className="mb-3 text-sm font-medium text-ink">Órdenes por Tipo de Examen</p>
+        <div className="rounded-card border-2 border-ink-soft/15 bg-white p-6">
+          <p className="mb-3 text-base font-medium text-ink">Órdenes por Tipo de Examen</p>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
               <Pie data={ordenes_por_tipo} dataKey="cantidad" nameKey="tipo" innerRadius={45} outerRadius={70}>
@@ -104,11 +104,11 @@ export default function DashboardAdmin() {
               </Pie>
             </PieChart>
           </ResponsiveContainer>
-          <ul className="mt-1 flex flex-col gap-1 text-xs text-ink-soft">
+          <ul className="mt-1 flex flex-col gap-1.5 text-sm text-ink-soft">
             {ordenes_por_tipo.map((o, i) => (
               <li key={o.tipo} className="flex items-center gap-2">
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-2.5 w-2.5 rounded-full"
                   style={{ background: COLORES_TORTA[i % COLORES_TORTA.length] }}
                 />
                 {o.tipo} — {o.porcentaje}% ({o.cantidad})
@@ -119,20 +119,20 @@ export default function DashboardAdmin() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-card border border-ink-soft/10 bg-white p-5">
-          <p className="mb-3 flex items-center gap-2 text-sm font-medium text-ink">
-            <Users size={16} /> Pendientes por Área
+        <div className="rounded-card border-2 border-ink-soft/15 bg-white p-6">
+          <p className="mb-3 flex items-center gap-2 text-base font-medium text-ink">
+            <Users size={18} /> Pendientes por Área
           </p>
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-3.5">
             {pendientes_por_area.map((a) => (
-              <li key={a.area} className="text-xs text-ink-soft">
+              <li key={a.area} className="text-sm text-ink-soft">
                 <div className="mb-1 flex justify-between">
                   <span>{a.area}</span>
                   <span className="font-medium text-ink">{a.pendientes}</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-ink-soft/10">
+                <div className="h-2 rounded-full bg-ink-soft/10">
                   <div
-                    className="h-1.5 rounded-full bg-primary"
+                    className="h-2 rounded-full bg-primary"
                     style={{ width: `${Math.min(100, a.pendientes)}%` }}
                   />
                 </div>
@@ -141,36 +141,38 @@ export default function DashboardAdmin() {
           </ul>
         </div>
 
-        <div className="rounded-card border border-ink-soft/10 bg-white p-5">
-          <p className="mb-3 text-sm font-medium text-ink">Alertas del Sistema</p>
-          <ul className="flex flex-col gap-3">
+        <div className="rounded-card border-2 border-ink-soft/15 bg-white p-6">
+          <p className="mb-3 text-base font-medium text-ink">Alertas del Sistema</p>
+          <ul className="flex flex-col gap-3.5">
             {alertas_sistema.map((a) => (
-              <li key={a.id} className="flex items-start justify-between gap-2 text-xs">
+              <li key={a.id} className="flex items-start justify-between gap-2 text-sm">
                 <span className="flex items-start gap-2 text-ink-soft">
                   {a.tipo === "backup" ? (
-                    <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-success" />
+                    <CheckCircle2 size={17} className="mt-0.5 shrink-0 text-success" />
                   ) : (
-                    <AlertTriangle size={15} className="mt-0.5 shrink-0 text-warning" />
+                    <AlertTriangle size={17} className="mt-0.5 shrink-0 text-warning" />
                   )}
                   {a.texto}
                 </span>
                 {a.accion && (
-                  <button className="shrink-0 text-primary hover:underline">{a.accion}</button>
+                  <button className="shrink-0 text-sm text-primary hover:underline">{a.accion}</button>
                 )}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="rounded-card border border-ink-soft/10 bg-white p-5">
-          <p className="mb-3 text-sm font-medium text-ink">Accesos Rápidos</p>
-          <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-card border-2 border-ink-soft/15 bg-white p-6">
+          <p className="mb-3 text-base font-medium text-ink">Accesos Rápidos</p>
+          <div className="grid grid-cols-2 gap-2.5">
             {ACCESOS_RAPIDOS.map(({ label, icon: Icon }) => (
               <button
                 key={label}
-                className="flex flex-col items-start gap-2 rounded-md border border-ink-soft/10 p-3 text-left text-xs text-ink hover:border-primary/40"
+                className="flex items-center gap-2.5 rounded-md border-2 border-ink-soft/15 p-3 text-left text-sm text-ink hover:border-primary/50 hover:bg-primary/5"
               >
-                <Icon size={16} className="text-primary" />
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <Icon size={18} />
+                </span>
                 {label}
               </button>
             ))}
