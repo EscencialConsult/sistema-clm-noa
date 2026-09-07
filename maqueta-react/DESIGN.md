@@ -55,9 +55,13 @@ El sidebar de navegación no es un menú único — cambia su contenido según e
 
 ---
 
+## La Regla de la Excepción del Login
+
+El login es la única pantalla donde se permite fondo animado (gradiente WebGL de marca, `FondoAnimado.jsx`) y card semi-transparente (`bg-white/85` + `backdrop-blur`) — es la puerta de entrada institucional, no una pantalla operativa. **Ninguna otra pantalla del sistema** (bandeja, formularios de carga, legajo, dashboards) usa glassmorphism ni fondos animados — ahí rige la Regla Plana por Defecto sin excepción, porque son pantallas donde alguien está leyendo datos clínicos, no una vidriera.
+
 ## Qué NO hacer
 
-- Nada de gradientes decorativos ni glassmorphism — es un sistema clínico/administrativo, no una landing de producto.
+- Gradientes decorativos o glassmorphism en cualquier pantalla que no sea el login (ver excepción arriba) — el resto es un sistema clínico/administrativo, no una landing de producto.
 - Nada de emojis en la UI de producción (el mockup de referencia tenía un 👋 en "Hola, Administrador" — se reemplaza por tipografía sola).
 - Nada de badges de colores random por categoría — los únicos colores de estado son los 3 semánticos del token (`warning`/`danger`/`success`).
 - Ningún hex/px hardcodeado en un componente que no salga de este archivo o de `src/index.css`.
