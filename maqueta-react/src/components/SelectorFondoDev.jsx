@@ -3,7 +3,7 @@ import { Image as ImageIcon } from "lucide-react"
 
 // Herramienta SOLO de maqueta: elegir con miniaturas reales cuál imagen de
 // fondo queda mejor, antes de tener la foto de la fachada del CML NOA.
-// Popover trigger-anchored: scale(0.95→1) + opacity, ease-out fuerte, 180ms
+// Popover trigger-anchored: scale(0.95→1) + opacity, ease-out fuerte, 150ms
 // (ver animate skill — dropdowns 150–250ms, origen en el trigger).
 export default function SelectorFondoDev({ fondos, indiceActual, onCambiar }) {
   const [abierto, setAbierto] = useState(false)
@@ -18,19 +18,19 @@ export default function SelectorFondoDev({ fondos, indiceActual, onCambiar }) {
   }, [])
 
   return (
-    <div ref={ref} className="absolute right-4 top-4 z-20">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="flex items-center gap-2 rounded-md border border-dashed border-white/40 bg-black/30 px-3 py-2 text-[11px] text-white/80 backdrop-blur-sm hover:border-white/70 hover:text-white"
+        className="flex w-full items-center gap-2 rounded border border-dashed border-white/40 px-2.5 py-1.5 text-[11px] text-white/80 hover:border-white/70 hover:text-white"
         title="Solo dev — elegir fondo candidato"
       >
-        <ImageIcon size={14} />
-        dev · fondo {indiceActual + 1}/{fondos.length}
+        <ImageIcon size={13} />
+        fondo {indiceActual + 1}/{fondos.length}
       </button>
 
       <div
-        className="absolute right-0 top-full mt-2 flex origin-top-right gap-2 rounded-md border border-dashed border-white/40 bg-black/70 p-2 backdrop-blur-md transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
+        className="absolute right-0 top-full z-30 mt-1.5 flex origin-top-right gap-1.5 rounded-md border border-dashed border-white/40 bg-black/85 p-1.5 backdrop-blur-md transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
         style={{
           transform: abierto ? "scale(1)" : "scale(0.95)",
           opacity: abierto ? 1 : 0,
@@ -50,7 +50,7 @@ export default function SelectorFondoDev({ fondos, indiceActual, onCambiar }) {
               i === indiceActual ? "border-accent" : "border-transparent hover:border-white/50"
             }`}
           >
-            <img src={f.src} alt={f.label} className="h-12 w-16 object-cover" />
+            <img src={f.src} alt={f.label} className="h-11 w-16 object-cover" />
           </button>
         ))}
       </div>

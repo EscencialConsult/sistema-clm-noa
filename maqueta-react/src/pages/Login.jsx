@@ -65,22 +65,32 @@ export default function Login() {
       <img
         src={FONDOS_LOGIN[indiceFondo].src}
         alt=""
-        className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-md"
+        className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-lg"
       />
-      <div className="absolute inset-0 bg-primary-deep/70 mix-blend-multiply" />
-      <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-black/35" />
+      {/* Overlay sólido — la foto queda como textura de fondo, no como
+          protagonista compitiendo con la card. mix-blend-multiply + una capa
+          extra plana evitan que los parches de luz del techo (blur duro de
+          una foto con tubos fluorescentes) se lean como manchas random. */}
+      <div className="absolute inset-0 bg-primary-deep/88 mix-blend-multiply" />
+      <div className="absolute inset-0 bg-primary-deep/35" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-black/25" />
 
-      <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
-      <AccesosRapidosDev onEntrar={entrar} cargando={cargando} />
+      {/* Panel de herramientas dev — un solo bloque prolijo, no dos sueltos */}
+      <div className="absolute right-4 top-4 z-20 flex flex-col items-end gap-1.5">
+        <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
+        <AccesosRapidosDev onEntrar={entrar} cargando={cargando} />
+      </div>
 
       {/* Logo — arriba a la izquierda, cambia de color al pasar el mouse.
           mask-image en vez de una segunda imagen: el logo es monocromático,
           así el color sale de un token real (--color-accent), no de un asset
-          nuevo por cada variante que se nos ocurra. */}
+          nuevo por cada variante que se nos ocurra. aspect-ratio en vez de un
+          ancho fijo, para que "contain" no lo deje chico dentro de una caja
+          que no respeta la proporción real del archivo (800×400). */}
       <div
         role="img"
         aria-label="Centro Médico Laboral del NOA"
-        className="absolute left-8 top-8 z-10 hidden h-14 w-64 bg-white transition-colors duration-200 ease-[ease] hover:bg-accent md:block"
+        className="absolute left-8 top-8 z-10 hidden aspect-2/1 h-24 bg-white transition-colors duration-200 ease-[ease] hover:bg-accent md:block"
         style={{
           WebkitMaskImage: `url(${logoBlanco})`,
           maskImage: `url(${logoBlanco})`,
