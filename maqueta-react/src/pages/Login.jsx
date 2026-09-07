@@ -53,23 +53,29 @@ export default function Login() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6 md:justify-end md:p-16">
       {/* Fondo — imágenes candidatas mientras no hay foto real de la fachada
-          del CML NOA (ver src/config/fondosLogin.js). Ya vienen borrosas de
-          origen; se les suma blur + tinte de marca para que no se lean como
-          foto de stock genérica y quede coherente con la paleta institucional. */}
+          del CML NOA (ver src/config/fondosLogin.js). Blur fuerte a propósito:
+          la idea es una textura ambiental irreconocible, no una foto nítida
+          con detalles propios (puertas, reflejos) compitiendo con la card. */}
       <img
         src={FONDOS_LOGIN[indiceFondo].src}
         alt=""
-        className="absolute inset-0 h-full w-full scale-110 object-cover blur-sm"
+        className="absolute inset-0 h-full w-full object-cover blur-2xl"
       />
-      <div className="absolute inset-0 bg-primary-deep/75 mix-blend-multiply" />
-      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-black/50" />
+      <div className="absolute inset-0 bg-primary-deep/80 mix-blend-multiply" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-black/40" />
 
       <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
 
-      {/* Texto institucional — abajo a la izquierda, sobre el fondo */}
-      <div className="absolute inset-x-0 bottom-0 z-10 hidden flex-col gap-6 p-12 text-white md:flex">
-        <img src={logoBlanco} alt="Centro Médico Laboral del NOA" className="h-12" />
-        <div className="max-w-md">
+      {/* Logo — arriba a la izquierda */}
+      <img
+        src={logoBlanco}
+        alt="Centro Médico Laboral del NOA"
+        className="absolute left-8 top-8 z-10 hidden h-11 md:block"
+      />
+
+      {/* Texto institucional — abajo a la izquierda, con margen real (no pegado al borde) */}
+      <div className="absolute bottom-10 left-8 z-10 hidden max-w-md flex-col gap-6 text-white md:flex">
+        <div>
           <p className="text-3xl font-semibold leading-snug">
             Cuidamos la salud de las personas que impulsan tu empresa.
           </p>
@@ -154,8 +160,8 @@ export default function Login() {
         <p className="mt-6 text-center text-xs text-ink-soft/60">Versión 1.0.0 · Prelaboral</p>
       </div>
 
-      <p className="absolute bottom-4 right-4 z-10 text-xs text-white/40 md:right-16">
-        Probar con <code>admin/admin</code> (Administrador) o <code>mlopez/1234</code> (Médico Laboral)
+      <p className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-center text-xs text-white/40 md:left-auto md:right-8 md:translate-x-0">
+        dev — probar con <code>admin/admin</code> (Administrador) o <code>mlopez/1234</code> (Médico Laboral)
       </p>
     </div>
   )
