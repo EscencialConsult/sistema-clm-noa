@@ -11,18 +11,19 @@ const FORMAS = { Checks: 0, Stripes: 1, Edge: 2 }
 const PRESET_INSTITUCIONAL = {
   color1: "#0B2545", // azul institucional
   color2: "#0066CC", // azul corporativo
-  color3: "#0B2545",
+  color3: "#3399FF", // celeste médico — antes repetía el color1, por eso el
+  // degradé se leía como una sola línea/curva en vez de una mezcla llena
   rotation: 20,
-  proportion: 45,
-  scale: 0.35,
+  proportion: 50,
+  scale: 0.8, // más grande = manchas más anchas, no un filamento fino
   speed: 8, // bien lento — "suave", no un efecto de producto de consumo
-  distortion: 3,
-  swirl: 20,
+  distortion: 4,
+  swirl: 25,
   swirlIterations: 6,
   softness: 100,
   offset: 0,
-  shape: "Edge",
-  shapeSize: 60,
+  shape: "Checks", // blobs orgánicos que cubren el lienzo, "Edge" daba una franja angosta
+  shapeSize: 90,
 }
 
 function hexToRgba(hex) {

@@ -59,61 +59,52 @@ export default function Login() {
   const fondo = FONDOS_LOGIN[indiceFondo]
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6 md:justify-end md:p-16">
-      {/* Fondo — gradiente animado de marca por defecto (WebGL, lento y sutil,
-          ver FondoAnimado.jsx) o, si se elige desde el panel dev, una de las
-          fotos candidatas mientras no hay foto real de la fachada. */}
-      {fondo.animado ? (
-        <FondoAnimado className="absolute inset-0 h-full w-full bg-primary-deep" />
-      ) : (
-        <>
-          <img
-            src={fondo.src}
-            alt=""
-            className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-lg"
-          />
-          <div className="absolute inset-0 bg-primary-deep/88 mix-blend-multiply" />
-          <div className="absolute inset-0 bg-primary-deep/35" />
-        </>
-      )}
-      <div className="absolute inset-0 bg-linear-to-t from-black/45 via-transparent to-black/20" />
+    <div className="flex min-h-screen">
+      {/* ── Mitad izquierda — marca y fondo ── */}
+      <div className="relative hidden w-1/2 flex-col justify-center gap-10 overflow-hidden p-14 text-white md:flex">
+        {fondo.animado ? (
+          <FondoAnimado className="absolute inset-0 h-full w-full bg-primary-deep" />
+        ) : (
+          <>
+            <img
+              src={fondo.src}
+              alt=""
+              className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-md"
+            />
+            <div className="absolute inset-0 bg-primary-deep/45 mix-blend-multiply" />
+          </>
+        )}
+        <div className="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-black/15" />
 
-      {/* Panel de herramientas dev — todo junto, un solo bloque */}
-      <div className="absolute right-4 top-4 z-20 flex flex-col items-end gap-1.5">
-        <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
-        <AccesosRapidosDev onEntrar={entrar} cargando={cargando} />
-      </div>
+        {/* Logo — cambia de color al pasar el mouse (mask-image: el logo es
+            monocromático, el color sale de un token real, no de un asset
+            nuevo por variante). */}
+        <div
+          role="img"
+          aria-label="Centro Médico Laboral del NOA"
+          className="absolute left-14 top-12 z-10 aspect-2/1 h-20 bg-white transition-colors duration-200 ease-[ease] hover:bg-accent"
+          style={{
+            WebkitMaskImage: `url(${logoBlanco})`,
+            maskImage: `url(${logoBlanco})`,
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            WebkitMaskPosition: "left center",
+            maskPosition: "left center",
+            WebkitMaskSize: "contain",
+            maskSize: "contain",
+          }}
+        />
 
-      {/* Logo — arriba a la izquierda, cambia de color al pasar el mouse
-          (mask-image: el logo es monocromático, el color sale de un token
-          real, no de un asset nuevo por variante). */}
-      <div
-        role="img"
-        aria-label="Centro Médico Laboral del NOA"
-        className="absolute left-8 top-8 z-10 hidden aspect-2/1 h-24 bg-white transition-colors duration-200 ease-[ease] hover:bg-accent md:block"
-        style={{
-          WebkitMaskImage: `url(${logoBlanco})`,
-          maskImage: `url(${logoBlanco})`,
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "left center",
-          maskPosition: "left center",
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
-        }}
-      />
-
-      {/* Texto institucional — un solo renglón, abajo a la izquierda */}
-      <div className="absolute bottom-10 left-8 z-10 hidden flex-col gap-6 text-white md:flex">
-        <div>
-          <p className="whitespace-nowrap text-2xl leading-none font-semibold">
+        <div className="relative z-10 max-w-md">
+          <p className="whitespace-nowrap text-lg leading-none font-semibold">
             Cuidamos la salud de las personas que impulsan tu empresa.
           </p>
           <p className="mt-3 text-sm font-light text-white/50">
             Medicina Laboral · Exámenes · Juntas Médicas
           </p>
         </div>
-        <div className="flex flex-col gap-2 text-sm text-white/60">
+
+        <div className="relative z-10 flex flex-col gap-2 text-sm text-white/60">
           <span className="flex items-center gap-2.5">
             <MapPin size={15} className="opacity-90" /> Av. Avellaneda 338, San Miguel de Tucumán
           </span>
@@ -123,11 +114,19 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Card — semi-transparente sobre el fondo (frosted), no un bloque blanco opaco */}
-      <div
-        className="relative z-10 w-full max-w-md rounded-card bg-white/85 p-10 backdrop-blur-md"
-        style={{ boxShadow: "0 20px 40px rgba(11,37,69,0.25)" }}
-      >
+      {/* ── Mitad derecha — acción. Card centrada en el centro de ESTA mitad,
+          no pegada a ningún borde. ── */}
+      <div className="relative flex w-full items-center justify-center bg-ink-soft/5 p-6 md:w-1/2">
+        {/* Panel de herramientas dev — visibles a propósito, no escondidas */}
+        <div className="absolute right-6 top-6 z-20 flex flex-col items-end gap-2">
+          <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
+          <AccesosRapidosDev onEntrar={entrar} cargando={cargando} />
+        </div>
+
+        <div
+          className="w-full max-w-sm rounded-card bg-white p-10"
+          style={{ boxShadow: "0 20px 40px rgba(11,37,69,0.15)" }}
+        >
         <div className="mb-7 flex flex-col items-center text-center">
           <img src={logoCompleto} alt="Centro Médico Laboral del NOA" className="mb-5 h-16" />
           <h1 className="text-xl font-semibold text-ink">Bienvenido</h1>
@@ -191,6 +190,7 @@ export default function Login() {
         </form>
 
         <p className="mt-6 text-center text-xs text-ink-soft/60">Versión 1.0.0 · Prelaboral</p>
+        </div>
       </div>
     </div>
   )

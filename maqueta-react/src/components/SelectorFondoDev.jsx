@@ -22,11 +22,11 @@ export default function SelectorFondoDev({ fondos, indiceActual, onCambiar }) {
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="flex w-full items-center gap-2 rounded border border-dashed border-white/40 px-2.5 py-1.5 text-[11px] text-white/80 hover:border-white/70 hover:text-white"
+        className="flex w-full items-center gap-2 rounded-md bg-primary-deep px-3 py-2 text-xs font-medium text-white shadow-lg hover:bg-primary-deep/80"
         title="Solo dev — elegir fondo candidato"
       >
-        <ImageIcon size={13} />
-        fondo {indiceActual + 1}/{fondos.length}
+        <ImageIcon size={15} />
+        dev · fondo {indiceActual + 1}/{fondos.length}
       </button>
 
       <div
