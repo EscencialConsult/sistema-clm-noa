@@ -5,6 +5,7 @@ import { authService } from "../services/authService"
 import { navegacionPorRol } from "../config/navegacionPorRol"
 import { FONDOS_LOGIN } from "../config/fondosLogin"
 import SelectorFondoDev from "../components/SelectorFondoDev"
+import AccesosRapidosDev from "../components/AccesosRapidosDev"
 import logoCompleto from "../assets/logo/1.webp"
 import logoBlanco from "../assets/logo/2.webp"
 
@@ -31,12 +32,11 @@ export default function Login() {
     return <Navigate to={destino} replace />
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function entrar(usuarioIntento, contrasenaIntento) {
     setError("")
     setCargando(true)
     try {
-      const sesion = await authService.login(usuario, contrasena)
+      const sesion = await authService.login(usuarioIntento, contrasenaIntento)
       if (sesion.debe_cambiar_contrasena) {
         navigate("/cambiar-contrasena")
         return
@@ -50,30 +50,50 @@ export default function Login() {
     }
   }
 
+  function handleSubmit(e) {
+    e.preventDefault()
+    entrar(usuario, contrasena)
+  }
+
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6 md:justify-end md:p-16">
       {/* Fondo — imágenes candidatas mientras no hay foto real de la fachada
-          del CML NOA (ver src/config/fondosLogin.js). Blur fuerte a propósito:
-          la idea es una textura ambiental irreconocible, no una foto nítida
-          con detalles propios (puertas, reflejos) compitiendo con la card. */}
+          del CML NOA (ver src/config/fondosLogin.js). Blur moderado: textura
+          ambiental legible, sin detalles nítidos compitiendo con la card.
+          Ken Burns lento (transform: scale, ver index.css) para que no se
+          sienta estático. */}
       <img
         src={FONDOS_LOGIN[indiceFondo].src}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover blur-2xl"
+        className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-md"
       />
-      <div className="absolute inset-0 bg-primary-deep/80 mix-blend-multiply" />
-      <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/10 to-black/40" />
+      <div className="absolute inset-0 bg-primary-deep/70 mix-blend-multiply" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-black/35" />
 
       <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
+      <AccesosRapidosDev onEntrar={entrar} cargando={cargando} />
 
-      {/* Logo — arriba a la izquierda */}
-      <img
-        src={logoBlanco}
-        alt="Centro Médico Laboral del NOA"
-        className="absolute left-8 top-8 z-10 hidden h-11 md:block"
+      {/* Logo — arriba a la izquierda, cambia de color al pasar el mouse.
+          mask-image en vez de una segunda imagen: el logo es monocromático,
+          así el color sale de un token real (--color-accent), no de un asset
+          nuevo por cada variante que se nos ocurra. */}
+      <div
+        role="img"
+        aria-label="Centro Médico Laboral del NOA"
+        className="absolute left-8 top-8 z-10 hidden h-14 w-64 bg-white transition-colors duration-200 ease-[ease] hover:bg-accent md:block"
+        style={{
+          WebkitMaskImage: `url(${logoBlanco})`,
+          maskImage: `url(${logoBlanco})`,
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "left center",
+          maskPosition: "left center",
+          WebkitMaskSize: "contain",
+          maskSize: "contain",
+        }}
       />
 
-      {/* Texto institucional — abajo a la izquierda, con margen real (no pegado al borde) */}
+      {/* Texto institucional — abajo a la izquierda, con margen real */}
       <div className="absolute bottom-10 left-8 z-10 hidden max-w-md flex-col gap-6 text-white md:flex">
         <div>
           <p className="text-3xl font-semibold leading-snug">
@@ -93,17 +113,17 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Card — flota sobre el fondo, no ocupa un panel propio */}
-      <div className="relative z-10 w-full max-w-sm rounded-card bg-white p-8 shadow-xl">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <img src={logoCompleto} alt="Centro Médico Laboral del NOA" className="mb-4 h-16" />
-          <h1 className="text-lg font-semibold text-ink">Bienvenido</h1>
+      {/* Card — más grande, flota sobre el fondo */}
+      <div className="relative z-10 w-full max-w-md rounded-card bg-white p-10 shadow-xl">
+        <div className="mb-7 flex flex-col items-center text-center">
+          <img src={logoCompleto} alt="Centro Médico Laboral del NOA" className="mb-5 h-20" />
+          <h1 className="text-xl font-semibold text-ink">Bienvenido</h1>
           <p className="text-sm text-ink-soft">Inicie sesión para continuar</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3 py-2.5 focus-within:border-primary">
-            <User size={17} className="text-ink-soft" />
+          <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3.5 py-3 focus-within:border-primary">
+            <User size={18} className="text-ink-soft" />
             <input
               className="w-full text-sm outline-none"
               placeholder="Usuario"
@@ -113,8 +133,8 @@ export default function Login() {
             />
           </label>
 
-          <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3 py-2.5 focus-within:border-primary">
-            <Lock size={17} className="text-ink-soft" />
+          <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3.5 py-3 focus-within:border-primary">
+            <Lock size={18} className="text-ink-soft" />
             <input
               type={verClave ? "text" : "password"}
               className="w-full text-sm outline-none"
@@ -124,9 +144,9 @@ export default function Login() {
             />
             <button type="button" onClick={() => setVerClave((v) => !v)}>
               {verClave ? (
-                <EyeOff size={17} className="text-ink-soft" />
+                <EyeOff size={18} className="text-ink-soft" />
               ) : (
-                <Eye size={17} className="text-ink-soft" />
+                <Eye size={18} className="text-ink-soft" />
               )}
             </button>
           </label>
@@ -145,7 +165,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={cargando}
-            className="rounded-md bg-primary py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+            className="rounded-md bg-primary py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
           >
             {cargando ? "Ingresando…" : "Ingresar"}
           </button>
@@ -159,10 +179,6 @@ export default function Login() {
 
         <p className="mt-6 text-center text-xs text-ink-soft/60">Versión 1.0.0 · Prelaboral</p>
       </div>
-
-      <p className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-center text-xs text-white/40 md:left-auto md:right-8 md:translate-x-0">
-        dev — probar con <code>admin/admin</code> (Administrador) o <code>mlopez/1234</code> (Médico Laboral)
-      </p>
     </div>
   )
 }

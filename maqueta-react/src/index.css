@@ -29,3 +29,27 @@ body {
   background: var(--color-surface);
   color: var(--color-ink);
 }
+
+/*
+  Ken Burns lento — fondo del login (única ocurrencia, ambiental, no UI
+  interactiva, por eso puede pasar los 300ms que rigen el resto del sistema).
+  transform: scale únicamente — GPU, no dispara layout/paint del resto de la
+  página. Ver DESIGN.md / animate skill: ease-in-out, ~24s, infinite alternate.
+*/
+@keyframes kenburns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+.fondo-kenburns {
+  animation: kenburns 24s cubic-bezier(0.77, 0, 0.175, 1) infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fondo-kenburns {
+    animation: none;
+  }
+}
