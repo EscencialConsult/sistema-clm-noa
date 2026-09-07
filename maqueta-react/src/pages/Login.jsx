@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, MapPin, Phone, User, Lock, Info } from "lucide-react"
 import { authService } from "../services/authService"
 import { navegacionPorRol } from "../config/navegacionPorRol"
+import { FONDOS_LOGIN } from "../config/fondosLogin"
+import SelectorFondoDev from "../components/SelectorFondoDev"
 import logoCompleto from "../assets/logo/1.webp"
 import logoBlanco from "../assets/logo/2.webp"
 
@@ -13,6 +15,15 @@ export default function Login() {
   const [verClave, setVerClave] = useState(false)
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
+  const [indiceFondo, setIndiceFondo] = useState(() => {
+    const guardado = Number(localStorage.getItem("kaplan_dev_fondo_login"))
+    return Number.isInteger(guardado) && guardado < FONDOS_LOGIN.length ? guardado : 0
+  })
+
+  function cambiarFondo(indice) {
+    setIndiceFondo(indice)
+    localStorage.setItem("kaplan_dev_fondo_login", String(indice))
+  }
 
   const sesionActual = authService.getSesionActual()
   if (sesionActual) {
@@ -41,18 +52,19 @@ export default function Login() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6 md:justify-end md:p-16">
-      {/* Fondo institucional — placeholder hasta tener la foto real de la fachada.
-          Reemplazar por <img src={fotoFachada} className="absolute inset-0 h-full w-full object-cover" />
-          y mantener el overlay de abajo encima. */}
-      <div className="absolute inset-0 bg-primary-deep" />
-      <div
-        className="absolute inset-0 opacity-40"
-        style={{
-          background:
-            "radial-gradient(circle at 20% 30%, var(--color-accent) 0%, transparent 45%), radial-gradient(circle at 80% 80%, var(--color-primary) 0%, transparent 40%)",
-        }}
+      {/* Fondo — imágenes candidatas mientras no hay foto real de la fachada
+          del CML NOA (ver src/config/fondosLogin.js). Ya vienen borrosas de
+          origen; se les suma blur + tinte de marca para que no se lean como
+          foto de stock genérica y quede coherente con la paleta institucional. */}
+      <img
+        src={FONDOS_LOGIN[indiceFondo].src}
+        alt=""
+        className="absolute inset-0 h-full w-full scale-110 object-cover blur-sm"
       />
-      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-black/60" />
+      <div className="absolute inset-0 bg-primary-deep/75 mix-blend-multiply" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-black/50" />
+
+      <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
 
       {/* Texto institucional — abajo a la izquierda, sobre el fondo */}
       <div className="absolute inset-x-0 bottom-0 z-10 hidden flex-col gap-6 p-12 text-white md:flex">
