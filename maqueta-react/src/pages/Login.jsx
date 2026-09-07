@@ -40,14 +40,24 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Panel izquierdo — institucional */}
-      <div className="relative hidden w-1/2 flex-col justify-between bg-primary-deep p-12 text-white md:flex">
-        <div className="absolute inset-0 bg-primary-deep/70 mix-blend-multiply" />
-        <div className="relative z-10">
-          <img src={logoBlanco} alt="Centro Médico Laboral del NOA" className="h-14" />
-        </div>
-        <div className="relative z-10 max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-6 md:justify-end md:p-16">
+      {/* Fondo institucional — placeholder hasta tener la foto real de la fachada.
+          Reemplazar por <img src={fotoFachada} className="absolute inset-0 h-full w-full object-cover" />
+          y mantener el overlay de abajo encima. */}
+      <div className="absolute inset-0 bg-primary-deep" />
+      <div
+        className="absolute inset-0 opacity-40"
+        style={{
+          background:
+            "radial-gradient(circle at 20% 30%, var(--color-accent) 0%, transparent 45%), radial-gradient(circle at 80% 80%, var(--color-primary) 0%, transparent 40%)",
+        }}
+      />
+      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-black/60" />
+
+      {/* Texto institucional — abajo a la izquierda, sobre el fondo */}
+      <div className="absolute inset-x-0 bottom-0 z-10 hidden flex-col gap-6 p-12 text-white md:flex">
+        <img src={logoBlanco} alt="Centro Médico Laboral del NOA" className="h-12" />
+        <div className="max-w-md">
           <p className="text-3xl font-semibold leading-snug">
             Cuidamos la salud de las personas que impulsan tu empresa.
           </p>
@@ -55,7 +65,7 @@ export default function Login() {
             Medicina Laboral · Exámenes · Juntas Médicas
           </p>
         </div>
-        <div className="relative z-10 flex flex-col gap-2 text-sm text-white/70">
+        <div className="flex flex-col gap-2 text-sm text-white/70">
           <span className="flex items-center gap-2">
             <MapPin size={15} /> Av. Avellaneda 338, San Miguel de Tucumán
           </span>
@@ -65,80 +75,76 @@ export default function Login() {
         </div>
       </div>
 
-      {/* Panel derecho — formulario */}
-      <div className="flex w-full flex-col items-center justify-center bg-ink-soft/5 p-8 md:w-1/2">
-        <div className="w-full max-w-sm rounded-card border border-ink-soft/10 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex flex-col items-center text-center">
-            <img src={logoCompleto} alt="Centro Médico Laboral del NOA" className="mb-4 h-16" />
-            <h1 className="text-lg font-semibold text-ink">Bienvenido</h1>
-            <p className="text-sm text-ink-soft">Inicie sesión para continuar</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3 py-2.5 focus-within:border-primary">
-              <User size={17} className="text-ink-soft" />
-              <input
-                className="w-full text-sm outline-none"
-                placeholder="Usuario"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                autoFocus
-              />
-            </label>
-
-            <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3 py-2.5 focus-within:border-primary">
-              <Lock size={17} className="text-ink-soft" />
-              <input
-                type={verClave ? "text" : "password"}
-                className="w-full text-sm outline-none"
-                placeholder="Contraseña"
-                value={contrasena}
-                onChange={(e) => setContrasena(e.target.value)}
-              />
-              <button type="button" onClick={() => setVerClave((v) => !v)}>
-                {verClave ? (
-                  <EyeOff size={17} className="text-ink-soft" />
-                ) : (
-                  <Eye size={17} className="text-ink-soft" />
-                )}
-              </button>
-            </label>
-
-            {error && <p className="text-sm text-danger">{error}</p>}
-
-            <div className="flex items-center justify-between text-sm text-ink-soft">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" className="accent-primary" /> Recordarme
-              </label>
-              <button type="button" className="text-primary hover:underline">
-                ¿Olvidó su contraseña?
-              </button>
-            </div>
-
-            <button
-              type="submit"
-              disabled={cargando}
-              className="rounded-md bg-primary py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
-            >
-              {cargando ? "Ingresando…" : "Ingresar"}
-            </button>
-
-            {/* RF01: el primer ingreso obliga a cambiar la contraseña */}
-            <div className="flex items-start gap-2 rounded-md bg-accent/10 p-3 text-xs text-ink-soft">
-              <Info size={15} className="mt-0.5 shrink-0 text-primary" />
-              Por su seguridad, deberá cambiar su contraseña en su primer inicio de sesión.
-            </div>
-          </form>
-
-          <p className="mt-6 text-center text-xs text-ink-soft/60">
-            Versión 1.0.0 · Prelaboral
-          </p>
+      {/* Card — flota sobre el fondo, no ocupa un panel propio */}
+      <div className="relative z-10 w-full max-w-sm rounded-card bg-white p-8 shadow-xl">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <img src={logoCompleto} alt="Centro Médico Laboral del NOA" className="mb-4 h-16" />
+          <h1 className="text-lg font-semibold text-ink">Bienvenido</h1>
+          <p className="text-sm text-ink-soft">Inicie sesión para continuar</p>
         </div>
 
-        <p className="mt-4 text-xs text-ink-soft/50">
-          Probar con <code>admin/admin</code> (Administrador) o <code>mlopez/1234</code> (Médico Laboral)
-        </p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3 py-2.5 focus-within:border-primary">
+            <User size={17} className="text-ink-soft" />
+            <input
+              className="w-full text-sm outline-none"
+              placeholder="Usuario"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              autoFocus
+            />
+          </label>
+
+          <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 px-3 py-2.5 focus-within:border-primary">
+            <Lock size={17} className="text-ink-soft" />
+            <input
+              type={verClave ? "text" : "password"}
+              className="w-full text-sm outline-none"
+              placeholder="Contraseña"
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
+            />
+            <button type="button" onClick={() => setVerClave((v) => !v)}>
+              {verClave ? (
+                <EyeOff size={17} className="text-ink-soft" />
+              ) : (
+                <Eye size={17} className="text-ink-soft" />
+              )}
+            </button>
+          </label>
+
+          {error && <p className="text-sm text-danger">{error}</p>}
+
+          <div className="flex items-center justify-between text-sm text-ink-soft">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" className="accent-primary" /> Recordarme
+            </label>
+            <button type="button" className="text-primary hover:underline">
+              ¿Olvidó su contraseña?
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={cargando}
+            className="rounded-md bg-primary py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+          >
+            {cargando ? "Ingresando…" : "Ingresar"}
+          </button>
+
+          {/* RF01: el primer ingreso obliga a cambiar la contraseña */}
+          <div className="flex items-start gap-2 rounded-md bg-accent/10 p-3 text-xs text-ink-soft">
+            <Info size={15} className="mt-0.5 shrink-0 text-primary" />
+            Por su seguridad, deberá cambiar su contraseña en su primer inicio de sesión.
+          </div>
+        </form>
+
+        <p className="mt-6 text-center text-xs text-ink-soft/60">Versión 1.0.0 · Prelaboral</p>
       </div>
+
+      <p className="absolute bottom-4 right-4 z-10 text-xs text-white/40 md:right-16">
+        Probar con <code>admin/admin</code> (Administrador) o <code>mlopez/1234</code> (Médico Laboral)
+      </p>
     </div>
   )
 }
