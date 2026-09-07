@@ -68,7 +68,7 @@ export default function AppShell({ children, titulo, subtitulo }) {
           </Link>
 
           {!colapsado && (
-            <p className="mb-3 text-xs font-medium tracking-wide text-white/50">{nav.etiqueta}</p>
+            <p className="mb-3 text-center text-xs font-medium tracking-wide text-white/50">{nav.etiqueta}</p>
           )}
           <nav className="flex flex-col gap-1">
             {nav.items.map((item) => {
