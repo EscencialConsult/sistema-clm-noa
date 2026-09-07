@@ -6,7 +6,6 @@ import { navegacionPorRol } from "../config/navegacionPorRol"
 import { FONDOS_LOGIN } from "../config/fondosLogin"
 import SelectorFondoDev from "../components/SelectorFondoDev"
 import AccesosRapidosDev from "../components/AccesosRapidosDev"
-import FondoAnimado from "../components/FondoAnimado"
 import logoCompleto from "../assets/logo/1.webp"
 import logoBlanco from "../assets/logo/2.webp"
 
@@ -60,28 +59,15 @@ export default function Login() {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* ── Fondo — UNA sola capa detrás de toda la interfaz (las dos mitades
-          son solo layout de contenido encima, transparentes). Siempre 3
-          capas apiladas, en todas las opciones (foto o no): foto → tinte de
-          color → shader animado encima. No es "una u otra", es una sola
-          composición. ── */}
-      {fondo.src && (
-        <img
-          src={fondo.src}
-          alt=""
-          className="fondo-kenburns absolute inset-0 h-full w-full object-cover blur-md"
-        />
+      {/* ── Fondo — estático, sin WebGL. Foto (o base sólida si no hay) +
+          tinte de color. Se sacó el shader animado: no valía la vuelta que
+          costaba, se veía mal/inconsistente y ya se probó varias veces. ── */}
+      {fondo.src ? (
+        <img src={fondo.src} alt="" className="absolute inset-0 h-full w-full object-cover blur-md" />
+      ) : (
+        <div className="absolute inset-0 bg-primary-deep" />
       )}
       <div className="absolute inset-0 bg-primary-deep/45 mix-blend-multiply" />
-      {/* Sin foto: base sólida propia. El shader va ENCIMA a baja opacidad
-          en los dos casos — así se nota que se mueve sin dominar la
-          pantalla, en cualquiera de las 6 opciones. */}
-      {!fondo.src && <div className="absolute inset-0 bg-primary-deep" />}
-      <FondoAnimado
-        className={`absolute inset-0 h-full w-full ${
-          fondo.src ? "opacity-20 mix-blend-screen" : "opacity-35 mix-blend-screen"
-        }`}
-      />
       <div className="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-black/15" />
 
       {/* ── Contenido — mitad y mitad, ambas transparentes sobre el fondo ── */}
@@ -135,20 +121,20 @@ export default function Login() {
           </div>
 
           <div
-            className="w-full max-w-sm rounded-card bg-white/90 p-10 backdrop-blur-md"
+            className="w-full max-w-lg rounded-card bg-white/90 p-14 backdrop-blur-md"
             style={{ boxShadow: "0 20px 40px rgba(11,37,69,0.25)" }}
           >
-            <div className="mb-7 flex flex-col items-center text-center">
-              <img src={logoCompleto} alt="Centro Médico Laboral del NOA" className="mb-5 h-16" />
-              <h1 className="text-xl font-semibold text-ink">Bienvenido</h1>
-              <p className="text-sm text-ink-soft">Inicie sesión para continuar</p>
+            <div className="mb-9 flex flex-col items-center text-center">
+              <img src={logoCompleto} alt="Centro Médico Laboral del NOA" className="mb-6 h-20" />
+              <h1 className="text-2xl font-semibold text-ink">Bienvenido</h1>
+              <p className="text-base text-ink-soft">Inicie sesión para continuar</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 bg-white/60 px-3.5 py-3 focus-within:border-primary">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 bg-white/60 px-4 py-3.5 focus-within:border-primary">
                 <User size={18} className="text-ink-soft" />
                 <input
-                  className="w-full bg-transparent text-sm outline-none"
+                  className="w-full bg-transparent text-base outline-none"
                   placeholder="Usuario"
                   value={usuario}
                   onChange={(e) => setUsuario(e.target.value)}
@@ -156,11 +142,11 @@ export default function Login() {
                 />
               </label>
 
-              <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 bg-white/60 px-3.5 py-3 focus-within:border-primary">
+              <label className="flex items-center gap-2 rounded-md border border-ink-soft/20 bg-white/60 px-4 py-3.5 focus-within:border-primary">
                 <Lock size={18} className="text-ink-soft" />
                 <input
                   type={verClave ? "text" : "password"}
-                  className="w-full bg-transparent text-sm outline-none"
+                  className="w-full bg-transparent text-base outline-none"
                   placeholder="Contraseña"
                   value={contrasena}
                   onChange={(e) => setContrasena(e.target.value)}
@@ -188,7 +174,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={cargando}
-                className="rounded-md bg-primary py-3 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+                className="rounded-md bg-primary py-3.5 text-base font-medium text-white hover:opacity-90 disabled:opacity-60"
               >
                 {cargando ? "Ingresando…" : "Ingresar"}
               </button>

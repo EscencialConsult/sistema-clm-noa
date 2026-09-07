@@ -10,7 +10,7 @@ import recepcion2 from "../assets/fondos/recepcion-2.webp"
 
 // Origen: C:\Users\PERSONAL\Downloads\px-conversions (8)\
 export const FONDOS_LOGIN = [
-  { id: "animado", label: "Gradiente animado de marca", src: null, animado: true },
+  { id: "gradiente", label: "Gradiente de marca (sin foto)", src: null },
   { id: "hospital-1", label: "Hospital — pasillo/recepción", src: hospital1 },
   { id: "hospital-2", label: "Hospital — recepción/entrada", src: hospital2 },
   { id: "lobby-oficina", label: "Lobby de oficina — puerta de vidrio", src: lobbyOficina },

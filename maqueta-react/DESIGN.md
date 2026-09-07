@@ -57,7 +57,7 @@ El sidebar de navegación no es un menú único — cambia su contenido según e
 
 ## La Regla de la Excepción del Login
 
-El login es la única pantalla donde se permite fondo animado (gradiente WebGL de marca, `FondoAnimado.jsx`) y card semi-transparente (`bg-white/85` + `backdrop-blur`) — es la puerta de entrada institucional, no una pantalla operativa. **Ninguna otra pantalla del sistema** (bandeja, formularios de carga, legajo, dashboards) usa glassmorphism ni fondos animados — ahí rige la Regla Plana por Defecto sin excepción, porque son pantallas donde alguien está leyendo datos clínicos, no una vidriera.
+El login es la única pantalla donde se permite foto/gradiente de fondo con tinte de marca y card semi-transparente (`bg-white/90` + `backdrop-blur`) — es la puerta de entrada institucional, no una pantalla operativa. Se probó un fondo animado con shader WebGL (`FondoAnimado.jsx`) y se descartó — daba problemas de cache/consistencia entre navegadores y no sumaba lo suficiente como para justificar la complejidad; el fondo del login es estático. **Ninguna otra pantalla del sistema** (bandeja, formularios de carga, legajo, dashboards) usa glassmorphism ni fondos animados — ahí rige la Regla Plana por Defecto sin excepción, porque son pantallas donde alguien está leyendo datos clínicos, no una vidriera.
 
 ## Qué NO hacer
 
