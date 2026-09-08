@@ -39,9 +39,17 @@ const iniciales = (nombre) =>
 
 /** Arma la sesión que esperan las pantallas, a partir de la fila de `usuario`. */
 async function armarSesion() {
+  // Hay que filtrar por auth_id explícitamente. El Administrador ve a
+  // TODOS los usuarios —los administra, es lo correcto— así que sin este
+  // filtro la consulta devuelve varias filas y .single() falla con
+  // PGRST116. El síntoma es que entra cualquiera menos el administrador.
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("No hay sesión activa.")
+
   const { data, error } = await supabase
     .from("usuario")
     .select("id, usuario, nombre, debe_cambiar, activo, usuario_rol(rol_codigo), profesional(especialidad, matricula_prov, matricula_nac)")
+    .eq("auth_id", user.id)
     .single()
 
   if (error || !data) {

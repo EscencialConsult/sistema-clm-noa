@@ -21,9 +21,11 @@ async function login(usuario, contrasena) {
   const { error } = await supabase.auth.signInWithPassword({ email, password: contrasena })
   if (error) return { error: "Usuario o contraseña incorrectos." }
 
+  const { data: { user } } = await supabase.auth.getUser()
   const { data, error: e2 } = await supabase
     .from("usuario")
     .select("id, usuario, nombre, debe_cambiar, activo, usuario_rol(rol_codigo), profesional(especialidad, matricula_prov, matricula_nac)")
+    .eq("auth_id", user.id)
     .single()
   if (e2 || !data) return { error: "sin fila en usuario: " + (e2?.message ?? "") }
 
@@ -37,7 +39,12 @@ async function login(usuario, contrasena) {
   }
 }
 
-console.log("=== login correcto: recepcion ===")
+/* El admin va primero a propósito: ve a TODOS los usuarios, así que si
+   alguien saca el filtro por auth_id, .single() falla solo con él. */
+console.log("=== login admin (ve a todos los usuarios) ===")
+console.log(JSON.stringify(await login("admin", "cambiar-en-el-primer-ingreso"), null, 2))
+
+console.log("\n=== login correcto: recepcion ===")
 console.log(JSON.stringify(await login("recepcion", "W6ImKpbnZLsW"), null, 2))
 
 console.log("\n=== contraseña equivocada ===")
