@@ -8,6 +8,7 @@ import CargaPage from "../features/carga/CargaPage"
 import AptitudPage from "../features/aptitud/AptitudPage"
 import DictamenPage from "../features/aptitud/DictamenPage"
 import LegajoPage from "../features/legajo/LegajoPage"
+import NuevaOrdenPage from "../features/ordenes/NuevaOrdenPage"
 import Placeholder from "../components/Placeholder"
 
 // Regla de la Raíz Literal (DESIGN.md): "/" ES el login, no un redirect.
@@ -46,9 +47,9 @@ export default function AppRoutes() {
         <Route path="/bandeja/historial" element={<Placeholder titulo="Historial Personal" />} />
 
         {/* Recepción — G2, G4, G7 */}
-        <Route path="/recepcion" element={<Placeholder titulo="Nueva Orden" />} />
-        <Route path="/recepcion/nueva-orden" element={<Placeholder titulo="Nueva Orden" />} />
-        <Route path="/recepcion/personas" element={<Placeholder titulo="Buscar Persona" />} />
+        <Route path="/recepcion" element={<NuevaOrdenPage />} />
+        <Route path="/recepcion/nueva-orden" element={<NuevaOrdenPage />} />
+        <Route path="/recepcion/personas" element={<LegajoPage />} />
         <Route path="/recepcion/empresas" element={<Placeholder titulo="Empresas" />} />
         <Route path="/recepcion/pendientes" element={<Placeholder titulo="Pendientes del Día" />} />
         <Route path="/recepcion/listado" element={<Placeholder titulo="Listado de Órdenes" />} />

@@ -203,6 +203,7 @@ corré esto antes de commitear.
 
 ```bash
 cd app && node scripts/probar-aptitud.mjs
+cd app && node scripts/probar-alta-orden.mjs
 ```
 
 Recorre el circuito entero con el mismo cliente que usa el navegador: recepción
@@ -234,8 +235,8 @@ las vistas mostraban nombre y DNI de pacientes sin ninguna sesión.
 
 | Carpeta | Qué va | Caso de uso |
 |---|---|---|
-| `features/padron/` | Buscar por documento, alta de persona y empresa | CU-05 |
-| `features/ordenes/` | Elegir empresa y batería, crear orden, hoja de ruta | CU-06 |
+| `features/padron/` | ✔ hecho — dentro de Nueva Orden y de Legajos | CU-05 |
+| `features/ordenes/` | ✔ hecho — admisión, empresa y batería, crear orden, hoja de ruta | CU-06 |
 | `features/carga/` | ✔ hecho — las dos grillas: categorías arriba, estudios abajo | CU-07 |
 | `features/aptitud/` | ✔ hecho — bandeja de dictamen, APTO/NO APTO, protocolo | CU-11, CU-12 |
 | `features/legajo/` | ✔ hecho — buscar persona y ver su historial | CU-11 |
