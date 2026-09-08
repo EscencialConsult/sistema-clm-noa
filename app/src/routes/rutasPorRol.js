@@ -23,6 +23,7 @@ export const navegacionPorRol = {
     etiqueta: "MI ÁREA",
     home: "/bandeja",
     items: [
+      { label: "Aptitud", to: "/aptitud", icon: "Stamp" },
       { label: "Bandeja del Día", to: "/bandeja", icon: "LayoutGrid" },
       { label: "Pacientes", to: "/bandeja/pacientes", icon: "Users" },
       { label: "Estudios Pendientes", to: "/bandeja/pendientes", icon: "FlaskConical" },

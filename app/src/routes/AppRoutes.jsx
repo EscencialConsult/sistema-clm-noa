@@ -5,6 +5,9 @@ import CambiarContrasenaPage from "../features/auth/CambiarContrasenaPage"
 import DashboardAdminPage from "../features/usuarios/DashboardAdminPage"
 import BandejaPage from "../features/carga/BandejaPage"
 import CargaPage from "../features/carga/CargaPage"
+import AptitudPage from "../features/aptitud/AptitudPage"
+import DictamenPage from "../features/aptitud/DictamenPage"
+import LegajoPage from "../features/legajo/LegajoPage"
 import Placeholder from "../components/Placeholder"
 
 // Regla de la Raíz Literal (DESIGN.md): "/" ES el login, no un redirect.
@@ -31,9 +34,13 @@ export default function AppRoutes() {
         {/* Profesionales — G5, G6 */}
         <Route path="/bandeja" element={<BandejaPage />} />
         <Route path="/carga/:ordenId" element={<CargaPage />} />
+
+        {/* Médico laboral · CU-11 */}
+        <Route path="/aptitud" element={<AptitudPage />} />
+        <Route path="/aptitud/:ordenId" element={<DictamenPage />} />
         <Route path="/bandeja/pacientes" element={<Placeholder titulo="Pacientes" />} />
         <Route path="/bandeja/pendientes" element={<Placeholder titulo="Estudios Pendientes" />} />
-        <Route path="/bandeja/legajos" element={<Placeholder titulo="Legajos" />} />
+        <Route path="/bandeja/legajos" element={<LegajoPage />} />
         <Route path="/bandeja/terceros" element={<Placeholder titulo="Informes de Terceros" />} />
         <Route path="/bandeja/vigencias" element={<Placeholder titulo="Vigencias Próximas" />} />
         <Route path="/bandeja/historial" element={<Placeholder titulo="Historial Personal" />} />

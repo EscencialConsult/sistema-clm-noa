@@ -201,6 +201,22 @@ cd app && node scripts/probar-login.mjs
 Entra como el navegador con cada rol y muestra qué ve. Si tocaste permisos,
 corré esto antes de commitear.
 
+```bash
+cd app && node scripts/probar-aptitud.mjs
+```
+
+Recorre el circuito entero con el mismo cliente que usa el navegador: recepción
+abre la orden, se cargan los estudios, el médico dictamina y después se
+comprueba que ya no se pueda tocar nada. **Que la aplicación compile no dice
+nada sobre si las consultas existen** — una columna mal escrita o un `select`
+anidado que RLS no deja seguir aparece recién acá.
+
+```bash
+node scripts/probar-casos.js
+```
+
+Desde la raíz. Los casos bloqueantes; devuelve 1 si alguno falla.
+
 Y si dudás de si algo se puede ver sin estar logueado:
 
 ```bash
@@ -220,8 +236,9 @@ las vistas mostraban nombre y DNI de pacientes sin ninguna sesión.
 |---|---|---|
 | `features/padron/` | Buscar por documento, alta de persona y empresa | CU-05 |
 | `features/ordenes/` | Elegir empresa y batería, crear orden, hoja de ruta | CU-06 |
-| `features/carga/` | Las dos grillas: categorías arriba, estudios abajo | CU-07 |
-| `features/aptitud/` | Legajo consolidado, APTO/NO APTO, protocolo | CU-11, CU-12 |
+| `features/carga/` | ✔ hecho — las dos grillas: categorías arriba, estudios abajo | CU-07 |
+| `features/aptitud/` | ✔ hecho — bandeja de dictamen, APTO/NO APTO, protocolo | CU-11, CU-12 |
+| `features/legajo/` | ✔ hecho — buscar persona y ver su historial | CU-11 |
 | `features/catalogo/` | Alta de categorías y estudios | CU-03 |
 | `features/baterias/` | Armado de baterías por empresa | CU-04 |
 
