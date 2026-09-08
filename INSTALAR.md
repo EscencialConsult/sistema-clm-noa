@@ -59,7 +59,20 @@ NOTICE:  Control OK: todo cargado y con RLS activo.
 Si eso no aparece, algo falló en la carga y **la base quedó a medio armar**: mirá
 `docker compose logs db` completo antes de seguir.
 
-## 4 · Crear el primer usuario
+## 4 · Crear el bucket de los informes
+
+```bash
+node scripts/crear-bucket.js
+```
+
+Acá se guardan los informes que llegan de afuera ya firmados: el ECG, la
+campimetría, el EEG y las declaraciones juradas escaneadas.
+
+Va aparte de las migraciones porque cuando estas corren, la tabla de buckets
+todavía es la versión base de la imagen y le faltan columnas — el servicio de
+Storage las agrega recién al arrancar.
+
+## 5 · Crear el primer usuario
 
 ```bash
 node scripts/crear-usuario.js admin@cmlnoa.local admin "Administrador" R1
@@ -75,7 +88,7 @@ Los roles: `R1` administrador · `R2` recepción · `R3` médico laboral ·
 **Un usuario por persona.** Compartir una cuenta deja la auditoría sin sentido,
 que es lo único que después permite saber quién cargó qué.
 
-## 5 · Entrar
+## 6 · Entrar
 
 | | |
 |---|---|

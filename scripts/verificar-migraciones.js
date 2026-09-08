@@ -52,10 +52,27 @@ for (const archivo of archivos) {
   }
 }
 
+/* Las marcas que abren y cierran el cuerpo de una función tienen que
+   estar balanceadas. Un escapado del shell puede comerse una, el archivo
+   queda roto y NO se nota leyéndolo: revienta al aplicar la migración,
+   a mitad de camino y con la base a medio armar. Pasó dos veces. */
+const MARCA = "$".repeat(2)
+let rotas = 0
+for (const archivo of archivos) {
+  const texto = fs.readFileSync(path.join(DIR, archivo), "utf8")
+  const n = texto.split(MARCA).length - 1
+  if (n % 2 !== 0) {
+    rotas++
+    console.log(`${archivo}  →  ${n} marcas ${MARCA}: impar, hay una función sin cerrar`)
+  }
+}
+
 console.log("")
-console.log(`${revisados} sentencias INSERT revisadas`)
-if (problemas) {
-  console.log(`${problemas} con columnas inexistentes — la migración va a fallar.`)
+console.log(`${revisados} sentencias INSERT revisadas · ${archivos.length} migraciones`)
+if (problemas || rotas) {
+  if (problemas) console.log(`${problemas} INSERT con columnas inexistentes.`)
+  if (rotas) console.log(`${rotas} archivo(s) con funciones sin cerrar.`)
+  console.log("La migración va a fallar. Corregilo antes de levantar la base.")
   process.exit(1)
 }
-console.log("Todas las columnas existen.")
+console.log("Todo en orden: columnas existentes y funciones bien cerradas.")

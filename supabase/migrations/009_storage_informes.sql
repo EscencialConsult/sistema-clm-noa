@@ -1,5 +1,5 @@
 -- =====================================================================
---  009 · ALMACENAMIENTO DE INFORMES DE TERCEROS · RF18, RNF-22, RNF-28
+--  009 · PERMISOS DEL ALMACENAMIENTO · RF18, RNF-22, RNF-28
 --
 --  Acá van los documentos que llegan de afuera ya firmados: el ECG del
 --  cardiólogo, la campimetría, el EEG, el laboratorio derivado, y las
@@ -7,23 +7,15 @@
 --
 --  La regla del requisito es clara: se incorporan TAL COMO FUERON
 --  EMITIDOS. No se re-tipean, no se vuelven a firmar y no se editan.
+--
+--  El BUCKET no se crea acá. En el momento en que corren estas
+--  migraciones, storage.buckets todavía es la versión base de la imagen
+--  y le faltan columnas: el servicio de Storage las agrega recién al
+--  arrancar, después. Por eso el bucket se crea con
+--  scripts/crear-bucket.js, una vez que la pila está levantada.
 -- =====================================================================
 
 BEGIN;
-
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('informes', 'informes', false, 20971520,
-        ARRAY['application/pdf','image/jpeg','image/png','image/webp','image/tiff'])
-ON CONFLICT (id) DO UPDATE
-   SET file_size_limit    = EXCLUDED.file_size_limit,
-       allowed_mime_types = EXCLUDED.allowed_mime_types;
-
--- 20 MB por archivo (RNF-22). No es público: sin sesión no se ve nada,
--- ni siquiera con la URL.
-
--- ---------------------------------------------------------------------
---  Quién puede qué
--- ---------------------------------------------------------------------
 
 -- Ver: cualquiera del centro que haya iniciado sesión. El profesional
 -- necesita mirar el ECG que llegó, y el médico laboral el legajo entero.

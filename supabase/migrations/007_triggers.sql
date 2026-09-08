@@ -140,7 +140,7 @@ BEGIN
   END IF;
 
   RETURN NEW;
-END $ LANGUAGE plpgsql SECURITY DEFINER;
+END $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- SECURITY DEFINER es imprescindible acá: un trigger corre con los permisos
 -- de QUIEN LO DISPARA, no del dueño. Sin esto, y como auditoria no tiene
 -- política de escritura (a propósito, RNF-11), cada INSERT de un usuario
