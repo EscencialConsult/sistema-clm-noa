@@ -58,6 +58,7 @@ services:
       GOTRUE_API_PORT: 9999
       GOTRUE_DB_DRIVER: postgres
       GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      API_EXTERNAL_URL: ${SITE_URL}:8000
       GOTRUE_SITE_URL: ${SITE_URL}
       GOTRUE_JWT_SECRET: ${JWT_SECRET}
       GOTRUE_JWT_EXP: 3600
@@ -116,8 +117,13 @@ services:
       KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
       KONG_DNS_ORDER: LAST,A,CNAME
       KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      SUPABASE_ANON_KEY: ${ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SERVICE_ROLE_KEY}
+    # Kong no sustituye variables en su configuración por su cuenta: se monta
+    # como plantilla y el entrypoint la expande antes de arrancar.
+    entrypoint: bash -c 'eval "echo \"$$(cat ~/plantilla.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
     volumes:
-      - ./supabase/kong.yml:/home/kong/kong.yml:ro
+      - ./supabase/kong.yml:/home/kong/plantilla.yml:ro
 
   # ---------- las pantallas ----------
   app:

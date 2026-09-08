@@ -30,6 +30,16 @@ for f in "$DIR"/*.sql; do
   psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER:-supabase_admin}" --dbname "${POSTGRES_DB:-postgres}" -f "$f"
 done
 
+echo "--> contraseñas de los roles internos"
+# La imagen crea authenticator, supabase_auth_admin y supabase_storage_admin
+# sin contraseña utilizable. Sin esto, PostgREST y Storage no conectan:
+# «password authentication failed for user authenticator».
+psql -v ON_ERROR_STOP=1 --username "supabase_admin" --dbname "postgres" <<EOSQL
+ALTER USER authenticator            WITH PASSWORD '$POSTGRES_PASSWORD';
+ALTER USER supabase_auth_admin      WITH PASSWORD '$POSTGRES_PASSWORD';
+ALTER USER supabase_storage_admin   WITH PASSWORD '$POSTGRES_PASSWORD';
+EOSQL
+
 echo "=== migraciones aplicadas ==="
 
 # Control rápido: si algo de esto no cuadra, conviene saberlo ahora y no
