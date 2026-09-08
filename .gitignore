@@ -6,3 +6,7 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# credenciales del servidor: nunca al repositorio
+.env
+app/.env

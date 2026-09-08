@@ -1,8 +1,8 @@
-import ordenes from "../mock/data/ordenes.json"
-import estudiosPendientes from "../mock/data/estudios_pendientes.json"
-import personas from "../mock/data/personas.json"
-import empresas from "../mock/data/empresas.json"
-import { delay } from "./delay"
+import ordenes from "../../../mock/data/ordenes.json"
+import estudiosPendientes from "../../../mock/data/estudios_pendientes.json"
+import personas from "../../../mock/data/personas.json"
+import empresas from "../../../mock/data/empresas.json"
+import { delay } from "../../../lib/delay"
 
 function conPersonaYEmpresa(orden) {
   const persona = personas.find((p) => p.id === orden.persona_id)

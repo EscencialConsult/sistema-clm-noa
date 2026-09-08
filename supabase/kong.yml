@@ -1,0 +1,64 @@
+_format_version: "2.1"
+_transform: true
+
+# =====================================================================
+#  La puerta única del servidor. Todo lo que llega desde la red de la
+#  clínica entra por acá y se reparte a auth, rest o storage.
+#
+#  Las dos claves: anon es la que viaja al navegador (cualquiera puede
+#  leerla — por eso la seguridad real es RLS, no esta clave), y
+#  service_role es la de administración, que NUNCA sale del servidor.
+# =====================================================================
+
+consumers:
+  - username: anon
+    keyauth_credentials:
+      - key: $SUPABASE_ANON_KEY
+  - username: service_role
+    keyauth_credentials:
+      - key: $SUPABASE_SERVICE_KEY
+
+acls:
+  - consumer: anon
+    group: anon
+  - consumer: service_role
+    group: admin
+
+services:
+
+  # ---------- autenticación: login y sesiones ----------
+  - name: auth-v1
+    url: http://auth:9999/
+    routes:
+      - name: auth-v1-route
+        strip_path: true
+        paths: [/auth/v1/]
+    plugins:
+      - name: cors
+
+  # ---------- la API generada desde las tablas ----------
+  - name: rest-v1
+    url: http://rest:3000/
+    routes:
+      - name: rest-v1-route
+        strip_path: true
+        paths: [/rest/v1/]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow: [anon, admin]
+
+  # ---------- archivos: informes externos y escaneos ----------
+  - name: storage-v1
+    url: http://storage:5000/
+    routes:
+      - name: storage-v1-route
+        strip_path: true
+        paths: [/storage/v1/]
+    plugins:
+      - name: cors

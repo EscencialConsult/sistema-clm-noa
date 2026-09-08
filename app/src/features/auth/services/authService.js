@@ -1,5 +1,5 @@
-import usuarios from "../mock/data/usuarios.json"
-import { delay } from "./delay"
+import usuarios from "../../../mock/data/usuarios.json"
+import { delay } from "../../../lib/delay"
 
 const CLAVE_SESION = "kaplan_sesion"
 

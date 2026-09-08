@@ -26,7 +26,7 @@ import {
   BarChart3,
 } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
-import { dashboardService } from "../../services/dashboardService"
+import { dashboardService } from "./services/dashboardService"
 
 const COLORES_TORTA = ["var(--color-primary)", "var(--color-accent)", "#B8D4EE"]
 

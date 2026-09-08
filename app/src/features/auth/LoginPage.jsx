@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { Navigate, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, MapPin, Phone, User, Lock, Info } from "lucide-react"
-import { authService } from "../services/authService"
-import { navegacionPorRol } from "../config/navegacionPorRol"
-import { FONDOS_LOGIN } from "../config/fondosLogin"
-import SelectorFondoDev from "../components/SelectorFondoDev"
-import AccesosRapidosDev from "../components/AccesosRapidosDev"
-import logoCompleto from "../assets/logo/1.webp"
-import logoBlanco from "../assets/logo/2.webp"
+import { authService } from "./services/authService"
+import { navegacionPorRol } from "../../routes/rutasPorRol"
+import { FONDOS_LOGIN } from "../../config/fondosLogin"
+import SelectorFondoDev from "../../components/SelectorFondoDev"
+import AccesosRapidosDev from "../../components/AccesosRapidosDev"
+import logoCompleto from "../../assets/logo/1.webp"
+import logoBlanco from "../../assets/logo/2.webp"
 
 export default function Login() {
   const navigate = useNavigate()

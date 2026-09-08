@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { authService } from "../services/authService"
-import { navegacionPorRol } from "../config/navegacionPorRol"
-import logoCompleto from "../assets/logo/1.webp"
+import { authService } from "./services/authService"
+import { navegacionPorRol } from "../../routes/rutasPorRol"
+import logoCompleto from "../../assets/logo/1.webp"
 
 export default function CambiarContrasena() {
   const navigate = useNavigate()

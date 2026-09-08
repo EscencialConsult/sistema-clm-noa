@@ -1,20 +1,21 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import Login from "./pages/Login"
-import CambiarContrasena from "./pages/CambiarContrasena"
-import DashboardAdmin from "./pages/admin/DashboardAdmin"
-import BandejaProfesional from "./pages/profesional/BandejaProfesional"
-import Placeholder from "./pages/Placeholder"
+
+import LoginPage from "../features/auth/LoginPage"
+import CambiarContrasenaPage from "../features/auth/CambiarContrasenaPage"
+import DashboardAdminPage from "../features/usuarios/DashboardAdminPage"
+import BandejaPage from "../features/carga/BandejaPage"
+import Placeholder from "../components/Placeholder"
 
 // Regla de la Raíz Literal (DESIGN.md): "/" ES el login, no un redirect.
-export default function App() {
+export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/cambiar-contrasena" element={<CambiarContrasena />} />
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/cambiar-contrasena" element={<CambiarContrasenaPage />} />
 
-        {/* Administrador */}
-        <Route path="/admin" element={<DashboardAdmin />} />
+        {/* Administrador — G1, G3 */}
+        <Route path="/admin" element={<DashboardAdminPage />} />
         <Route path="/admin/usuarios" element={<Placeholder titulo="Usuarios y Roles" />} />
         <Route path="/admin/profesionales" element={<Placeholder titulo="Maestro de Profesionales" />} />
         <Route path="/admin/empresas" element={<Placeholder titulo="Empresas" />} />
@@ -26,8 +27,8 @@ export default function App() {
         <Route path="/admin/referencias" element={<Placeholder titulo="Valores de Referencia" />} />
         <Route path="/admin/auditoria" element={<Placeholder titulo="Auditoría" />} />
 
-        {/* Profesionales (Médico laboral, Laboratorio, Rayos, Audiometría, Psicología) */}
-        <Route path="/bandeja" element={<BandejaProfesional />} />
+        {/* Profesionales — G5, G6 */}
+        <Route path="/bandeja" element={<BandejaPage />} />
         <Route path="/bandeja/pacientes" element={<Placeholder titulo="Pacientes" />} />
         <Route path="/bandeja/pendientes" element={<Placeholder titulo="Estudios Pendientes" />} />
         <Route path="/bandeja/legajos" element={<Placeholder titulo="Legajos" />} />
@@ -35,7 +36,7 @@ export default function App() {
         <Route path="/bandeja/vigencias" element={<Placeholder titulo="Vigencias Próximas" />} />
         <Route path="/bandeja/historial" element={<Placeholder titulo="Historial Personal" />} />
 
-        {/* Recepción */}
+        {/* Recepción — G2, G4, G7 */}
         <Route path="/recepcion" element={<Placeholder titulo="Nueva Orden" />} />
         <Route path="/recepcion/nueva-orden" element={<Placeholder titulo="Nueva Orden" />} />
         <Route path="/recepcion/personas" element={<Placeholder titulo="Buscar Persona" />} />

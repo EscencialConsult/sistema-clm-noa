@@ -1,16 +1,128 @@
+# =====================================================================
+#  CML NOA · Prelaboral — servidor de la clínica
+#
+#  Supabase AUTOALOJADO: corre entero adentro del consultorio, sobre la
+#  red local. No es el servicio en la nube. Es código abierto, no valida
+#  licencia contra internet y funciona con el cable del router
+#  desenchufado (RNF-06).
+#
+#  Todo escucha en 127.0.0.1 salvo kong y app: el resto de los servicios
+#  no tiene por qué ser alcanzable desde la red, ni siquiera la interna.
+#
+#  Levantar:   docker compose up -d
+#  Ver estado: docker compose ps
+#  Procedimiento para cuando algo se cae: 08_Procedimientos, P-03.
+# =====================================================================
+
+name: cmlnoa
+
 services:
-  kaplan-front:
-    build:
-      context: ./maqueta-react
-    container_name: kaplan-front
+
+  # ---------- la base ----------
+  db:
+    image: supabase/postgres:15.8.1.060
+    container_name: cmlnoa-db
     restart: unless-stopped
     ports:
-      - "8082:80" # acceso LAN/Tailscale directo — puerto 8082 libre en la tabla de servidor-local
+      - "127.0.0.1:5432:5432"        # solo desde el propio servidor
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: 3600
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # las migraciones corren solas la primera vez, en orden alfabético
+      - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
-  kaplan-tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: kaplan-tunnel
+  # ---------- autenticación ----------
+  auth:
+    image: supabase/gotrue:v2.170.0
+    container_name: cmlnoa-auth
     restart: unless-stopped
-    command: tunnel --no-autoupdate --url http://kaplan-front:80
     depends_on:
-      - kaplan-front
+      db: { condition: service_healthy }
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      GOTRUE_SITE_URL: ${SITE_URL}
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      # nadie se registra solo: los usuarios los da de alta el Administrador (RF01)
+      GOTRUE_DISABLE_SIGNUP: "true"
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+
+  # ---------- la API que se genera desde las tablas ----------
+  rest:
+    image: postgrest/postgrest:v12.2.3
+    container_name: cmlnoa-rest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+
+  # ---------- archivos: informes externos y declaraciones escaneadas ----------
+  storage:
+    image: supabase/storage-api:v1.14.5
+    container_name: cmlnoa-storage
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      rest: { condition: service_started }
+    environment:
+      ANON_KEY: ${ANON_KEY}
+      SERVICE_KEY: ${SERVICE_ROLE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      FILE_SIZE_LIMIT: 20971520        # 20 MB por informe (RNF-22)
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: cmlnoa
+      REGION: local
+      GLOBAL_S3_BUCKET: cmlnoa
+    volumes:
+      - storage-data:/var/lib/storage
+
+  # ---------- la puerta única: todo entra por acá ----------
+  kong:
+    image: kong:2.8.1
+    container_name: cmlnoa-kong
+    restart: unless-stopped
+    depends_on: [auth, rest, storage]
+    ports:
+      - "8000:8000"                    # la red local de la clínica
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+    volumes:
+      - ./supabase/kong.yml:/home/kong/kong.yml:ro
+
+  # ---------- las pantallas ----------
+  app:
+    build:
+      context: ./app
+    container_name: cmlnoa-app
+    restart: unless-stopped
+    depends_on: [kong]
+    ports:
+      - "80:80"                        # http://servidor-cml/ desde cualquier puesto
+
+volumes:
+  db-data:
+  storage-data:

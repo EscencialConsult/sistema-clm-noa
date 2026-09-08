@@ -1,5 +1,5 @@
-import alertasPersonales from "../mock/data/alertas_personales.json"
-import { delay } from "./delay"
+import alertasPersonales from "../../../mock/data/alertas_personales.json"
+import { delay } from "../../../lib/delay"
 
 export const alertasService = {
   async getAlertasPersonales() {

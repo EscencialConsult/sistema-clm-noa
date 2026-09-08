@@ -9,8 +9,8 @@ import {
   AlertTriangle,
 } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
-import { ordenesService } from "../../services/ordenesService"
-import { alertasService } from "../../services/alertasService"
+import { ordenesService } from "./services/ordenesService"
+import { alertasService } from "./services/alertasService"
 
 const TIPO_EXAMEN_LABEL = {
   prelaboral: "Prelaboral",
