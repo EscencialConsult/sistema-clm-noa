@@ -3,7 +3,7 @@
 Sistema de Gestión de Medicina Laboral — Centro Médico Laboral del NOA S.R.L.
 (Escencial Consultora). **Incremento 1: Prelaboral.**
 
-Cómo levantarlo: **[INSTALAR.md](INSTALAR.md)**
+Cómo levantarlo: **[INSTALAR.md](INSTALAR.md)** · Cómo trabajar sobre esto: **[TRABAJAR.md](TRABAJAR.md)**
 
 ## Qué hay acá
 
