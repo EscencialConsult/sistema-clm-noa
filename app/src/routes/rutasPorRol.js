@@ -40,6 +40,38 @@ export const navegacionPorRol = {
       { label: "Estudios Pendientes", to: "/bandeja/pendientes", icon: "FlaskConical" },
     ],
   },
+  medico_clinico: {
+    etiqueta: 'MI ÁREA',
+    home: '/bandeja',
+    items: [
+      { label: 'Bandeja del Día', to: '/bandeja', icon: 'LayoutGrid' },
+      { label: 'Estudios Pendientes', to: '/bandeja/pendientes', icon: 'Stethoscope' },
+    ],
+  },
+  rayos: {
+    etiqueta: 'MI ÁREA',
+    home: '/bandeja',
+    items: [
+      { label: 'Bandeja del Día', to: '/bandeja', icon: 'LayoutGrid' },
+      { label: 'Estudios Pendientes', to: '/bandeja/pendientes', icon: 'Scan' },
+    ],
+  },
+  audiometria: {
+    etiqueta: 'MI ÁREA',
+    home: '/bandeja',
+    items: [
+      { label: 'Bandeja del Día', to: '/bandeja', icon: 'LayoutGrid' },
+      { label: 'Estudios Pendientes', to: '/bandeja/pendientes', icon: 'Ear' },
+    ],
+  },
+  psicologia: {
+    etiqueta: 'MI ÁREA',
+    home: '/bandeja',
+    items: [
+      { label: 'Bandeja del Día', to: '/bandeja', icon: 'LayoutGrid' },
+      { label: 'Estudios Pendientes', to: '/bandeja/pendientes', icon: 'Brain' },
+    ],
+  },
   recepcion: {
     etiqueta: "RECEPCIÓN",
     home: "/recepcion",
