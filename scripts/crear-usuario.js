@@ -13,7 +13,11 @@
    síntoma es "entro pero está todo vacío".
 
    Uso:
-     node scripts/crear-usuario.js <email> <usuario> "<nombre>" <ROL>
+     node scripts/crear-usuario.js <email> <usuario> "<nombre>" <ROL> [id_profesional]
+
+   El médico laboral (R3) necesita el id_profesional: la matrícula del
+   protocolo sale de ahí, y sin ella el sistema no lo deja informar.
+   Los ids salen de:  SELECT id, apellido_nombre FROM profesional;
 
    Ejemplo:
      node scripts/crear-usuario.js maria@cmlnoa.local mgomez "María Gómez" R5
@@ -27,10 +31,26 @@ const path = require("path")
 const { execFileSync } = require("child_process")
 
 const RAIZ = path.resolve(__dirname, "..")
-const [email, usuario, nombre, rol] = process.argv.slice(2)
+const [email, usuario, nombre, rol, profesional] = process.argv.slice(2)
 
 if (!email || !usuario || !nombre || !rol) {
-  console.error("Uso: node scripts/crear-usuario.js <email> <usuario> \"<nombre>\" <ROL>")
+  console.error("Uso: node scripts/crear-usuario.js <email> <usuario> \"<nombre>\" <ROL> [id_profesional]")
+  process.exit(1)
+}
+if (profesional !== undefined && !/^d+$/.test(profesional)) {
+  console.error(`id_profesional inválido: ${profesional}. Es un número.`)
+  process.exit(1)
+}
+if (rol === "R3" && profesional === undefined) {
+  console.error("Falta el id_profesional.")
+  console.error("")
+  console.error("El médico laboral firma el protocolo con su matrícula, y esa")
+  console.error("matrícula sale de la tabla profesional. Sin vincularlo, entra")
+  console.error("al sistema pero no puede informar ninguna orden.")
+  console.error("")
+  console.error("Mirá los ids con:")
+  console.error("  docker compose exec -T db psql -U supabase_admin -d postgres \\")
+  console.error("    -c \"SELECT id, apellido_nombre, matricula_prov FROM profesional\"")
   process.exit(1)
 }
 if (!/^R[1-8]$/.test(rol)) {
@@ -72,9 +92,9 @@ async function main() {
 
   /* 2 y 3 · la fila en usuario y su rol */
   const sql = `
-    INSERT INTO usuario (usuario, nombre, auth_id, debe_cambiar)
+    INSERT INTO usuario (usuario, nombre, auth_id, profesional_id, debe_cambiar)
     VALUES ('${usuario.replace(/'/g, "''")}', '${nombre.replace(/'/g, "''")}',
-            '${creado.id}', true)
+            '${creado.id}', ${profesional === undefined ? "NULL" : profesional}, true)
     RETURNING id;
   `
   const salida = execFileSync("docker", [
