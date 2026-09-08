@@ -16,7 +16,7 @@ controladores ni servicios de servidor. La API se genera sola desde las tablas.
 | 9 categorías, 120 estudios | el catálogo real del centro |
 | 38 empresas, 8 baterías | los datos que usan hoy |
 | Permisos por rol (RLS) | probados: cada rol ve solo lo suyo |
-| Funciones | `crear_orden`, `calcular_presupuesto`, `emitir_protocolo` |
+| Funciones | `crear_orden`, `calcular_presupuesto`, `emitir_protocolo`, `cargar_categoria_normal` |
 | Triggers | fuera de rango por sexo, avance de estado, auditoría |
 | Login | real, contra Supabase Auth |
 
@@ -133,18 +133,37 @@ await supabase
 Tampoco hay que cambiar el estado de la orden: pasa sola a `COMPLETA` cuando no
 queda ninguno pendiente.
 
+### Toda una categoría en NORMAL, de una sola vez
+
+```js
+const { data: cargados } = await supabase.rpc("cargar_categoria_normal", {
+  p_orden: ordenId,
+  p_categoria: categoriaId,
+})
+```
+
+Es el botón que la bioquímica va a usar todo el día: un hemograma sin novedades
+son catorce casillas iguales. Devuelve cuántos estudios cargó, y sólo toca los
+que estaban pendientes — no pisa nada ya escrito.
+
+Si la categoría no es del área de quien la llama, devuelve error. No hace falta
+esconder el botón: la base ya decide.
+
 ### Emitir el protocolo
 
 ```js
 const { error } = await supabase.rpc("emitir_protocolo", {
   p_orden: ordenId,
   p_aptitud: "APTO",
-  p_medico: profesionalId,
   p_preexistencias: "HDL levemente bajo",
 })
 ```
 
 Si queda algún estudio sin cargar, devuelve error y no emite. Es a propósito.
+
+**`p_medico` ya no se manda.** La matrícula sale del usuario de la sesión: cada
+médico firma con la suya y no se puede informar a nombre de otro. Y sólo el
+médico laboral puede llamarla — si la llama cualquier otro rol, rebota.
 
 ---
 

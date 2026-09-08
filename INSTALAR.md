@@ -153,6 +153,18 @@ confirmar que el backup sirve (procedimiento P-02). Que los datos estén no alca
 ## Comprobar que quedó bien
 
 ```bash
+node scripts/probar-casos.js
+```
+
+Corre los casos bloqueantes contra el sistema andando: el padrón sin duplicados,
+el rango que cambia según el sexo, la batería que se abre sola, el presupuesto,
+la carga por categoría, y que la aptitud sea del médico laboral y de nadie más.
+Devuelve 0 si pasan todos y 1 si alguno falla.
+
+Se crea sus propios usuarios de prueba y borra todo al terminar. **Se puede correr
+en la clínica**: no toca las cuentas reales ni los datos de pacientes.
+
+```bash
 cd app && node scripts/probar-login.mjs
 ```
 
