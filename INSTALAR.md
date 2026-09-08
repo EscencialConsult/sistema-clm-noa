@@ -15,6 +15,69 @@ Todo corre adentro: **no hace falta internet** una vez que las imágenes están 
 
 ---
 
+## 0 · Si esto va al servidor de la clínica
+
+Saltear esta parte en una máquina de desarrollo. En la clínica **es el paso que
+más cuesta deshacer después**, porque la dirección del servidor queda grabada
+dentro de la aplicación al compilarla (ver el recuadro más abajo).
+
+### La máquina
+
+| | Por qué |
+|---|---|
+| **Una PC dedicada** | No la de recepción, no la de un médico. Si alguien la apaga o la usa para otra cosa, se cae el sistema para todos |
+| **UPS** | Un corte de luz con la base escribiendo puede dejarla inconsistente. Es el respaldo más barato que existe |
+| **Disco externo** | Ahí van los backups de todas las noches (paso 7). Que quede conectado |
+| **Que no se suspenda** | Configurarla para que nunca entre en suspensión ni apague el disco |
+
+### La red — esto va ANTES de generar las claves
+
+El servidor necesita una **IP fija** en la red de la clínica. Pedírsela a quien
+maneje el router, o fijarla en el adaptador.
+
+Después hay que decidir con qué nombre lo ven las demás PC, y escribirlo en
+`SITE_URL`. Dos opciones:
+
+| Opción | Cómo | Cuándo conviene |
+|---|---|---|
+| **La IP directa** | `SITE_URL=http://192.168.1.50` | Más simple. Si algún día cambia la IP, hay que recompilar |
+| **Un nombre** | `SITE_URL=http://servidor-cml` y una línea en el `hosts` de cada PC | Más prolijo, pero hay que tocar puesto por puesto |
+
+En Windows el `hosts` está en `C:\Windows\System32\drivers\etc\hosts` y se edita
+como Administrador. La línea es:
+
+```
+192.168.1.50    servidor-cml
+```
+
+**Fijalo antes de seguir**, con la IP real del servidor:
+
+```bash
+export SITE_URL=http://192.168.1.50
+```
+
+> **Por qué importa el orden.** La aplicación no lee esa dirección cuando
+> arranca: la trae grabada de cuando se compiló. Si generás las claves o
+> compilás con la dirección equivocada, los puestos abren la pantalla de login y
+> no pueden entrar, sin ningún error que lo explique. Se arregla corrigiendo el
+> `.env` y recompilando con `docker compose up -d --build`, pero es media hora
+> perdida y un susto al pedo.
+
+### Comprobar que se llega desde otro puesto
+
+Con el sistema ya levantado, parada **en otra PC de la clínica**:
+
+```bash
+curl http://192.168.1.50:8000/rest/v1/
+```
+
+Si no responde, casi siempre es el firewall de Windows del servidor: hay que
+permitir los puertos **80** y **8000** en la red privada. Mientras eso no ande,
+el sistema funciona sólo en la máquina donde está instalado — que es lo mismo
+que no servir.
+
+---
+
 ## 1 · Bajar el proyecto
 
 ```bash
@@ -128,7 +191,7 @@ como Administrador — cambiá la ruta si el proyecto está en otro lado):
 
 ```bat
 schtasks /Create /TN "CML NOA - Backup" /SC DAILY /ST 02:00 /RL HIGHEST /RU SYSTEM ^
-  /TR "cmd /c cd /d C:cmlnoasistema-clm-noa && node scriptsackup.js D:ackups-cmlnoa"
+  /TR "cmd /c cd /d C:\cmlnoa\sistema-clm-noa && node scripts\backup.js D:\backups-cmlnoa"
 ```
 
 En Linux, lo mismo con cron: `0 2 * * * cd /opt/cmlnoa && node scripts/backup.js /mnt/backup`
