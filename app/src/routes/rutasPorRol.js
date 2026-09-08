@@ -79,6 +79,11 @@ export const navegacionPorRol = {
       { label: "Nueva Orden", to: "/recepcion/nueva-orden", icon: "FilePlus2" },
       { label: "Buscar Persona", to: "/recepcion/personas", icon: "Search" },
       { label: "Empresas", to: "/recepcion/empresas", icon: "Building2" },
+      // CU-07: en esta fase, Recepción es quien carga los resultados (cada
+      // profesional pasa a hacerlo directo recién en Fase 2). Sin este
+      // enlace, la pantalla de carga solo era alcanzable escribiendo la URL
+      // a mano — no aparecía en ningún menú.
+      { label: "Bandeja del Día", to: "/bandeja", icon: "LayoutGrid" },
       { label: "Pendientes del Día", to: "/recepcion/pendientes", icon: "ListChecks" },
       { label: "Listado de Órdenes", to: "/recepcion/listado", icon: "ClipboardList" },
     ],
