@@ -54,6 +54,12 @@ const anonKey = firmarJwt({ role: "anon", iss: "supabase", iat: ahora, exp: diez
 const serviceKey = firmarJwt({ role: "service_role", iss: "supabase", iat: ahora, exp: diezAnios }, jwtSecret)
 
 const sitio = process.env.SITE_URL || "http://servidor-cml"
+// Puertos por defecto pensados para el servidor DEDICADO de la clínica.
+// En una máquina compartida con otros proyectos (p. ej. mientras se
+// prueba en la X270 de la oficina), se pisan por variable de entorno
+// para no chocar con lo que ya está usando ese puerto.
+const kongPuerto = process.env.KONG_PUERTO_PUBLICO || "8000"
+const appPuerto = process.env.APP_PUERTO_PUBLICO || "80"
 
 const env = `# =====================================================================
 #  CML NOA · claves del servidor de la clínica
@@ -68,6 +74,8 @@ JWT_SECRET=${jwtSecret}
 ANON_KEY=${anonKey}
 SERVICE_ROLE_KEY=${serviceKey}
 SITE_URL=${sitio}
+KONG_PUERTO_PUBLICO=${kongPuerto}
+APP_PUERTO_PUBLICO=${appPuerto}
 
 # Con esta clave se cifran los backups. GUARDÁ UNA COPIA FUERA DEL SERVIDOR:
 # si se pierde el servidor y la clave estaba solo acá, los respaldos no se
@@ -76,7 +84,7 @@ BACKUP_KEY=${backupKey}
 `
 
 const envApp = `# Generado por scripts/generar-claves.js — no se commitea
-VITE_SUPABASE_URL=${sitio}:8000
+VITE_SUPABASE_URL=${sitio}:${kongPuerto}
 VITE_SUPABASE_ANON_KEY=${anonKey}
 `
 
