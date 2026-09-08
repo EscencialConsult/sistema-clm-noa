@@ -325,6 +325,14 @@ JOIN empresa e ON e.id = o.empresa_id
 WHERE o.aptitud <> 'PENDIENTE'
   AND o.fecha_vencimiento BETWEEN current_date AND current_date + 30;
 
+-- Las vistas deben correr con los permisos de QUIEN CONSULTA, no de quien
+-- las creó. Sin esto saltean el RLS de las tablas de abajo: se probó y
+-- v_orden_avance devolvía nombre y DNI del paciente sin ninguna sesión.
+-- Toda vista que se agregue nace con esto.
+ALTER VIEW v_orden_avance  SET (security_invoker = true);
+ALTER VIEW v_pendientes    SET (security_invoker = true);
+ALTER VIEW v_vencimientos  SET (security_invoker = true);
+
 COMMIT;
 
 -- =====================================================================
