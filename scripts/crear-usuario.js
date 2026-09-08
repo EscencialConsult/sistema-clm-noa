@@ -37,7 +37,7 @@ if (!email || !usuario || !nombre || !rol) {
   console.error("Uso: node scripts/crear-usuario.js <email> <usuario> \"<nombre>\" <ROL> [id_profesional]")
   process.exit(1)
 }
-if (profesional !== undefined && !/^d+$/.test(profesional)) {
+if (profesional !== undefined && !/^\d+$/.test(profesional)) {
   console.error(`id_profesional inválido: ${profesional}. Es un número.`)
   process.exit(1)
 }
