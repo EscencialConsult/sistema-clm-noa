@@ -85,6 +85,17 @@ Los roles: `R1` administrador · `R2` recepción · `R3` médico laboral ·
 `R4` médico clínico · `R5` laboratorio · `R6` rayos · `R7` audiometría ·
 `R8` psicología.
 
+**El médico laboral (`R3`) lleva un dato más:** el id del profesional, porque el
+protocolo se firma con su matrícula. Sin eso entra al sistema pero no puede
+informar ninguna orden.
+
+```bash
+docker compose exec -T db psql -U supabase_admin -d postgres \
+  -c "SELECT id, apellido_nombre, matricula_prov FROM profesional"
+
+node scripts/crear-usuario.js kaplan@cmlnoa.local rkaplan "Rubén Kaplan" R3 1
+```
+
 **Un usuario por persona.** Compartir una cuenta deja la auditoría sin sentido,
 que es lo único que después permite saber quién cargó qué.
 
