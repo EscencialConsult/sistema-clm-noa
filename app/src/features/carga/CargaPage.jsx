@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { Printer, ArrowLeft, CheckCheck, AlertTriangle } from "lucide-react"
+import { Printer, Download, ArrowLeft, CheckCheck, AlertTriangle } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
 import { authService } from "../auth/services/authService"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
 import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
-import { imprimirProtocolo } from "../aptitud/imprimir/Protocolo"
+import { imprimirProtocolo, descargarProtocoloPdf } from "../aptitud/imprimir/Protocolo"
 
 /* ---------------------------------------------------------------------
    ClickUp 06 · Pantalla de carga: las dos grillas (CU-07).
@@ -136,12 +136,21 @@ export default function CargaPage() {
             <Printer size={15} /> Hoja de ruta
           </button>
           {orden.estado === "INFORMADA" && (
-            <button
-              onClick={() => imprimirProtocolo(orden.id)}
-              className="flex items-center gap-1.5 rounded-md border border-primary/40 px-3 py-2 text-xs text-primary hover:bg-primary/5"
-            >
-              <Printer size={15} /> Protocolo ({ETIQUETA_APTITUD[orden.aptitud]})
-            </button>
+            <>
+              <button
+                onClick={() => imprimirProtocolo(orden.id)}
+                className="flex items-center gap-1.5 rounded-md border border-primary/40 px-3 py-2 text-xs text-primary hover:bg-primary/5"
+              >
+                <Printer size={15} /> Protocolo ({ETIQUETA_APTITUD[orden.aptitud]})
+              </button>
+              <button
+                onClick={() => descargarProtocoloPdf(orden.id)}
+                title="Descargar el protocolo como PDF (RF23) — para mandar por mail a una empresa de otra provincia sin escanear"
+                className="flex items-center gap-1.5 rounded-md border border-primary/40 px-3 py-2 text-xs text-primary hover:bg-primary/5"
+              >
+                <Download size={15} /> Descargar PDF
+              </button>
+            </>
           )}
         </div>
       </div>
