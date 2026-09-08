@@ -1,0 +1,8 @@
+# El .env NUNCA entra a la imagen: las claves quedarían dentro de una capa,
+# y además la URL horneada sería la de la máquina donde se construyó.
+# La dirección del servidor entra como argumento de compilación.
+.env
+.env.*
+node_modules
+dist
+scripts

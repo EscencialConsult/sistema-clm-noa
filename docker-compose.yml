@@ -129,6 +129,10 @@ services:
   app:
     build:
       context: ./app
+      args:
+        # La URL con la que van a entrar los puestos, NO localhost.
+        VITE_SUPABASE_URL: ${SITE_URL}:8000
+        VITE_SUPABASE_ANON_KEY: ${ANON_KEY}
     container_name: cmlnoa-app
     restart: unless-stopped
     depends_on: [kong]
