@@ -10,3 +10,8 @@ Thumbs.db
 # credenciales del servidor: nunca al repositorio
 .env
 app/.env
+
+# copias de seguridad: van al disco externo y a la nube, NUNCA al repositorio.
+# Están cifradas, pero el repositorio es público y son datos de pacientes.
+backups/
+*.sql.enc

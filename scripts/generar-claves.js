@@ -48,6 +48,8 @@ const pgPass = crypto.randomBytes(24).toString("base64").replace(/[^A-Za-z0-9]/g
 const ahora = Math.floor(Date.now() / 1000)
 const diezAnios = ahora + 60 * 60 * 24 * 365 * 10
 
+const backupKey = crypto.randomBytes(32).toString("base64")
+
 const anonKey = firmarJwt({ role: "anon", iss: "supabase", iat: ahora, exp: diezAnios }, jwtSecret)
 const serviceKey = firmarJwt({ role: "service_role", iss: "supabase", iat: ahora, exp: diezAnios }, jwtSecret)
 
@@ -66,6 +68,11 @@ JWT_SECRET=${jwtSecret}
 ANON_KEY=${anonKey}
 SERVICE_ROLE_KEY=${serviceKey}
 SITE_URL=${sitio}
+
+# Con esta clave se cifran los backups. GUARDÁ UNA COPIA FUERA DEL SERVIDOR:
+# si se pierde el servidor y la clave estaba solo acá, los respaldos no se
+# pueden abrir y no sirven para nada.
+BACKUP_KEY=${backupKey}
 `
 
 const envApp = `# Generado por scripts/generar-claves.js — no se commitea

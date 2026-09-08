@@ -97,6 +97,57 @@ que es lo único que después permite saber quién cargó qué.
 
 Al entrar se escribe solo el usuario (`admin`), sin el correo.
 
+## 7 · Programar el backup de todas las noches
+
+Esto **no es opcional en la clínica**. Son historias clínicas: si se pierde el
+disco y no hay copia, no hay de dónde sacarlas.
+
+Probá primero que corra a mano, apuntando al disco externo:
+
+```bash
+node scripts/backup.js D:/backups-cmlnoa
+```
+
+Sale un archivo `cmlnoa-<fecha>.sql.enc`, **cifrado con AES-256-GCM**. Va cifrado
+porque después ese mismo archivo sube a la nube: el proveedor guarda el respaldo
+sin poder leer nada. Se conservan 30 días; los más viejos se borran solos.
+
+Y ahora que corra solo, todas las noches a las 02:00 (Windows, en una consola
+como Administrador — cambiá la ruta si el proyecto está en otro lado):
+
+```bat
+schtasks /Create /TN "CML NOA - Backup" /SC DAILY /ST 02:00 /RL HIGHEST /RU SYSTEM ^
+  /TR "cmd /c cd /d C:cmlnoasistema-clm-noa && node scriptsackup.js D:ackups-cmlnoa"
+```
+
+En Linux, lo mismo con cron: `0 2 * * * cd /opt/cmlnoa && node scripts/backup.js /mnt/backup`
+
+Comprobá al otro día que el archivo de anoche esté ahí. Una tarea programada que
+nadie miró nunca es lo mismo que no tener backup.
+
+### La clave de los backups
+
+`generar-claves.js` dejó una `BACKUP_KEY` en el `.env`. Con esa clave se cifran y
+se abren las copias.
+
+**Guardá una copia de esa clave fuera del servidor** — impresa, en la caja de la
+clínica. El `.env` vive en el servidor: si el servidor se pierde y la clave estaba
+solamente ahí, los respaldos siguen existiendo pero no se pueden abrir, y no
+sirven para nada.
+
+### Restaurar
+
+```bash
+node scripts/restaurar.js backups/cmlnoa-2026-09-08-02-00-00.sql.enc
+```
+
+Pisa la base actual, así que pide que escribas `restaurar` para seguir. Después
+acomoda los permisos de los esquemas internos y reinicia los servicios: sin eso,
+los datos vuelven bien pero **no entra nadie al sistema**.
+
+Cada tres meses hay que restaurar en una PC de prueba y **entrar al sistema** para
+confirmar que el backup sirve (procedimiento P-02). Que los datos estén no alcanza.
+
 ---
 
 ## Comprobar que quedó bien
