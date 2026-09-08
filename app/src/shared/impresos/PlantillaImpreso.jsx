@@ -57,55 +57,63 @@ export function DatosOrden({ orden }) {
   )
 }
 
-/** conValores=true muestra Resultado/Valor/Observación (protocolo).
- *  conValores=false muestra solo Estudio (hoja de ruta: nada cargado aún). */
-export function TablaEstudios({ categorias, conValores }) {
+/**
+ * Las cuatro columnas confirmadas (ClickUp 03 / Informe_Formularios 2.12):
+ * Estudio · Resultado · Observación · Valor — SIEMPRE las cuatro, en ese
+ * orden, en los dos impresos. Lo que cambia entre uno y otro es si están
+ * en blanco (hoja de ruta, RF13: nada se cargó todavía, se llenan a
+ * mano) o con lo que ya está guardado (protocolo, RF23).
+ *
+ * modo: "blanco" | "con-datos"
+ *
+ * El valor de referencia (ref_h/ref_m) no es una quinta columna: va
+ * pegado al valor, entre paréntesis, como se ve en el papel real
+ * ("4,8 (V 3,5-5,5)") — así lo pide ClickUp 09: "resultado y
+ * observación juntos", no una grilla más ancha que la de siempre.
+ */
+export function TablaEstudios({ categorias, modo }) {
+  const conDatos = modo === "con-datos"
   return (
     <table className="imp-tabla">
       <thead>
         <tr>
           <th>Estudio</th>
-          {conValores && (
-            <>
-              <th>Resultado</th>
-              <th>Valor</th>
-              <th>Referencia</th>
-              <th>Observación</th>
-            </>
-          )}
+          <th>Resultado</th>
+          <th>Observación</th>
+          <th>Valor</th>
         </tr>
       </thead>
       <tbody>
         {categorias.map((cat) => (
-          <FragmentoCategoria key={cat.id} cat={cat} conValores={conValores} />
+          <FragmentoCategoria key={cat.id} cat={cat} conDatos={conDatos} />
         ))}
       </tbody>
     </table>
   )
 }
 
-function FragmentoCategoria({ cat, conValores }) {
+function FragmentoCategoria({ cat, conDatos }) {
   return (
     <>
       <tr className="imp-cat">
-        <td colSpan={conValores ? 5 : 1}>{cat.nombre}</td>
+        <td colSpan={4}>{cat.nombre}</td>
       </tr>
-      {cat.items.map((it, i) => (
-        <tr key={i}>
-          <td>
-            {it.nombre}
-            {it.unidad ? ` (${it.unidad})` : ""}
-          </td>
-          {conValores && (
-            <>
-              <td className={it.fueraDeRango ? "imp-fuera" : undefined}>{it.resultado ?? "—"}</td>
-              <td className={it.fueraDeRango ? "imp-fuera" : undefined}>{it.detalle ?? "—"}</td>
-              <td>{it.referencia ?? "—"}</td>
-              <td>{it.observacion ?? ""}</td>
-            </>
-          )}
-        </tr>
-      ))}
+      {cat.items.map((it, i) => {
+        const valor = conDatos
+          ? [it.detalle, it.referencia && `(${it.referencia})`].filter(Boolean).join(" ") || "—"
+          : ""
+        return (
+          <tr key={i}>
+            <td>
+              {it.nombre}
+              {it.unidad ? ` (${it.unidad})` : ""}
+            </td>
+            <td className={it.fueraDeRango ? "imp-fuera" : undefined}>{conDatos ? it.resultado ?? "—" : ""}</td>
+            <td>{conDatos ? it.observacion ?? "" : ""}</td>
+            <td className={it.fueraDeRango ? "imp-fuera" : undefined}>{valor}</td>
+          </tr>
+        )
+      })}
     </>
   )
 }
@@ -116,5 +124,17 @@ export function FirmasImpreso({ segunda }) {
       <div>Firma del postulante</div>
       <div>{segunda}</div>
     </div>
+  )
+}
+
+/** ClickUp 09, criterio de cierre: "Queda dicho al cliente que el
+ *  formato es propuesta nuestra". No alcanza con que quede escrito en
+ *  el código — tiene que verlo quien recibe el papel. */
+export function LeyendaPropuesta() {
+  return (
+    <p className="imp-leyenda">
+      Formato de protocolo propuesto por Escencial Consultora — pendiente de validación con el
+      cliente (no hay un legajo de referencia de cómo se compagina hoy el documento final).
+    </p>
   )
 }

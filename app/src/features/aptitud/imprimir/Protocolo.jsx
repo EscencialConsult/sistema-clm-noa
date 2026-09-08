@@ -1,6 +1,12 @@
 import { getDatosParaImprimir } from "../../../shared/impresos/datosImpresionService"
 import { imprimirComponente } from "../../../shared/impresos/imprimir"
-import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../../../shared/impresos/PlantillaImpreso"
+import {
+  CabeceraImpreso,
+  DatosOrden,
+  TablaEstudios,
+  FirmasImpreso,
+  LeyendaPropuesta,
+} from "../../../shared/impresos/PlantillaImpreso"
 import { ETIQUETA_APTITUD } from "../../../types/dominio"
 
 /* ---------------------------------------------------------------------
@@ -25,7 +31,7 @@ export function Protocolo({ datos }) {
     <div className="hoja-impresion">
       <CabeceraImpreso titulo={`PROTOCOLO — EXAMEN ${datos.tipo_examen ?? ""}`} numero={datos.numero} />
       <DatosOrden orden={datos} />
-      <TablaEstudios categorias={datos.categorias} conValores />
+      <TablaEstudios categorias={datos.categorias} modo="con-datos" />
 
       <div className="imp-res">
         <div>
@@ -64,6 +70,8 @@ export function Protocolo({ datos }) {
           )
         }
       />
+
+      <LeyendaPropuesta />
     </div>
   )
 }

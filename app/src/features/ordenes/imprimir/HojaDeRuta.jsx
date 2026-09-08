@@ -7,8 +7,10 @@ import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../..
    Se entrega al crear la orden (RF11) y acompaña al paciente por cada
    puesto de carga. Formato confirmado: Informe_Formularios_y_Plan_Fase1,
    sección 2.12 — "EXAMEN PRELABORAL", N° de orden arriba a la derecha,
-   tabla Estudio/Resultado/Observación/Valor agrupada por especialidad.
-   Acá todavía no hay nada cargado, así que la tabla va sin esas columnas.
+   tabla Estudio/Resultado/Observación/Valor agrupada por especialidad,
+   con las cuatro columnas en blanco: nada se cargó todavía, se llenan a
+   mano en el puesto (ClickUp 03, criterio "las cuatro columnas en
+   blanco, para escribir a mano").
    --------------------------------------------------------------------- */
 
 export function HojaDeRuta({ datos }) {
@@ -16,7 +18,7 @@ export function HojaDeRuta({ datos }) {
     <div className="hoja-impresion">
       <CabeceraImpreso titulo="EXAMEN PRELABORAL" numero={datos.numero} />
       <DatosOrden orden={datos} />
-      <TablaEstudios categorias={datos.categorias} conValores={false} />
+      <TablaEstudios categorias={datos.categorias} modo="blanco" />
       <FirmasImpreso segunda="Firma del profesional" />
     </div>
   )
