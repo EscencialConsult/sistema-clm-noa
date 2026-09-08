@@ -53,3 +53,120 @@ body {
     animation: none;
   }
 }
+
+/*
+  Impresos (hoja de ruta, protocolo) — shared/impresos/.
+  Mismo patrón que el prototipo validado (CML-Prelaborales.html: #print +
+  @media print): un nodo fuera de #root, oculto en pantalla, que pasa a
+  ser lo único visible al imprimir. Papel institucional blanco y negro
+  a propósito — no lleva los tokens de marca de la app (ver
+  PlantillaImpreso.jsx).
+*/
+#hoja-impresion-root {
+  display: none;
+}
+@media print {
+  body > div#root {
+    display: none !important;
+  }
+  #hoja-impresion-root {
+    display: block !important;
+  }
+  @page {
+    size: A4;
+    margin: 14mm 13mm;
+  }
+}
+
+.hoja-impresion {
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #000;
+  font-size: 10.5pt;
+}
+.hoja-impresion .imp-ph {
+  text-align: center;
+  border-bottom: 2px solid #000;
+  padding-bottom: 3mm;
+  margin-bottom: 4mm;
+  position: relative;
+}
+.hoja-impresion .imp-ph h1 {
+  font-size: 15pt;
+  margin: 0;
+  font-weight: 700;
+}
+.hoja-impresion .imp-ph .imp-s {
+  font-size: 9pt;
+  margin-top: 1mm;
+}
+.hoja-impresion .imp-num {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 10pt;
+  font-weight: 700;
+}
+.hoja-impresion .imp-pt {
+  text-align: center;
+  font-size: 13pt;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin: 3mm 0 0;
+}
+.hoja-impresion .imp-pd {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1mm 6mm;
+  font-size: 10pt;
+  margin-bottom: 4mm;
+}
+.hoja-impresion .imp-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  margin-bottom: 4mm;
+}
+.hoja-impresion .imp-tabla th {
+  background: #eee;
+  border: 0.5pt solid #666;
+  padding: 1.5mm 2mm;
+  text-align: left;
+  font-size: 8pt;
+  text-transform: uppercase;
+}
+.hoja-impresion .imp-tabla td {
+  border: 0.5pt solid #999;
+  padding: 1.5mm 2mm;
+}
+.hoja-impresion .imp-cat td {
+  background: #f4f4f4;
+  font-weight: 700;
+}
+.hoja-impresion .imp-fuera {
+  color: #b91c1c;
+  font-weight: 700;
+}
+.hoja-impresion .imp-res {
+  border: 1pt solid #000;
+  padding: 2mm 3mm;
+  margin-top: 4mm;
+  display: flex;
+  gap: 10mm;
+  font-size: 11pt;
+}
+.hoja-impresion .imp-obs {
+  margin-top: 2mm;
+  font-size: 10pt;
+}
+.hoja-impresion .imp-sig {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16mm;
+  margin-top: 16mm;
+}
+.hoja-impresion .imp-sig div {
+  border-top: 0.8pt solid #000;
+  padding-top: 1.5mm;
+  font-size: 9pt;
+  text-align: center;
+}

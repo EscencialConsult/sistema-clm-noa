@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Search,
   Printer,
-  Eye,
   UserPlus,
   FolderOpen,
   CalendarClock,
@@ -11,66 +11,58 @@ import {
 import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
 import { alertasService } from "./services/alertasService"
+import { ESTADO_ORDEN, ETIQUETA_ESTADO } from "../../types/dominio"
+import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
 
 const TIPO_EXAMEN_LABEL = {
-  prelaboral: "Prelaboral",
-  periodico: "Periódico",
-  egreso: "Egreso",
+  PRELABORAL: "Prelaboral",
+  PERIODICO: "Periódico",
+  EGRESO: "Egreso",
 }
 
+// Colores semánticos (DESIGN.md: nunca el azul de marca para estado clínico/operativo)
 const ESTADO_ESTILO = {
-  pendiente: "bg-warning/10 text-warning",
-  en_curso: "bg-accent/15 text-primary",
-  completo: "bg-success/10 text-success",
-}
-const ESTADO_LABEL = {
-  pendiente: "Pendiente",
-  en_curso: "En Curso",
-  completo: "Completo",
+  ABIERTA: "bg-warning/10 text-warning",
+  EN_CURSO: "bg-accent/15 text-primary",
+  COMPLETA: "bg-success/10 text-success",
+  INFORMADA: "bg-ink-soft/10 text-ink-soft",
 }
 
-const PRIORIDAD_ESTILO = {
-  alta: "bg-danger/10 text-danger",
-  media: "bg-warning/10 text-warning",
-  baja: "bg-ink-soft/10 text-ink-soft",
-}
-
-const TABS = [
-  { key: "todos", label: "Todos" },
-  { key: "pendiente", label: "Pendientes" },
-  { key: "en_curso", label: "En Curso" },
-  { key: "completo", label: "Completos" },
-]
+const TABS = [{ key: "todos", label: "Todos" }, ...ESTADO_ORDEN.map((e) => ({ key: e, label: ETIQUETA_ESTADO[e] }))]
 
 export default function BandejaProfesional() {
+  const navigate = useNavigate()
   const [ordenes, setOrdenes] = useState([])
   const [pendientes, setPendientes] = useState([])
   const [alertas, setAlertas] = useState([])
   const [tab, setTab] = useState("todos")
   const [busqueda, setBusqueda] = useState("")
+  const [cargando, setCargando] = useState(true)
+  const [errorCarga, setErrorCarga] = useState(null)
 
   useEffect(() => {
-    ordenesService.getOrdenesDelDia().then(setOrdenes)
-    ordenesService.getEstudiosPendientes().then(setPendientes)
+    Promise.all([ordenesService.getOrdenesDelDia(), ordenesService.getEstudiosPendientes()])
+      .then(([ords, pends]) => {
+        setOrdenes(ords)
+        setPendientes(pends)
+      })
+      .catch((e) => setErrorCarga(e.message))
+      .finally(() => setCargando(false))
     alertasService.getAlertasPersonales().then(setAlertas)
   }, [])
 
-  const conteos = useMemo(
-    () => ({
-      todos: ordenes.length,
-      pendiente: ordenes.filter((o) => o.estado === "pendiente").length,
-      en_curso: ordenes.filter((o) => o.estado === "en_curso").length,
-      completo: ordenes.filter((o) => o.estado === "completo").length,
-    }),
-    [ordenes]
-  )
+  const conteos = useMemo(() => {
+    const base = { todos: ordenes.length }
+    for (const e of ESTADO_ORDEN) base[e] = ordenes.filter((o) => o.estado === e).length
+    return base
+  }, [ordenes])
 
   const ordenesFiltradas = ordenes
     .filter((o) => tab === "todos" || o.estado === tab)
     .filter((o) =>
       busqueda
         ? o.persona?.apellido_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-          o.persona?.documento.includes(busqueda) ||
+          o.persona?.documento.toLowerCase().includes(busqueda.toLowerCase()) ||
           o.empresa?.razon_social.toLowerCase().includes(busqueda.toLowerCase())
         : true
     )
@@ -87,18 +79,18 @@ export default function BandejaProfesional() {
             onChange={(e) => setBusqueda(e.target.value)}
           />
         </label>
-        <button className="rounded-md border border-ink-soft/20 p-2 text-ink-soft hover:text-ink">
-          <Printer size={18} strokeWidth={1.75} />
-        </button>
       </div>
+
+      {errorCarga && (
+        <div className="mb-6 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+          No se pudo traer la bandeja: {errorCarga}
+        </div>
+      )}
 
       <div className="mb-6 flex gap-4">
         {[
           { label: "Pacientes Hoy", valor: conteos.todos },
-          { label: "Pendientes", valor: conteos.pendiente },
-          { label: "En Curso", valor: conteos.en_curso },
-          { label: "Completos", valor: conteos.completo },
-          { label: "Devueltos", valor: 2 },
+          ...ESTADO_ORDEN.map((e) => ({ label: ETIQUETA_ESTADO[e], valor: conteos[e] })),
         ].map((k) => (
           <div key={k.label} className="flex-1 rounded-card border border-ink-soft/10 bg-white p-4">
             <p className="text-xs text-ink-soft">{k.label}</p>
@@ -120,7 +112,7 @@ export default function BandejaProfesional() {
                     : "text-ink-soft hover:text-ink"
                 }`}
               >
-                {t.label} ({conteos[t.key]})
+                {t.label} ({conteos[t.key] ?? 0})
               </button>
             ))}
           </div>
@@ -132,27 +124,50 @@ export default function BandejaProfesional() {
                 <th className="pb-2 font-normal">Empresa</th>
                 <th className="pb-2 font-normal">Tipo Examen</th>
                 <th className="pb-2 font-normal">Estado</th>
+                <th className="pb-2 font-normal"></th>
               </tr>
             </thead>
             <tbody>
+              {!cargando && ordenesFiltradas.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-xs text-ink-soft">
+                    No hay órdenes con fecha de hoy que coincidan con el filtro.
+                  </td>
+                </tr>
+              )}
               {ordenesFiltradas.map((o) => (
-                <tr key={o.id} className="border-t border-ink-soft/10">
+                <tr
+                  key={o.id}
+                  className="cursor-pointer border-t border-ink-soft/10 hover:bg-ink-soft/5"
+                  onClick={() => navigate(`/carga/${o.id}`)}
+                >
                   <td className="py-2.5">
                     <p className="text-ink">{o.persona?.apellido_nombre}</p>
-                    <p className="text-xs text-ink-soft">DNI {o.persona?.documento}</p>
+                    <p className="text-xs text-ink-soft">{o.persona?.documento}</p>
                   </td>
                   <td className="py-2.5 text-ink-soft">{o.empresa?.razon_social}</td>
                   <td className="py-2.5 text-ink-soft">{TIPO_EXAMEN_LABEL[o.tipo_examen]}</td>
                   <td className="py-2.5">
                     <span className={`rounded-full px-2 py-0.5 text-xs ${ESTADO_ESTILO[o.estado]}`}>
-                      {ESTADO_LABEL[o.estado]}
+                      {ETIQUETA_ESTADO[o.estado]}
                     </span>
+                  </td>
+                  <td className="py-2.5 text-right">
+                    <button
+                      title="Imprimir hoja de ruta"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        imprimirHojaDeRuta(o.id)
+                      }}
+                      className="text-ink-soft hover:text-primary"
+                    >
+                      <Printer size={16} strokeWidth={1.75} />
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button className="mt-3 text-xs text-primary hover:underline">Ver todos los pacientes →</button>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -196,31 +211,22 @@ export default function BandejaProfesional() {
               <th className="pb-2 font-normal">Paciente</th>
               <th className="pb-2 font-normal">Estudio</th>
               <th className="pb-2 font-normal">Categoría</th>
-              <th className="pb-2 font-normal">Prioridad</th>
-              <th className="pb-2 font-normal">Acciones</th>
+              <th className="pb-2 font-normal">Empresa</th>
+              <th className="pb-2 font-normal">Lo carga</th>
             </tr>
           </thead>
           <tbody>
-            {pendientes.map((e) => (
-              <tr key={e.id} className="border-t border-ink-soft/10">
-                <td className="py-2.5 text-ink">{e.persona?.apellido_nombre}</td>
+            {pendientes.map((e, i) => (
+              <tr key={`${e.numero}-${e.estudio}-${i}`} className="border-t border-ink-soft/10">
+                <td className="py-2.5 text-ink">{e.paciente}</td>
                 <td className="py-2.5 text-ink-soft">{e.estudio}</td>
-                <td className="py-2.5 text-ink-soft">{e.categoria.replace("_", " ")}</td>
-                <td className="py-2.5">
-                  <span className={`rounded-full px-2 py-0.5 text-xs capitalize ${PRIORIDAD_ESTILO[e.prioridad]}`}>
-                    {e.prioridad}
-                  </span>
-                </td>
-                <td className="py-2.5">
-                  <button className="text-ink-soft hover:text-primary">
-                    <Eye size={16} />
-                  </button>
-                </td>
+                <td className="py-2.5 text-ink-soft">{e.categoria}</td>
+                <td className="py-2.5 text-ink-soft">{e.empresa}</td>
+                <td className="py-2.5 text-ink-soft">{e.rol_responsable}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <button className="mt-3 text-xs text-primary hover:underline">Ver todos los estudios pendientes →</button>
       </div>
     </AppShell>
   )

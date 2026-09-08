@@ -4,6 +4,7 @@ import LoginPage from "../features/auth/LoginPage"
 import CambiarContrasenaPage from "../features/auth/CambiarContrasenaPage"
 import DashboardAdminPage from "../features/usuarios/DashboardAdminPage"
 import BandejaPage from "../features/carga/BandejaPage"
+import CargaPage from "../features/carga/CargaPage"
 import Placeholder from "../components/Placeholder"
 
 // Regla de la Raíz Literal (DESIGN.md): "/" ES el login, no un redirect.
@@ -29,6 +30,7 @@ export default function AppRoutes() {
 
         {/* Profesionales — G5, G6 */}
         <Route path="/bandeja" element={<BandejaPage />} />
+        <Route path="/carga/:ordenId" element={<CargaPage />} />
         <Route path="/bandeja/pacientes" element={<Placeholder titulo="Pacientes" />} />
         <Route path="/bandeja/pendientes" element={<Placeholder titulo="Estudios Pendientes" />} />
         <Route path="/bandeja/legajos" element={<Placeholder titulo="Legajos" />} />
