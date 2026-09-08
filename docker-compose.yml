@@ -32,8 +32,14 @@ services:
       JWT_EXP: 3600
     volumes:
       - db-data:/var/lib/postgresql/data
-      # las migraciones corren solas la primera vez, en orden alfabético
-      - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations:ro
+      # zz- para que corra DESPUÉS de migrate.sh, el script propio de la imagen
+      # que crea el esquema auth. Postgres los ejecuta por orden alfabético y
+      # "99" viene antes que "m": con ese nombre, auth.uid() todavía no existe.
+      # Y va como .sh porque Postgres no entra en subcarpetas: este recorre migrations/.
+      - ./supabase/aplicar-migraciones.sh:/docker-entrypoint-initdb.d/zz-cmlnoa.sh:ro
+      # a una ruta PROPIA: /docker-entrypoint-initdb.d/migrations es la carpeta
+      # de la imagen — montar ahí tapa las suyas (y sin ellas no existe auth)
+      - ./supabase/migrations:/cmlnoa/migrations:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

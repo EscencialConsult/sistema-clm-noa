@@ -158,39 +158,39 @@ INSERT INTO estudio (nombre, categoria_id, orden, unidad, ref_h, ref_m) VALUES (
 
 -- ---------- conceptos facturables ----------
 -- Lista de precios del 01/08/2026, sin IVA. Rubro 0003 = prelaborales.
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Básico de ley', 55000, '0003', 1);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Perfil lipídico', 25000, '0003', 2);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Hepatograma completo', 25000, '0003', 3);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Urea y creatinina', 27000, '0003', 4);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Grupo y factor', 11000, '0003', 5);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Rx columna lumbosacra', 25000, '0003', 6);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Rx columna cervical', 25000, '0003', 7);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Audiometría', 15000, '0003', 8);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Interconsulta psiquiátrica', 90000, '0003', 9);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Consulta con especialista', 66000, '0003', 10);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Estudios ambientales', 65000, '0003', 11);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Psicotécnico', 59000, '0003', 12);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Espirometría', 35000, '0003', 13);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('IgE', 35000, '0003', 14);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Electroencefalograma', 50000, '0003', 15);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Ergometría', 50000, '0003', 16);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Colinesterasa', 30000, '0003', 17);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Homologación', 30000, '0003', 18);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Hemoglobina glicosilada', 25000, '0003', 19);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Test de Epworth', 18000, '0003', 20);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Índice de Framingham', 18000, '0003', 21);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Sub unidad beta', 20000, '0003', 22);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Equilibriométrico', 15000, '0003', 23);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('I.M.C.', 15000, '0003', 24);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('PPD', 12000, '0003', 25);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('V.D.R.L.', 11000, '0003', 26);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Cocaína', 30000, '0003', 27);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Cannabinoides', 30000, '0003', 28);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Alcoholemia', 30000, '0003', 29);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Benzodiacepinas', 30000, '0003', 30);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Opiáceos', 30000, '0003', 31);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Anfetaminas', 30000, '0003', 32);
-INSERT INTO concepto (nombre, precio, rubro, orden) VALUES ('Éxtasis', 30000, '0003', 33);
+INSERT INTO concepto (nombre, precio) VALUES ('Básico de ley', 55000);
+INSERT INTO concepto (nombre, precio) VALUES ('Perfil lipídico', 25000);
+INSERT INTO concepto (nombre, precio) VALUES ('Hepatograma completo', 25000);
+INSERT INTO concepto (nombre, precio) VALUES ('Urea y creatinina', 27000);
+INSERT INTO concepto (nombre, precio) VALUES ('Grupo y factor', 11000);
+INSERT INTO concepto (nombre, precio) VALUES ('Rx columna lumbosacra', 25000);
+INSERT INTO concepto (nombre, precio) VALUES ('Rx columna cervical', 25000);
+INSERT INTO concepto (nombre, precio) VALUES ('Audiometría', 15000);
+INSERT INTO concepto (nombre, precio) VALUES ('Interconsulta psiquiátrica', 90000);
+INSERT INTO concepto (nombre, precio) VALUES ('Consulta con especialista', 66000);
+INSERT INTO concepto (nombre, precio) VALUES ('Estudios ambientales', 65000);
+INSERT INTO concepto (nombre, precio) VALUES ('Psicotécnico', 59000);
+INSERT INTO concepto (nombre, precio) VALUES ('Espirometría', 35000);
+INSERT INTO concepto (nombre, precio) VALUES ('IgE', 35000);
+INSERT INTO concepto (nombre, precio) VALUES ('Electroencefalograma', 50000);
+INSERT INTO concepto (nombre, precio) VALUES ('Ergometría', 50000);
+INSERT INTO concepto (nombre, precio) VALUES ('Colinesterasa', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Homologación', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Hemoglobina glicosilada', 25000);
+INSERT INTO concepto (nombre, precio) VALUES ('Test de Epworth', 18000);
+INSERT INTO concepto (nombre, precio) VALUES ('Índice de Framingham', 18000);
+INSERT INTO concepto (nombre, precio) VALUES ('Sub unidad beta', 20000);
+INSERT INTO concepto (nombre, precio) VALUES ('Equilibriométrico', 15000);
+INSERT INTO concepto (nombre, precio) VALUES ('I.M.C.', 15000);
+INSERT INTO concepto (nombre, precio) VALUES ('PPD', 12000);
+INSERT INTO concepto (nombre, precio) VALUES ('V.D.R.L.', 11000);
+INSERT INTO concepto (nombre, precio) VALUES ('Cocaína', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Cannabinoides', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Alcoholemia', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Benzodiacepinas', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Opiáceos', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Anfetaminas', 30000);
+INSERT INTO concepto (nombre, precio) VALUES ('Éxtasis', 30000);
 
 -- ---------- qué estudios cubre cada concepto ----------
 
@@ -358,8 +358,7 @@ INSERT INTO concepto_estudio (concepto_id, estudio_id) SELECT c.id, e.id FROM co
 INSERT INTO concepto_estudio (concepto_id, estudio_id) SELECT c.id, e.id FROM concepto c, estudio e JOIN categoria k ON k.id = e.categoria_id WHERE c.nombre='Éxtasis' AND k.nombre='TOXICOLOGICO' AND e.nombre='EXTASIS';
 
 
--- ---------- estudios agregados tras revisar el sistema en producción ----------
-INSERT INTO estudio (nombre, categoria_id, orden, unidad, ref_h, ref_m) VALUES ('V.D.R.L.', (SELECT id FROM categoria WHERE nombre='OTRAS DETERMINACIONES'), 90, NULL, NULL, NULL);
-INSERT INTO estudio (nombre, categoria_id, orden, unidad, ref_h, ref_m) VALUES ('HEPATITIS A', (SELECT id FROM categoria WHERE nombre='OTRAS DETERMINACIONES'), 91, NULL, NULL, NULL);
+-- ---------- estudio agregado tras revisar el sistema en producción ----------
+-- (V.D.R.L. y Hepatitis A NO se agregan acá: ya estaban en el catálogo)
 INSERT INTO estudio (nombre, categoria_id, orden, unidad, ref_h, ref_m) VALUES ('CUESTIONARIO DE STOP BANG', (SELECT id FROM categoria WHERE nombre='ESPECIALIDADES'), 90, NULL, NULL, NULL);
 COMMIT;
