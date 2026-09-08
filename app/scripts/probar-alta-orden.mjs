@@ -53,6 +53,7 @@ function limpiar() {
     DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
+    DELETE FROM empresa        WHERE razon_social LIKE '${MARCA}%';
     DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');
     DELETE FROM usuario     WHERE usuario LIKE '${MARCA}%';
   `)
@@ -174,6 +175,40 @@ async function main() {
   paso("laboratorio no puede abrir una orden",
     !!e11 && /Recepción o el Administrador/.test(e11.message),
     e11 ? e11.message : "LA CREÓ, no debería")
+
+  /* ---------- las otras tres pantallas de recepción ---------- */
+
+  /* 12 · alta de empresa (CU-05) */
+  const { data: emp, error: e12 } = await c.from("empresa").insert({
+    razon_social: `${MARCA} TRANSPORTES`, codigo: "ZZT", cuit: "30-99999999-9",
+    domicilio: "Ruta 9 km 1300", telefono: "381-555-1111", activo: true,
+  }).select().single()
+  paso("recepción da de alta una empresa", !e12 && !!emp?.id,
+    e12 ? e12.message : `id ${emp.id}`)
+
+  /* 13 · desactivar en vez de borrar */
+  const { error: e13 } = await c.from("empresa").update({ activo: false }).eq("id", emp.id)
+  const { data: activas } = await c.from("empresa").select("id").eq("activo", true).eq("id", emp.id)
+  paso("una empresa desactivada deja de ofrecerse", !e13 && (activas?.length ?? 0) === 0,
+    e13 ? e13.message : "ya no figura entre las activas, pero sigue existiendo")
+
+  /* 14 · pendientes del día (CP-26) */
+  const hoy = new Date().toISOString().slice(0, 10)
+  const { data: pend, error: e14 } = await c.from("v_orden_avance").select("*")
+    .eq("fecha", hoy).neq("estado", "INFORMADA").order("numero", { ascending: false })
+  const nuestra = pend?.find((o) => o.id === ordenId)
+  paso("pendientes del día trae la orden con su avance",
+    !e14 && !!nuestra && nuestra.estudios === 56 && nuestra.cargados === 0,
+    e14 ? e14.message : `${pend.length} sin informar · la nuestra ${nuestra?.cargados}/${nuestra?.estudios}`)
+
+  /* 15 · listado por empresa con importes (CP-25) */
+  const { data: listado, error: e15 } = await c.from("v_orden_avance").select("*")
+    .gte("fecha", hoy).lte("fecha", hoy).eq("empresa", empresas[0].razon_social)
+    .order("numero", { ascending: false })
+  const total = (listado ?? []).reduce((s2, o) => s2 + Number(o.importe ?? 0), 0)
+  paso("el listado filtra por empresa y suma importes",
+    !e15 && listado.some((o) => o.id === ordenId) && total >= 160000,
+    e15 ? e15.message : `${listado.length} de ${empresas[0].razon_social} · ${total}`)
 
   /* limpieza */
   limpiar()

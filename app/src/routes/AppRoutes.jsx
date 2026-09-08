@@ -9,6 +9,9 @@ import AptitudPage from "../features/aptitud/AptitudPage"
 import DictamenPage from "../features/aptitud/DictamenPage"
 import LegajoPage from "../features/legajo/LegajoPage"
 import NuevaOrdenPage from "../features/ordenes/NuevaOrdenPage"
+import EmpresasPage from "../features/recepcion/EmpresasPage"
+import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
+import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
 import Placeholder from "../components/Placeholder"
 
 // Regla de la Raíz Literal (DESIGN.md): "/" ES el login, no un redirect.
@@ -23,9 +26,9 @@ export default function AppRoutes() {
         <Route path="/admin" element={<DashboardAdminPage />} />
         <Route path="/admin/usuarios" element={<Placeholder titulo="Usuarios y Roles" />} />
         <Route path="/admin/profesionales" element={<Placeholder titulo="Maestro de Profesionales" />} />
-        <Route path="/admin/empresas" element={<Placeholder titulo="Empresas" />} />
-        <Route path="/admin/personas" element={<Placeholder titulo="Personas" />} />
-        <Route path="/admin/ordenes" element={<Placeholder titulo="Órdenes de Servicio" />} />
+        <Route path="/admin/empresas" element={<EmpresasPage />} />
+        <Route path="/admin/personas" element={<LegajoPage />} />
+        <Route path="/admin/ordenes" element={<ListadoOrdenesPage />} />
         <Route path="/admin/catalogo" element={<Placeholder titulo="Estudios y Categorías" />} />
         <Route path="/admin/baterias" element={<Placeholder titulo="Baterías" />} />
         <Route path="/admin/conceptos" element={<Placeholder titulo="Conceptos Facturables" />} />
@@ -50,9 +53,9 @@ export default function AppRoutes() {
         <Route path="/recepcion" element={<NuevaOrdenPage />} />
         <Route path="/recepcion/nueva-orden" element={<NuevaOrdenPage />} />
         <Route path="/recepcion/personas" element={<LegajoPage />} />
-        <Route path="/recepcion/empresas" element={<Placeholder titulo="Empresas" />} />
-        <Route path="/recepcion/pendientes" element={<Placeholder titulo="Pendientes del Día" />} />
-        <Route path="/recepcion/listado" element={<Placeholder titulo="Listado de Órdenes" />} />
+        <Route path="/recepcion/empresas" element={<EmpresasPage />} />
+        <Route path="/recepcion/pendientes" element={<PendientesDelDiaPage />} />
+        <Route path="/recepcion/listado" element={<ListadoOrdenesPage />} />
       </Routes>
     </BrowserRouter>
   )
