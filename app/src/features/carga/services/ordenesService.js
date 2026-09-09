@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabase"
+import { hoyLocal } from "../../../lib/fechas"
 
 /* ---------------------------------------------------------------------
    Órdenes — real, contra Supabase (ver TRABAJAR.md, "La bandeja del día"
@@ -19,16 +20,6 @@ const SELECT_ORDEN = `
   empresa:empresa_id ( id, razon_social )
 `
 
-/** "Hoy" en la fecha LOCAL del navegador, no en UTC.
- *  toISOString() siempre da la fecha en UTC — pasadas las 21:00 en
- *  Argentina (UTC-3) ya es "mañana" en UTC, y la Bandeja del Día
- *  quedaba buscando órdenes de un día que todavía no llegó. */
-function hoyLocal() {
-  const d = new Date()
-  const mes = String(d.getMonth() + 1).padStart(2, "0")
-  const dia = String(d.getDate()).padStart(2, "0")
-  return `${d.getFullYear()}-${mes}-${dia}`
-}
 
 function conNombreYDocumento(orden) {
   const p = orden.persona

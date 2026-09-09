@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabase"
+import { hoyLocal, desdeMedianoche } from "../../../lib/fechas"
 
 /* ---------------------------------------------------------------------
    Aptitud y legajo — CU-11, RF22/RF23.
@@ -53,12 +54,12 @@ export const aptitudService = {
 
   /** Las informadas hoy, para tenerlas a mano y poder reimprimir. */
   async getInformadasDeHoy() {
-    const hoy = new Date().toISOString().slice(0, 10)
+    const hoy = hoyLocal()
     const { data, error } = await supabase
       .from("orden")
       .select(SELECT_ORDEN)
       .eq("estado", "INFORMADA")
-      .gte("informado_at", `${hoy}T00:00:00`)
+      .gte("informado_at", desdeMedianoche(hoy))
       .order("informado_at", { ascending: false })
 
     if (error) throw new Error(error.message)

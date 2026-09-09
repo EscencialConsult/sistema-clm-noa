@@ -1,4 +1,5 @@
 import { supabase } from "../../../lib/supabase"
+import { hoyLocal } from "../../../lib/fechas"
 
 /* ---------------------------------------------------------------------
    Lo que le queda a recepción además del alta: empresas, el pendiente
@@ -66,7 +67,7 @@ export const recepcionService = {
   /** Las órdenes de hoy que todavía no se informaron, separando las que
    *  siguen en curso de las que ya están completas esperando al médico. */
   async getPendientesDelDia() {
-    const hoy = new Date().toISOString().slice(0, 10)
+    const hoy = hoyLocal()
     const { data, error } = await supabase
       .from("v_orden_avance")
       .select("*")

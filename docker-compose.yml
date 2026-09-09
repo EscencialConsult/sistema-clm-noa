@@ -30,6 +30,11 @@ services:
       POSTGRES_DB: postgres
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXP: 3600
+      # La hora de la clínica, no UTC. La zona de la BASE la fija la
+      # migración 012 (ALTER DATABASE); esto alinea al contenedor, para
+      # que los logs y el backup nocturno hablen de la misma noche.
+      TZ: ${TZ:-America/Argentina/Tucuman}
+      PGTZ: ${TZ:-America/Argentina/Tucuman}
     volumes:
       - db-data:/var/lib/postgresql/data
       # zz- para que corra DESPUÉS de migrate.sh, el script propio de la imagen

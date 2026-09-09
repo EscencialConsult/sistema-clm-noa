@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { AlertTriangle, Download } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { recepcionService } from "./services/recepcionService"
+import { hoyLocal, primerDiaDelMes } from "../../lib/fechas"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
 
 /* ---------------------------------------------------------------------
@@ -18,16 +19,10 @@ import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
    que puedan seguir trabajándolo en Excel mientras se acostumbran.
    --------------------------------------------------------------------- */
 
-function primerDiaDelMes() {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-}
-const hoyISO = () => new Date().toISOString().slice(0, 10)
-
 export default function ListadoOrdenesPage() {
   const navigate = useNavigate()
   const [desde, setDesde] = useState(primerDiaDelMes())
-  const [hasta, setHasta] = useState(hoyISO())
+  const [hasta, setHasta] = useState(hoyLocal())
   const [empresa, setEmpresa] = useState("")
   const [empresas, setEmpresas] = useState([])
   const [ordenes, setOrdenes] = useState([])

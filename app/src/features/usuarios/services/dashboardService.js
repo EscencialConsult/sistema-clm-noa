@@ -1,5 +1,6 @@
 import { supabase } from "../../../lib/supabase"
 import { ETIQUETA_ROL } from "../../../types/dominio"
+import { hoyLocal, haceDias, desdeMedianoche } from "../../../lib/fechas"
 
 /* ---------------------------------------------------------------------
    Resumen del Administrador — real, contra la base.
@@ -33,14 +34,6 @@ import { ETIQUETA_ROL } from "../../../types/dominio"
        exactamente lo que tiene permitido ver, ni una fila más.
    --------------------------------------------------------------------- */
 
-const hoyISO = () => new Date().toISOString().slice(0, 10)
-
-function haceDias(n) {
-  const d = new Date()
-  d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
-}
-
 const diaCorto = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 
 async function contar(tabla, armar = (q) => q) {
@@ -55,7 +48,7 @@ const TIPO_LABEL = { PRELABORAL: "Prelaboral", PERIODICO: "Periódico", EGRESO: 
 
 export const dashboardService = {
   async getResumenAdministrador() {
-    const hoy = hoyISO()
+    const hoy = hoyLocal()
     const desde = haceDias(6)
 
     const [
@@ -78,7 +71,7 @@ export const dashboardService = {
       contar("persona"),
       supabase.from("v_pendientes").select("rol_responsable"),
       supabase.from("orden").select("fecha").gte("fecha", desde),
-      supabase.from("orden_estudio").select("cargado_at").gte("cargado_at", `${desde}T00:00:00`),
+      supabase.from("orden_estudio").select("cargado_at").gte("cargado_at", desdeMedianoche(desde)),
       supabase.from("orden").select("tipo_examen").eq("fecha", hoy),
       supabase.from("v_vencimientos").select("dias").lte("dias", 30),
       contar("orden_estudio", (q) => q.eq("estado", "DERIVADO")),

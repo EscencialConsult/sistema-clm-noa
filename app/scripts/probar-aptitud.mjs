@@ -46,6 +46,9 @@ const admin = async (ruta, opts) => {
   return r.json()
 }
 
+const comoISOLocal = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+
 const MARCA = "ZZAPT"
 const pasos = []
 const paso = (n, ok, det) => { pasos.push({ n, ok, det }); console.log(`  ${ok ? "✔" : "✘"}  ${n}\n        ${det}`) }
@@ -177,7 +180,9 @@ async function main() {
     `${fin?.estado} · ${fin?.aptitud} · ${m?.apellido_nombre} MP ${m?.matricula_prov} MN ${m?.matricula_nac} · preex: ${fin?.preexistencias} · obs: ${fin?.observaciones}`)
 
   /* --- getInformadasDeHoy --- */
-  const hoy = new Date().toISOString().slice(0, 10)
+  /* la fecha LOCAL, igual que la base: corre en la zona de la clínica.
+     Con toISOString() esto fallaba después de las 21:00 (ver 012). */
+  const hoy = comoISOLocal(new Date())
   const { data: inf, error: e8 } = await cMedico.from("orden").select(SELECT_ORDEN)
     .eq("estado", "INFORMADA").gte("informado_at", `${hoy}T00:00:00`)
     .order("informado_at", { ascending: false })

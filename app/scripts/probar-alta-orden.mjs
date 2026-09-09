@@ -21,6 +21,9 @@ const env = Object.fromEntries(
     .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1).trim()])
 )
 const API = "http://localhost:8000"
+const comoISOLocal = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+
 const MARCA = "ZZALTA"
 
 const sql = (t) => execFileSync("docker", [
@@ -193,7 +196,9 @@ async function main() {
     e13 ? e13.message : "ya no figura entre las activas, pero sigue existiendo")
 
   /* 14 · pendientes del día (CP-26) */
-  const hoy = new Date().toISOString().slice(0, 10)
+  /* la fecha LOCAL, igual que la base: corre en la zona de la clínica.
+     Con toISOString() esto fallaba después de las 21:00 (ver 012). */
+  const hoy = comoISOLocal(new Date())
   const { data: pend, error: e14 } = await c.from("v_orden_avance").select("*")
     .eq("fecha", hoy).neq("estado", "INFORMADA").order("numero", { ascending: false })
   const nuestra = pend?.find((o) => o.id === ordenId)
