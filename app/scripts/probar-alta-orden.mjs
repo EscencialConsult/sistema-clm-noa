@@ -57,6 +57,8 @@ function limpiar() {
     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
     DELETE FROM empresa        WHERE razon_social LIKE '${MARCA}%';
+    DELETE FROM plantilla_item WHERE plantilla_id IN (SELECT id FROM plantilla WHERE nombre LIKE '${MARCA}%');
+    DELETE FROM plantilla      WHERE nombre LIKE '${MARCA}%';
     DELETE FROM concepto_estudio WHERE concepto_id IN (SELECT id FROM concepto WHERE nombre LIKE '${MARCA}%');
     DELETE FROM concepto       WHERE nombre LIKE '${MARCA}%';
     DELETE FROM orden_estudio  WHERE estudio_id IN (SELECT id FROM estudio WHERE nombre LIKE '${MARCA}%');
@@ -339,6 +341,57 @@ async function main() {
   paso("con un estudio del concepto faltando, no se cobra nada de él",
     Number(incompleto) === Number(antesImporte),
     `la orden no tiene los dos, así que vuelve a ${incompleto}`)
+
+  /* ---------- RF09 · baterías: el sexo decide qué se abre ---------- */
+
+  /* 26 · recepción crea una batería propia de una empresa */
+  const { data: bat, error: j1 } = await c.from("plantilla")
+    .insert({ nombre: `${MARCA} BATERIA`, empresa_id: empresas[0].id }).select().single()
+  paso("recepción crea una batería de empresa (RF09)", !j1 && !!bat?.id,
+    j1 ? j1.message : `${bat.nombre} · ${empresas[0].razon_social}`)
+
+  /* 27 · con dos estudios: uno para ambos y otro sólo para mujer */
+  const { data: dosEst } = await cAdmin2.from("estudio")
+    .select("id, nombre").eq("activo", true).in("nombre", ["HEMATOCRITO", "SUB UNIDAD BETA"])
+  const hemato = dosEst.find((e) => e.nombre === "HEMATOCRITO")
+  const beta = dosEst.find((e) => e.nombre === "SUB UNIDAD BETA")
+  const { error: j2 } = await c.from("plantilla_item").insert([
+    { plantilla_id: bat.id, estudio_id: hemato.id, sexo_aplica: "A" },
+    { plantilla_id: bat.id, estudio_id: beta.id, sexo_aplica: "F" },
+  ])
+  paso("le agrega un estudio para ambos y otro sólo para mujer", !j2,
+    j2 ? j2.message : "HEMATOCRITO (A) · SUB UNIDAD BETA (F)")
+
+  /* 28 · una orden de varón abre 1, una de mujer abre 2 */
+  const { data: pVaron } = await c.from("persona").insert({
+    tipo_doc: "DNI", nro_doc: "90700002", apellido: `${MARCA} BATERIA`, nombre: "JUAN", sexo: "M",
+  }).select().single()
+  const { data: ordVaron } = await c.rpc("crear_orden", {
+    p_persona: pVaron.id, p_empresa: empresas[0].id, p_plantilla: bat.id })
+  const { data: ordMujer } = await c.rpc("crear_orden", {
+    p_persona: persona.id, p_empresa: empresas[0].id, p_plantilla: bat.id })
+
+  const cuentaDe = async (id) =>
+    (await c.from("orden_estudio").select("*", { count: "exact", head: true }).eq("orden_id", id)).count
+  const nV = await cuentaDe(ordVaron)
+  const nM = await cuentaDe(ordMujer)
+  paso("el sexo del ítem decide qué abre la orden (CP-07)", nV === 1 && nM === 2,
+    `varón ${nV} · mujer ${nM}`)
+
+  /* 29 · cambiar el ítem a «ambos» cambia lo que abriría de ahí en más */
+  const { data: itemBeta } = await c.from("plantilla_item").select("id")
+    .eq("plantilla_id", bat.id).eq("estudio_id", beta.id).single()
+  await c.from("plantilla_item").update({ sexo_aplica: "A" }).eq("id", itemBeta.id)
+  const { data: ordVaron2 } = await c.rpc("crear_orden", {
+    p_persona: pVaron.id, p_empresa: empresas[0].id, p_plantilla: bat.id })
+  const nV2 = await cuentaDe(ordVaron2)
+  paso("cambiar el ítem a «ambos» abre el estudio también al varón", nV2 === 2,
+    `${nV} → ${nV2} estudios en una orden nueva de varón`)
+
+  /* 30 · pero la orden de antes no cambió (CP-09) */
+  const nVdespues = await cuentaDe(ordVaron)
+  paso("la orden emitida antes conserva sus estudios (CP-09)", nVdespues === nV,
+    `la orden vieja sigue en ${nVdespues}, no se tocó`)
 
   /* limpieza */
   limpiar()

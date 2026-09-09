@@ -12,6 +12,7 @@ import NuevaOrdenPage from "../features/ordenes/NuevaOrdenPage"
 import AjustarEstudiosPage from "../features/ordenes/AjustarEstudiosPage"
 import CatalogoPage from "../features/catalogo/CatalogoPage"
 import ConceptosPage from "../features/catalogo/ConceptosPage"
+import BateriasPage from "../features/baterias/BateriasPage"
 import EmpresasPage from "../features/recepcion/EmpresasPage"
 import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
 import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
@@ -33,7 +34,7 @@ export default function AppRoutes() {
         <Route path="/admin/personas" element={<LegajoPage />} />
         <Route path="/admin/ordenes" element={<ListadoOrdenesPage />} />
         <Route path="/admin/catalogo" element={<CatalogoPage />} />
-        <Route path="/admin/baterias" element={<Placeholder titulo="Baterías" />} />
+        <Route path="/admin/baterias" element={<BateriasPage />} />
         <Route path="/admin/conceptos" element={<ConceptosPage />} />
         <Route path="/admin/referencias" element={<Placeholder titulo="Valores de Referencia" />} />
         <Route path="/admin/auditoria" element={<Placeholder titulo="Auditoría" />} />
@@ -63,6 +64,8 @@ export default function AppRoutes() {
         <Route path="/recepcion/listado" element={<ListadoOrdenesPage />} />
         {/* RF07: el catálogo lo mantienen el Administrador Y Recepción */}
         <Route path="/recepcion/catalogo" element={<CatalogoPage />} />
+        {/* RF09: las baterías también las mantiene Recepción */}
+        <Route path="/recepcion/baterias" element={<BateriasPage />} />
       </Routes>
     </BrowserRouter>
   )

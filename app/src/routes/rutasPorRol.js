@@ -87,6 +87,7 @@ export const navegacionPorRol = {
       { label: "Pendientes del Día", to: "/recepcion/pendientes", icon: "ListChecks" },
       { label: "Listado de Órdenes", to: "/recepcion/listado", icon: "ClipboardList" },
       { label: "Estudios y Categorías", to: "/recepcion/catalogo", icon: "FlaskConical" },
+      { label: "Baterías", to: "/recepcion/baterias", icon: "Layers" },
     ],
   },
 }
