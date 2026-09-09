@@ -467,6 +467,23 @@ export default function CargaPage() {
             </p>
           )}
 
+          {/* Antes solo había un "1/1" chico y un tilde — no quedaba claro
+              cuándo una categoría estaba realmente terminada. Este aviso es
+              la confirmación explícita: aparece solo, no hace falta tocar
+              nada más para "cerrarla" (el guardado ya es automático por
+              campo), pero deja bien visible que no falta nada acá. */}
+          {catActual.completa && (
+            <div className="mb-4 flex items-center gap-3 rounded-md border-2 border-success/30 bg-success/5 px-4 py-3">
+              <CheckCircle2 size={20} className="shrink-0 text-success" />
+              <div>
+                <p className="text-sm font-medium text-success">Categoría completa</p>
+                <p className="text-xs text-ink-soft">
+                  Ya cargaste los {catActual.total} estudios de {catActual.nombre}. No falta nada más acá.
+                </p>
+              </div>
+            </div>
+          )}
+
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="rounded-md bg-ink-soft/5 text-xs font-semibold text-ink">
