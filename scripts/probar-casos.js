@@ -136,7 +136,12 @@ async function crearUsuarios() {
 async function borrarUsuarios() {
   for (const u of USUARIOS) {
     if (!u.authId) continue
-    sql(`DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE auth_id='${u.authId}');
+    sql(`
+    -- La auditoría referencia al usuario y no se puede borrar desde la
+    -- aplicación: eso es correcto —en la clínica los usuarios se desactivan,
+    -- no se borran— pero una prueba tiene que poder limpiar lo suyo. Se hace
+    -- por psql, como el operador de la base, y sólo de sus propios usuarios.
+    DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE auth_id='${u.authId}');
          DELETE FROM usuario WHERE auth_id='${u.authId}';`)
     await fetch(`${API}/auth/v1/admin/users/${u.authId}`, {
       method: "DELETE",
@@ -358,6 +363,49 @@ caso("CP-21", "Ni el Administrador ni Recepción ni anon pueden fijar la aptitud
   return fallas.length
     ? { ok: false, detalle: fallas.join("; ") }
     : { ok: true, detalle: "los tres rebotan por rol, antes de mirar la regla de negocio" }
+})
+
+/* --- RF27 / RNF-11 · la auditoría dice QUIÉN, y no se puede tocar --- */
+/* El caso viejo comprobaba que la fila apareciera y que nadie pudiera
+   borrarla. Pasaba igual con usuario_id en NULL: 10.454 registros sin
+   un solo nombre. Ahora se comprueba lo que RF27 pide de verdad. */
+caso("RF27", "La auditoría registra quién, y ni el Administrador la borra", async (ctx) => {
+  const fallas = []
+
+  /* un cambio sensible hecho por recepción */
+  const r = await pedir(`/rest/v1/persona?id=eq.${ctx.persona_m}`, {
+    token: sesion.recep, metodo: "PATCH", cuerpo: { nombre: "MUJER EDITADA" },
+    prefer: "return=representation" })
+  if (r.estado >= 400) return { ok: false, detalle: `no pude cambiar la persona: ${porQue(r)}` }
+
+  /* el administrador lo ve, con nombre y apellido */
+  const a = await pedir(
+    `/rest/v1/auditoria?tabla=eq.persona&registro_id=eq.${ctx.persona_m}` +
+    "&campo=eq.nombre&select=campo,valor_anterior,valor_nuevo,usuario:usuario_id(usuario)" +
+    "&order=id.desc&limit=1",
+    { token: sesion.admin })
+  const fila = a.datos?.[0]
+  if (!fila) fallas.push("el cambio no quedó registrado")
+  else {
+    if (!fila.usuario) fallas.push("quedó registrado pero SIN usuario")
+    else if (!fila.usuario.usuario.includes("recep"))
+      fallas.push(`lo atribuyó a ${fila.usuario.usuario}`)
+    if (fila.valor_nuevo !== "MUJER EDITADA") fallas.push("no guardó el valor nuevo")
+  }
+
+  /* recepción no puede leerla */
+  const leer = await pedir("/rest/v1/auditoria?select=id&limit=1", { token: sesion.recep })
+  if ((leer.datos ?? []).length > 0) fallas.push("recepción puede leer la auditoría")
+
+  /* y el administrador no puede borrarla */
+  const borrar = await pedir(`/rest/v1/auditoria?id=eq.${fila?.id ?? 0}`, {
+    token: sesion.admin, metodo: "DELETE", prefer: "return=representation" })
+  if (borrar.estado < 400 && (borrar.datos ?? []).length > 0)
+    fallas.push("el Administrador pudo borrar una fila de auditoría")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: `registrado a nombre de ${fila.usuario.usuario}; recepción no la lee y el admin no la borra` }
 })
 
 /* --- CP-22 ★ · el protocolo, y el cierre ---------------------------- */

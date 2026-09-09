@@ -60,6 +60,11 @@ function limpiar() {
     DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
+    -- La auditoría referencia al usuario y no se puede borrar desde la
+    -- aplicación: eso es correcto —en la clínica los usuarios se desactivan,
+    -- no se borran— pero una prueba tiene que poder limpiar lo suyo. Se hace
+    -- por psql, como el operador de la base, y sólo de sus propios usuarios.
+    DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');
     DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');
     DELETE FROM usuario     WHERE usuario LIKE '${MARCA}%';
   `)

@@ -14,6 +14,7 @@ import CatalogoPage from "../features/catalogo/CatalogoPage"
 import ConceptosPage from "../features/catalogo/ConceptosPage"
 import BateriasPage from "../features/baterias/BateriasPage"
 import PendientesPage from "../features/carga/PendientesPage"
+import AuditoriaPage from "../features/auditoria/AuditoriaPage"
 import EmpresasPage from "../features/recepcion/EmpresasPage"
 import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
 import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
@@ -38,7 +39,7 @@ export default function AppRoutes() {
         <Route path="/admin/baterias" element={<BateriasPage />} />
         <Route path="/admin/conceptos" element={<ConceptosPage />} />
         <Route path="/admin/referencias" element={<Placeholder titulo="Valores de Referencia" />} />
-        <Route path="/admin/auditoria" element={<Placeholder titulo="Auditoría" />} />
+        <Route path="/admin/auditoria" element={<AuditoriaPage />} />
 
         {/* Profesionales — G5, G6 */}
         <Route path="/bandeja" element={<BandejaPage />} />
