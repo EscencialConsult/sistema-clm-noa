@@ -133,7 +133,24 @@ async function crearUsuarios() {
   }
 }
 
+async function borrarCuentasSueltas() {
+  /* Las que crea crear_usuario_completo no pasan por crearUsuarios, así
+     que no están en USUARIOS: se buscan por el prefijo de la marca. */
+  const todas = await fetch(`${API}/auth/v1/admin/users`, {
+    headers: { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` },
+  }).then((r) => r.json()).catch(() => null)
+  for (const u of todas?.users ?? []) {
+    if (u.email?.startsWith(MARCA.toLowerCase())) {
+      await fetch(`${API}/auth/v1/admin/users/${u.id}`, {
+        method: "DELETE",
+        headers: { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` },
+      })
+    }
+  }
+}
+
 async function borrarUsuarios() {
+  await borrarCuentasSueltas()
   for (const u of USUARIOS) {
     if (!u.authId) continue
     sql(`
@@ -141,7 +158,7 @@ async function borrarUsuarios() {
     -- aplicación: eso es correcto —en la clínica los usuarios se desactivan,
     -- no se borran— pero una prueba tiene que poder limpiar lo suyo. Se hace
     -- por psql, como el operador de la base, y sólo de sus propios usuarios.
-    DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE auth_id='${u.authId}');
+    DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE auth_id='${u.authId}');
          DELETE FROM usuario WHERE auth_id='${u.authId}';`)
     await fetch(`${API}/auth/v1/admin/users/${u.authId}`, {
       method: "DELETE",
@@ -158,6 +175,14 @@ function limpiarDatos() {
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
     DELETE FROM estudio        WHERE nombre LIKE '${MARCA}%';
     DELETE FROM categoria      WHERE nombre LIKE '${MARCA}%';
+    -- Los usuarios van acá y no sólo en borrarUsuarios(), que únicamente
+    -- conoce los que creó él. El caso RF01 crea uno POR LA APLICACIÓN, con
+    -- crear_usuario_completo: si no se limpia, la corrida siguiente choca
+    -- con el índice único y falla por basura de la anterior.
+    -- La auditoría primero: referencia al usuario y no deja borrarlo.
+    DELETE FROM auditoria      WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+    DELETE FROM usuario_rol    WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+    DELETE FROM usuario        WHERE usuario ILIKE '${MARCA}%';
   `)
 }
 
@@ -363,6 +388,54 @@ caso("CP-21", "Ni el Administrador ni Recepción ni anon pueden fijar la aptitud
   return fallas.length
     ? { ok: false, detalle: fallas.join("; ") }
     : { ok: true, detalle: "los tres rebotan por rol, antes de mirar la regla de negocio" }
+})
+
+/* --- RF01 · el alta de usuarios, sin abrir una terminal -------------- */
+/* Crear una cuenta necesitaba la clave de servicio, que no puede viajar
+   al navegador. crear_usuario_completo (017) lo hace dentro de la base.
+   Lo único que prueba que funciona es que el usuario creado ENTRE. */
+caso("RF01", "El Administrador crea un usuario que después puede entrar", async () => {
+  const usuario = `${MARCA}_alta`.toLowerCase()
+  const clave = "Prueba-98765"
+  const fallas = []
+
+  /* recepción no puede */
+  const r2 = await rpc("crear_usuario_completo",
+    { p_usuario: usuario + "x", p_nombre: "X", p_rol: "R6", p_password: clave }, sesion.recep)
+  if (r2.estado < 400) fallas.push("recepción pudo crear un usuario")
+
+  /* el administrador sí */
+  const r1 = await rpc("crear_usuario_completo",
+    { p_usuario: usuario, p_nombre: "Alta de prueba", p_rol: "R6", p_password: clave }, sesion.admin)
+  if (typeof r1.datos !== "number") return { ok: false, detalle: `no lo creó: ${porQue(r1)}` }
+
+  /* y ese usuario entra de verdad */
+  let token = null
+  try {
+    const resp = await fetch(`${API}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: env.ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: `${usuario}@cmlnoa.local`, password: clave }),
+    })
+    token = (await resp.json()).access_token ?? null
+  } catch { token = null }
+  if (!token) fallas.push("se creó pero no puede iniciar sesión")
+
+  /* nace obligado a cambiar la contraseña */
+  const u = await pedir(`/rest/v1/usuario?usuario=eq.${usuario}&select=debe_cambiar,usuario_rol(rol_codigo)`,
+    { token: sesion.admin })
+  const fila = u.datos?.[0]
+  if (!fila?.debe_cambiar) fallas.push("no nace obligado a cambiar la contraseña")
+  if (fila?.usuario_rol?.[0]?.rol_codigo !== "R6") fallas.push("no quedó con el rol pedido")
+
+  /* un médico laboral sin profesional no se puede crear: no podría firmar */
+  const sinMat = await rpc("crear_usuario_completo",
+    { p_usuario: usuario + "med", p_nombre: "Med", p_rol: "R3", p_password: clave }, sesion.admin)
+  if (sinMat.estado < 400) fallas.push("dejó crear un médico laboral sin matrícula")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "creado por el admin, entra, nace con la clave por cambiar; recepción no puede y un R3 sin matrícula tampoco" }
 })
 
 /* --- RF27 / RNF-11 · la auditoría dice QUIÉN, y no se puede tocar --- */

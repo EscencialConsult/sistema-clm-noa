@@ -64,9 +64,9 @@ function limpiar() {
     -- aplicación: eso es correcto —en la clínica los usuarios se desactivan,
     -- no se borran— pero una prueba tiene que poder limpiar lo suyo. Se hace
     -- por psql, como el operador de la base, y sólo de sus propios usuarios.
-    DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');
-    DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');
-    DELETE FROM usuario     WHERE usuario LIKE '${MARCA}%';
+    DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+    DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+    DELETE FROM usuario     WHERE usuario ILIKE '${MARCA}%';
   `)
 }
 
