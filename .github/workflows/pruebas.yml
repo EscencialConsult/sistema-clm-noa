@@ -1,0 +1,169 @@
+# =====================================================================
+#  Las pruebas corren solas en cada push y en cada pull request.
+#
+#  Por qué:
+#
+#  Hoy las baterías sólo corren si alguien se acuerda de correrlas. En un
+#  solo día encontramos dos cosas que esto habría cazado sin que nadie
+#  hiciera nada:
+#
+#    - Una fusión que git dio por limpia y dejó dos pantallas importando
+#      un archivo que el otro había borrado. El build quedaba roto y la
+#      fusión no avisó, porque nadie tocó las mismas líneas.
+#
+#    - Un .sh que al clonarse en Windows quedaba con "#!/bin/bash\r" y
+#      hacía fallar la instalación entera. No se veía en la máquina donde
+#      se escribió: sólo al clonar de cero.
+#
+#  Corre en una base recién instalada, igual que la de la clínica el día
+#  que se instala. Por eso además prueba la instalación en sí: si el
+#  script de migraciones se rompe, esto se pone en rojo.
+# =====================================================================
+
+name: Pruebas
+
+on:
+  push:
+    branches: [main, estructura]
+  pull_request:
+  workflow_dispatch:      # para poder correrlo a mano desde GitHub
+
+jobs:
+  # -------------------------------------------------------------------
+  # Rápido: lo que se puede saber sin levantar nada. Da el aviso en un
+  # minuto en vez de en quince.
+  # -------------------------------------------------------------------
+  compila:
+    name: Compila y no quedó nada colgado
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Instalar dependencias
+        working-directory: app
+        run: npm ci
+
+      - name: Compilar
+        working-directory: app
+        run: npm run build
+
+      # Lo que se monta adentro de un contenedor Linux tiene que tener
+      # finales de línea LF. Con CRLF, "#!/bin/bash\r" no existe como
+      # programa y la instalación falla con un mensaje que no explica
+      # nada. El .gitattributes lo previene; esto comprueba que siga así.
+      #
+      # Va en Node y no en un grep: la primera versión de este control
+      # era `grep -lU $'\r'` y en Windows marcaba como rotos cuatro
+      # archivos que estaban perfectos. Además así se puede correr en la
+      # misma máquina donde uno trabaja, y no sólo acá.
+      - name: Nada con CRLF entra al contenedor
+        run: node scripts/verificar-fin-de-linea.js
+
+  # -------------------------------------------------------------------
+  # Completo: levanta el sistema entero desde cero y le corre encima las
+  # mismas baterías que se corren a mano.
+  # -------------------------------------------------------------------
+  sistema:
+    name: El sistema entero, desde cero
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generar las claves
+        run: node scripts/generar-claves.js
+        env:
+          SITE_URL: http://localhost
+
+      - name: Levantar
+        run: docker compose up -d
+
+      - name: Esperar a que la base acepte conexiones
+        run: |
+          for i in $(seq 1 60); do
+            if docker compose exec -T db pg_isready -U postgres > /dev/null 2>&1; then
+              echo "La base responde."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "La base no arrancó."
+          docker compose logs db | tail -60
+          exit 1
+
+      # Si las migraciones fallaron, la base queda a medio armar y todo
+      # lo que sigue da errores raros. Mejor cortar acá, con el motivo.
+      - name: Las migraciones corrieron enteras
+        run: |
+          if ! docker compose logs db | grep -q "Control OK"; then
+            echo "No apareció 'Control OK': la carga inicial falló."
+            docker compose logs db | tail -80
+            exit 1
+          fi
+          docker compose logs db | grep -E "NOTICE:.*(tablas=|Control OK)"
+
+      # La API tarda más que la base: Kong, PostgREST y Storage arrancan
+      # después. Sin esta espera, crear-bucket.js falla de a ratos y el
+      # CI se vuelve un ruido que la gente aprende a ignorar.
+      - name: Esperar a que responda la API
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:8000/storage/v1/status ||
+               curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/rest/v1/ | grep -qE '^(200|401|404)$'; then
+              echo "La API responde."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "La API no respondió."
+          docker compose logs kong rest storage | tail -60
+          exit 1
+
+      - name: Crear el bucket de informes
+        run: node scripts/crear-bucket.js
+
+      # Instalación e actualización tienen que dejar la base en el mismo
+      # estado. Si acá falta alguna migración, es que los dos caminos
+      # divergieron.
+      - name: Instalar y actualizar dejan lo mismo
+        run: node scripts/migrar.js --ver
+
+      - name: Migraciones bien formadas
+        run: node scripts/verificar-migraciones.js
+
+      - name: El frontend y la base dicen lo mismo
+        run: node scripts/verificar-frontend.js
+
+      - name: Casos bloqueantes
+        run: node scripts/probar-casos.js
+
+      - name: Permisos por rol
+        working-directory: app
+        run: node scripts/probar-permisos.mjs
+
+      - name: Aptitud
+        working-directory: app
+        run: node scripts/probar-aptitud.mjs
+
+      - name: Alta de orden
+        working-directory: app
+        run: node scripts/probar-alta-orden.mjs
+
+      - name: Informes de terceros
+        working-directory: app
+        run: node scripts/probar-terceros.mjs
+
+      # Cuando algo se pone en rojo, esto es lo primero que se mira.
+      - name: Si algo falló, los registros
+        if: failure()
+        run: docker compose logs --tail 120
