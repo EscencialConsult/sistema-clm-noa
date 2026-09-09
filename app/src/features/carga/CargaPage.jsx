@@ -21,7 +21,7 @@ import {
 import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
 import { authService } from "../auth/services/authService"
-import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
+import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ROL } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
 import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
 import { imprimirProtocolo } from "../aptitud/imprimir/Protocolo"
@@ -254,7 +254,12 @@ export default function CargaPage() {
 
         <div className="ml-auto flex gap-2">
           <MenuImpreso etiqueta="Hoja de ruta" onImprimir={() => imprimirHojaDeRuta(orden.id)} />
-          {orden.estado === "INFORMADA" && (
+          {/* RNF-17 "0 opciones ajenas visibles": el protocolo es el
+              informe integral que arma el médico laboral con todo el
+              flujo consolidado — un profesional de una sola categoría
+              (rayos, laboratorio, etc.) no tiene que ver este botón,
+              aunque la orden ya esté informada. */}
+          {orden.estado === "INFORMADA" && sesion?.roles?.includes(ROL.MEDICO_LABORAL) && (
             <MenuImpreso
               etiqueta={`Protocolo (${ETIQUETA_APTITUD[orden.aptitud]})`}
               destacado
