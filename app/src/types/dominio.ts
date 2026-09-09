@@ -21,8 +21,10 @@ export type Aptitud = (typeof APTITUD)[number]
 export const TIPO_EXAMEN = ["PRELABORAL", "PERIODICO", "EGRESO"] as const
 export type TipoExamen = (typeof TIPO_EXAMEN)[number]
 
-/** orden_estudio.estado — DERIVADO: fue a un laboratorio externo (RF19) */
-export const ESTADO_ESTUDIO = ["PENDIENTE", "DERIVADO", "CARGADO"] as const
+/** orden_estudio.estado
+ *  DERIVADO: fue a un laboratorio externo (RF19)
+ *  DEVUELTO: el médico laboral no acordó y lo mandó de vuelta (RF21) */
+export const ESTADO_ESTUDIO = ["PENDIENTE", "DERIVADO", "CARGADO", "DEVUELTO"] as const
 export type EstadoEstudio = (typeof ESTADO_ESTUDIO)[number]
 
 /** persona.sexo — define qué estudios se agregan y contra qué referencia se compara */
@@ -72,6 +74,13 @@ export const ETIQUETA_APTITUD: Record<Aptitud, string> = {
   PENDIENTE: "Pendiente",
   APTO: "Apto",
   NO_APTO: "No apto",
+}
+
+export const ETIQUETA_ESTADO_ESTUDIO: Record<EstadoEstudio, string> = {
+  PENDIENTE: "Pendiente",
+  DERIVADO: "Derivado",
+  CARGADO: "Cargado",
+  DEVUELTO: "Devuelto",
 }
 
 export const ETIQUETA_ROL: Record<Rol, string> = {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Printer, AlertTriangle, ShieldCheck, ShieldX } from "lucide-react"
+import { ArrowLeft, Printer, AlertTriangle, ShieldCheck, ShieldX, Undo2, X } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { aptitudService } from "./services/aptitudService"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO } from "../../types/dominio"
@@ -48,6 +48,8 @@ export default function DictamenPage() {
   const [preexistencias, setPreexistencias] = useState("")
   const [incapacidad, setIncapacidad] = useState("")
   const [observaciones, setObservaciones] = useState("")
+  const [devolviendo, setDevolviendo] = useState(null)
+  const [motivo, setMotivo] = useState("")
 
   async function recargar() {
     setCargando(true)
@@ -95,6 +97,21 @@ export default function DictamenPage() {
       setError(e.message)
     } finally {
       setGuardando(false)
+    }
+  }
+
+  /* RF21 · devolver con motivo. La orden vuelve sola a EN_CURSO: eso lo
+     hace el trigger de la base, no esta pantalla. */
+  async function devolver(e) {
+    e.preventDefault()
+    setError(null)
+    try {
+      await aptitudService.devolverEstudio(devolviendo.id, motivo)
+      setDevolviendo(null)
+      setMotivo("")
+      await recargar()
+    } catch (err) {
+      setError(err.message)
     }
   }
 
@@ -223,15 +240,28 @@ export default function DictamenPage() {
                   {c.items.map((i) => (
                     <span
                       key={i.id}
-                      className={
-                        i.estado !== "CARGADO"
+                      className={`flex items-center gap-1 ${
+                        i.estado === "DEVUELTO"
                           ? "text-danger"
-                          : i.fuera_de_rango
-                            ? "text-warning"
-                            : "text-ink-soft"
-                      }
+                          : i.estado !== "CARGADO"
+                            ? "text-danger"
+                            : i.fuera_de_rango
+                              ? "text-warning"
+                              : "text-ink-soft"
+                      }`}
+                      title={i.motivo_devolucion ? `Devuelto: ${i.motivo_devolucion}` : undefined}
                     >
                       {i.estudio.nombre}: {i.detalle || i.resultado || "sin cargar"}
+                      {i.estado === "DEVUELTO" && <span className="text-[10px]">· devuelto</span>}
+                      {!informada && i.estado === "CARGADO" && (
+                        <button
+                          onClick={() => { setDevolviendo(i); setMotivo("") }}
+                          title="Devolver al profesional que lo cargó"
+                          className="text-ink-soft hover:text-danger"
+                        >
+                          <Undo2 size={12} />
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -325,6 +355,43 @@ export default function DictamenPage() {
           </div>
         </div>
       </div>
+      {devolviendo && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-ink/30 p-4">
+          <form onSubmit={devolver} className="w-full max-w-lg rounded-card border-2 border-ink-soft/15 bg-white p-5 shadow-lg">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-medium text-ink">
+                Devolver {devolviendo.estudio.nombre}
+              </p>
+              <button type="button" onClick={() => setDevolviendo(null)} className="text-ink-soft hover:text-ink">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-ink-soft">
+              Vuelve a la bandeja de quien lo cargó y la orden deja de estar
+              completa. El motivo es obligatorio: es lo único que le dice qué
+              corregir.
+            </p>
+            <textarea
+              autoFocus
+              rows={3}
+              value={motivo}
+              onChange={(e) => setMotivo(e.target.value)}
+              placeholder="El valor no coincide con el informe adjunto"
+              className="mb-4 w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary"
+            />
+            <div className="flex gap-2">
+              <button type="submit" disabled={!motivo.trim()}
+                className="rounded-md bg-danger px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-40">
+                Devolver
+              </button>
+              <button type="button" onClick={() => setDevolviendo(null)}
+                className="rounded-md border-2 border-ink-soft/20 px-4 py-2 text-sm text-ink-soft">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </AppShell>
   )
 }

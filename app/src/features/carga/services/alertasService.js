@@ -11,15 +11,14 @@ import { authService } from "../../auth/services/authService"
    De las tres de la maqueta quedó una. Las otras dos no se pueden
    sostener con lo que hoy guarda el sistema:
 
-   · «estudios devueltos». Cuando el médico laboral devuelve un estudio
-     (CP-18) vuelve a quedar PENDIENTE, igual que uno que nunca se cargó.
-     La base no distingue una cosa de la otra, así que una alerta de
-     devueltos contaría cualquier pendiente. Para tenerla habría que
-     guardar la devolución, y eso no está pedido en el prelaboral.
-
    · «informes de terceros pendientes de validar». Los informes externos
      se suben al bucket, pero no hay un estado «esperando validación»
-     que se pueda consultar. Mismo caso.
+     que se pueda consultar.
+
+   La de «estudios devueltos» SÍ está, desde la migración 018. Hasta
+   entonces un estudio devuelto volvía a quedar PENDIENTE, igual que uno
+   que nunca se cargó, y contarlos habría sido contar cualquier
+   pendiente. Ahora DEVUELTO es un estado propio.
 
    Marcela llegó a la misma conclusión por su lado (rama tarea1) y la
    escribió igual de claro: se omiten en vez de inventar un número.
@@ -51,6 +50,21 @@ export const alertasService = {
         id: "al-p-mi-area",
         tipo: "pendiente",
         texto: `${mios} ${mios === 1 ? "estudio pendiente" : "estudios pendientes"} de tu área`,
+      })
+    }
+
+    /* --- lo que el médico me devolvió (RF21) --- */
+    const { count: devueltos, error: eDev } = await supabase
+      .from("orden_estudio")
+      .select("*", { count: "exact", head: true })
+      .eq("estado", "DEVUELTO")
+    if (eDev) throw new Error(eDev.message)
+
+    if (devueltos > 0) {
+      alertas.push({
+        id: "al-p-devuelto",
+        tipo: "devuelto",
+        texto: `${devueltos} ${devueltos === 1 ? "estudio devuelto" : "estudios devueltos"} para revisar`,
       })
     }
 

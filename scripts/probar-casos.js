@@ -481,6 +481,92 @@ caso("RF27", "La auditoría registra quién, y ni el Administrador la borra", as
     : { ok: true, detalle: `registrado a nombre de ${fila.usuario.usuario}; recepción no la lee y el admin no la borra` }
 })
 
+/* --- RF05 · corregir los datos de una persona ---------------------- */
+/* «Recepción da de alta Y MODIFICA.» Sólo estaba el alta: un apellido
+   mal tipeado no tenía dónde corregirse. */
+caso("RF05", "Recepción corrige los datos de una persona ya cargada", async (ctx) => {
+  const fallas = []
+
+  const r = await pedir(`/rest/v1/persona?id=eq.${ctx.persona_h}`, {
+    token: sesion.recep, metodo: "PATCH",
+    cuerpo: { apellido: `${MARCA} CORREGIDO`, telefono: "381-555-7777" },
+    prefer: "return=representation" })
+  if (r.estado >= 400) return { ok: false, detalle: `no dejó corregir: ${porQue(r)}` }
+  if (r.datos?.[0]?.apellido !== `${MARCA} CORREGIDO`) fallas.push("no guardó el apellido")
+  if (r.datos?.[0]?.telefono !== "381-555-7777") fallas.push("no guardó el teléfono")
+
+  /* el cambio queda en la auditoría, con quién */
+  const a = await pedir(
+    `/rest/v1/auditoria?tabla=eq.persona&registro_id=eq.${ctx.persona_h}&campo=eq.apellido&select=valor_nuevo,usuario:usuario_id(usuario)&order=id.desc&limit=1`,
+    { token: sesion.admin })
+  const fila = a.datos?.[0]
+  if (!fila) fallas.push("el cambio no quedó en la auditoría")
+  else if (!fila.usuario?.usuario?.includes("recep")) fallas.push("la auditoría no dice quién lo cambió")
+
+  /* no se puede pisar el documento de otra persona */
+  const choque = await pedir(`/rest/v1/persona?id=eq.${ctx.persona_h}`, {
+    token: sesion.recep, metodo: "PATCH", cuerpo: { nro_doc: "90000101" },
+    prefer: "return=representation" })
+  if (choque.estado < 400) fallas.push("dejó poner un documento que ya tiene otra persona")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "corrige apellido y teléfono, queda en la auditoría, y el documento repetido rebota" }
+})
+
+/* --- CP-18 · devolver un estudio al profesional (RF21) -------------- */
+/* No estaba implementado en ninguna parte. La orden retrocede sola a
+   EN_CURSO y no se puede informar hasta que vuelva. */
+caso("CP-18", "El médico laboral devuelve un estudio y la orden retrocede", async (ctx) => {
+  const fallas = []
+
+  /* dejar la orden completa */
+  await pedir(`/rest/v1/orden_estudio?orden_id=eq.${ctx.orden_h}&estado=neq.CARGADO`, {
+    token: sesion.admin, metodo: "PATCH",
+    cuerpo: { estado: "CARGADO", resultado: "NORMAL" }, prefer: "return=representation" })
+
+  const antes = await pedir(`/rest/v1/orden?id=eq.${ctx.orden_h}&select=estado`, { token: sesion.admin })
+  if (antes.datos?.[0]?.estado !== "COMPLETA") fallas.push(`la orden quedó en ${antes.datos?.[0]?.estado}, esperaba COMPLETA`)
+
+  const uno = await pedir(
+    `/rest/v1/orden_estudio?orden_id=eq.${ctx.orden_h}&estado=eq.CARGADO&select=id&limit=1`,
+    { token: sesion.admin })
+  const item = uno.datos?.[0]?.id
+  if (!item) return { ok: false, detalle: "no encontré un estudio cargado para devolver" }
+
+  /* sin motivo no se puede */
+  const sinMotivo = await rpc("devolver_estudio", { p_item: item, p_motivo: "  " }, sesion.medico)
+  if (sinMotivo.estado < 400) fallas.push("dejó devolver sin motivo")
+
+  /* recepción tampoco */
+  const otroRol = await rpc("devolver_estudio", { p_item: item, p_motivo: "porque sí" }, sesion.recep)
+  if (otroRol.estado < 400) fallas.push("recepción pudo devolver un estudio")
+
+  /* el médico sí */
+  const ok = await rpc("devolver_estudio",
+    { p_item: item, p_motivo: "El valor no coincide con el informe adjunto" }, sesion.medico)
+  if (ok.estado >= 400) return { ok: false, detalle: `no pudo devolver: ${porQue(ok)}` }
+
+  const despues = await pedir(
+    `/rest/v1/orden?id=eq.${ctx.orden_h}&select=estado`, { token: sesion.admin })
+  if (despues.datos?.[0]?.estado !== "EN_CURSO") fallas.push(`la orden quedó en ${despues.datos?.[0]?.estado}, esperaba EN_CURSO`)
+
+  /* el profesional lo ve, con el motivo */
+  const pend = await pedir(
+    `/rest/v1/v_pendientes?orden_id=eq.${ctx.orden_h}&select=estado_estudio,motivo_devolucion`,
+    { token: sesion.labo })
+  const dev = (pend.datos ?? []).find((x) => x.estado_estudio === "DEVUELTO")
+  if (!dev) fallas.push("el devuelto no aparece en los pendientes del profesional")
+  else if (!dev.motivo_devolucion?.includes("no coincide")) fallas.push("no se ve el motivo")
+
+  /* y ahora no se puede informar */
+  const informar = await rpc("emitir_protocolo", { p_orden: ctx.orden_h, p_aptitud: "APTO" }, sesion.medico)
+  if (informar.estado < 400) fallas.push("informó una orden con un estudio devuelto")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "COMPLETA → EN_CURSO; el profesional lo ve con el motivo y ya no se puede informar" }
+})
 /* --- CP-22 ★ · el protocolo, y el cierre ---------------------------- */
 caso("CP-22", "Emitido el protocolo, salen las dos matrículas y los resultados no se editan", async (ctx) => {
   // completar lo que falta: el Administrador puede corregir cualquier categoría

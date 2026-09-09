@@ -1,9 +1,9 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, Printer, AlertTriangle, FolderOpen } from "lucide-react"
+import { Search, Printer, AlertTriangle, FolderOpen, Pencil, X } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { aptitudService } from "../aptitud/services/aptitudService"
-import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
+import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, TIPO_DOC } from "../../types/dominio"
 import { imprimirProtocolo } from "../aptitud/imprimir/Protocolo"
 
 /* ---------------------------------------------------------------------
@@ -32,6 +32,7 @@ export default function LegajoPage() {
   const [buscando, setBuscando] = useState(false)
   const [error, setError] = useState(null)
   const [buscoAlgunaVez, setBuscoAlgunaVez] = useState(false)
+  const [editando, setEditando] = useState(null)
 
   async function buscar(e) {
     e?.preventDefault()
@@ -54,6 +55,26 @@ export default function LegajoPage() {
     setError(null)
     try {
       setOrdenes(await aptitudService.getLegajo(p.id))
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  /* RF05 · «da de alta Y MODIFICA». Un apellido mal tipeado o un
+     teléfono que cambió no tenían dónde corregirse. */
+  async function guardar(e) {
+    e.preventDefault()
+    setError(null)
+    try {
+      const g = await aptitudService.guardarPersona(editando)
+      const conFormato = {
+        ...g,
+        apellido_nombre: g.apellido + ', ' + g.nombre,
+        documento: g.tipo_doc + ' ' + g.nro_doc,
+      }
+      setEditando(null)
+      setElegida(conFormato)
+      setPersonas((ps) => ps.map((x) => (x.id === g.id ? conFormato : x)))
     } catch (err) {
       setError(err.message)
     }
@@ -123,12 +144,25 @@ export default function LegajoPage() {
             </div>
           ) : (
             <>
-              <div className="mb-4">
-                <p className="text-sm font-medium text-ink">{elegida.apellido_nombre}</p>
-                <p className="text-xs text-ink-soft">
-                  {elegida.documento} · {elegida.sexo === "F" ? "Femenino" : "Masculino"}
-                  {elegida.fecha_nac && ` · nacida/o el ${elegida.fecha_nac}`}
-                </p>
+              <div className="mb-4 flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-ink">{elegida.apellido_nombre}</p>
+                  <p className="text-xs text-ink-soft">
+                    {elegida.documento} · {elegida.sexo === "F" ? "Femenino" : "Masculino"}
+                    {elegida.fecha_nac && ` · nacida/o el ${elegida.fecha_nac}`}
+                  </p>
+                  {(elegida.telefono || elegida.domicilio) && (
+                    <p className="text-xs text-ink-soft">
+                      {[elegida.telefono, elegida.domicilio].filter(Boolean).join(" · ")}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setEditando({ ...elegida })}
+                  className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/15 px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-primary/50 hover:text-primary"
+                >
+                  <Pencil size={13} /> Corregir datos
+                </button>
               </div>
 
               {ordenes.length === 0 ? (
@@ -202,6 +236,82 @@ export default function LegajoPage() {
           )}
         </div>
       </div>
+      {editando && (
+        <div className="fixed inset-0 z-30 flex items-center justify-center bg-ink/30 p-4">
+          <form onSubmit={guardar} className="w-full max-w-2xl rounded-card border-2 border-ink-soft/15 bg-white p-5 shadow-lg">
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-sm font-medium text-ink">Corregir datos de la persona</p>
+              <button type="button" onClick={() => setEditando(null)} className="text-ink-soft hover:text-ink">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="mb-3 grid grid-cols-3 gap-3">
+              <div>
+                <label className="mb-1 block text-xs text-ink-soft">Tipo</label>
+                <select value={editando.tipo_doc}
+                  onChange={(e) => setEditando({ ...editando, tipo_doc: e.target.value })}
+                  className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary">
+                  {TIPO_DOC.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <C label="Documento" requerido v={editando.nro_doc} on={(x) => setEditando({ ...editando, nro_doc: x })} />
+              <div>
+                <label className="mb-1 block text-xs text-ink-soft">Sexo</label>
+                <select value={editando.sexo}
+                  onChange={(e) => setEditando({ ...editando, sexo: e.target.value })}
+                  className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary">
+                  <option value="M">Masculino</option>
+                  <option value="F">Femenino</option>
+                </select>
+              </div>
+              <C label="Apellido" requerido v={editando.apellido} on={(x) => setEditando({ ...editando, apellido: x })} />
+              <C label="Nombre" requerido v={editando.nombre} on={(x) => setEditando({ ...editando, nombre: x })} />
+              <C label="Fecha de nacimiento" tipo="date" v={editando.fecha_nac} on={(x) => setEditando({ ...editando, fecha_nac: x })} />
+              <C label="Teléfono" v={editando.telefono} on={(x) => setEditando({ ...editando, telefono: x })} />
+              <C label="Estado civil" v={editando.estado_civil} on={(x) => setEditando({ ...editando, estado_civil: x })} />
+              <C label="Ocupación" v={editando.ocupacion} on={(x) => setEditando({ ...editando, ocupacion: x })} />
+              <div className="col-span-3">
+                <C label="Domicilio" v={editando.domicilio} on={(x) => setEditando({ ...editando, domicilio: x })} />
+              </div>
+            </div>
+
+            <p className="mb-4 rounded-md border-2 border-ink-soft/15 bg-ink-soft/5 px-3 py-2 text-[11px] text-ink-soft">
+              Corregir el sexo o el documento NO reescribe las órdenes ya
+              emitidas: sus estudios se copiaron al crearlas. Y todo cambio queda
+              en la auditoría con tu nombre y la hora.
+            </p>
+
+            <div className="flex gap-2">
+              <button type="submit"
+                disabled={!editando.apellido?.trim() || !editando.nombre?.trim() || !editando.nro_doc?.trim()}
+                className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:opacity-90 disabled:opacity-40">
+                Guardar
+              </button>
+              <button type="button" onClick={() => setEditando(null)}
+                className="rounded-md border-2 border-ink-soft/20 px-4 py-2 text-sm text-ink-soft">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </AppShell>
+  )
+}
+
+function C({ label, v, on, tipo = "text", requerido }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs text-ink-soft">
+        {label} {requerido && <span className="text-danger">*</span>}
+      </label>
+      <input
+        type={tipo}
+        value={v ?? ""}
+        onChange={(e) => on(e.target.value)}
+        className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary"
+      />
+    </div>
   )
 }

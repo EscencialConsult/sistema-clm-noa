@@ -84,7 +84,7 @@ export const aptitudService = {
     const { data, error } = await supabase
       .from("orden_estudio")
       .select(
-        `id, estado, resultado, detalle, observacion, fuera_de_rango,
+        `id, estado, resultado, detalle, observacion, fuera_de_rango, motivo_devolucion,
          estudio:estudio_id ( id, nombre, unidad, ref_h, ref_m, orden,
            categoria:categoria_id ( id, nombre, orden ) )`
       )
@@ -133,6 +133,18 @@ export const aptitudService = {
     if (error) throw new Error(error.message)
   },
 
+  /** Devuelve un estudio al profesional que lo cargó · RF21, CP-18.
+   *  El motivo es obligatorio: sin él, el que lo cargó no sabe qué
+   *  corregir y la devolución no sirve de nada. La orden retrocede sola
+   *  a EN_CURSO — eso lo hace el trigger, no esta llamada. */
+  async devolverEstudio(ordenEstudioId, motivo) {
+    const { error } = await supabase.rpc("devolver_estudio", {
+      p_item: ordenEstudioId,
+      p_motivo: (motivo ?? "").trim(),
+    })
+    if (error) throw new Error(error.message)
+  },
+
   /* ------------------------------------------------------------------
      Legajo · RF02 regla b / CP-03
      El historial de una persona: todas sus órdenes, de la más nueva a
@@ -151,7 +163,7 @@ export const aptitudService = {
 
     const { data, error } = await supabase
       .from("persona")
-      .select("id, tipo_doc, nro_doc, apellido, nombre, sexo, fecha_nac")
+      .select("id, tipo_doc, nro_doc, apellido, nombre, sexo, fecha_nac, estado_civil, telefono, domicilio, ocupacion")
       .or(filtro)
       .order("apellido", { ascending: true })
       .limit(25)
@@ -162,6 +174,54 @@ export const aptitudService = {
       apellido_nombre: `${p.apellido}, ${p.nombre}`,
       documento: `${p.tipo_doc} ${p.nro_doc}`,
     }))
+  },
+
+  /** Corrige los datos de una persona ya cargada · RF05.
+   *
+   *  «Recepción da de alta Y MODIFICA los datos personales del
+   *  trabajador.» Sólo estaba el alta: un apellido mal tipeado o un
+   *  teléfono que cambió no tenían dónde corregirse.
+   *
+   *  El documento se puede corregir —a veces se carga mal— pero la base
+   *  sigue impidiendo que quede repetido. Y el sexo también, porque a
+   *  veces se carga mal: eso no reescribe las órdenes ya emitidas, que
+   *  tienen sus estudios copiados desde que se crearon.
+   *
+   *  Todo cambio de apellido, nombre, sexo, fecha de nacimiento o
+   *  documento queda en la auditoría con quién y cuándo (RF27). */
+  async guardarPersona(persona) {
+    const limpio = (v) => {
+      const t = (v ?? "").toString().trim()
+      return t === "" ? null : t
+    }
+    const { data, error } = await supabase
+      .from("persona")
+      .update({
+        tipo_doc: persona.tipo_doc,
+        nro_doc: limpio(persona.nro_doc),
+        apellido: limpio(persona.apellido)?.toUpperCase(),
+        nombre: limpio(persona.nombre)?.toUpperCase(),
+        sexo: persona.sexo,
+        fecha_nac: limpio(persona.fecha_nac),
+        estado_civil: limpio(persona.estado_civil),
+        telefono: limpio(persona.telefono),
+        domicilio: limpio(persona.domicilio),
+        ocupacion: limpio(persona.ocupacion),
+      })
+      .eq("id", persona.id)
+      .select()
+      .single()
+
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error("Ya hay otra persona con ese documento.")
+      }
+      if (error.code === "42501") {
+        throw new Error("El padrón lo mantienen Recepción y el Administrador (RF05).")
+      }
+      throw new Error(error.message)
+    }
+    return data
   },
 
   async getLegajo(personaId) {

@@ -41,7 +41,7 @@ export default function PendientesPage() {
     try {
       const { data, error: e } = await supabase
         .from("v_pendientes")
-        .select("numero, fecha, paciente, empresa, categoria, estudio, rol_responsable, orden_id, estudio_id")
+        .select("numero, fecha, paciente, empresa, categoria, estudio, rol_responsable, orden_id, estudio_id, estado_estudio, motivo_devolucion")
         .order("fecha", { ascending: true })
         .order("numero", { ascending: true })
       if (e) throw new Error(e.message)
@@ -167,9 +167,19 @@ export default function PendientesPage() {
             <ul className="flex flex-wrap gap-1.5">
               {o.estudios.map((e) => (
                 <li key={`${e.orden_id}-${e.estudio_id}`}>
-                  <span className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/15 px-2.5 py-1 text-xs text-ink">
+                  <span
+                    title={e.motivo_devolucion ? `Devuelto: ${e.motivo_devolucion}` : undefined}
+                    className={`flex items-center gap-1.5 rounded-md border-2 px-2.5 py-1 text-xs ${
+                      e.estado_estudio === "DEVUELTO"
+                        ? "border-danger/30 bg-danger/5 text-danger"
+                        : "border-ink-soft/15 text-ink"
+                    }`}
+                  >
                     {e.estudio}
                     <span className="text-[10px] text-ink-soft">{e.categoria}</span>
+                    {e.estado_estudio === "DEVUELTO" && (
+                      <span className="text-[10px] font-medium">· devuelto</span>
+                    )}
                   </span>
                 </li>
               ))}
