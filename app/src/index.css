@@ -87,41 +87,41 @@ body {
 .hoja-impresion .imp-ph {
   text-align: center;
   border-bottom: 1.5pt solid #000;
-  padding-bottom: 3.5mm;
-  margin-bottom: 6mm;
+  padding-bottom: 1.5mm;
+  margin-bottom: 3mm;
   position: relative;
 }
 .hoja-impresion .imp-logo {
-  height: 17mm;
+  height: 10mm;
   width: auto;
   display: inline-block;
 }
 .hoja-impresion .imp-ph .imp-s {
-  font-size: 9pt;
-  margin-top: 1.5mm;
+  font-size: 7.5pt;
+  margin-top: 0.5mm;
   color: #333;
 }
 .hoja-impresion .imp-num {
   position: absolute;
   top: 0;
   right: 0;
-  font-size: 11pt;
+  font-size: 10pt;
   font-weight: 700;
 }
 .hoja-impresion .imp-pt {
   text-align: center;
-  font-size: 13pt;
+  font-size: 12pt;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  margin: 4mm 0 0;
+  letter-spacing: 0.1em;
+  margin: 1.5mm 0 0;
 }
 .hoja-impresion .imp-pd {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2mm 8mm;
-  font-size: 10pt;
-  padding: 3mm 4mm;
-  margin-bottom: 5mm;
+  gap: 0.5mm 8mm;
+  font-size: 9pt;
+  padding: 1.5mm 3mm;
+  margin-bottom: 3mm;
   border: 0.75pt solid #ccc;
   border-radius: 2pt;
   background: #fafafa;
