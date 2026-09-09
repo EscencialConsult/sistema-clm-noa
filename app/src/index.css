@@ -105,11 +105,8 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  font-size: 9.5pt;
+  font-size: 11pt;
   font-weight: 700;
-  border: 1pt solid #000;
-  border-radius: 2pt;
-  padding: 1mm 2.5mm;
 }
 .hoja-impresion .imp-pt {
   text-align: center;

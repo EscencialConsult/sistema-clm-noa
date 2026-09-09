@@ -23,12 +23,19 @@
 // blanca queda invisible.
 import logo from "../../assets/logo/1.webp"
 
+/* Datos institucionales confirmados contra el papel real (la foto del
+   legajo, no un dato inventado): "Medicina del Trabajo" abajo del
+   nombre, dirección y teléfono. El médico NO va en el encabezado del
+   papel real — su nombre y matrícula van solo al pie, en la firma
+   (FirmasImpreso), así que no se repite acá arriba. */
 export function CabeceraImpreso({ titulo, numero }) {
   return (
     <div className="imp-ph">
       <img src={logo} alt="Centro Médico Laboral del NOA" className="imp-logo" />
-      <p className="imp-s">Dr. Rubén Mario Kaplan · Médico Cirujano – Laboral</p>
-      {numero != null && <p className="imp-num">N° {numero}</p>}
+      <p className="imp-s">
+        Medicina del Trabajo · Av. Avellaneda 338 · Tel. 4214114 – 4221541
+      </p>
+      {numero != null && <p className="imp-num">{numero}</p>}
       <div className="imp-pt">{titulo}</div>
     </div>
   )
