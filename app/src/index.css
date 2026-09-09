@@ -182,8 +182,8 @@ body {
 .hoja-impresion .imp-sig {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 50mm;
-  margin: 30mm 10mm 0;
+  gap: 65mm;
+  margin: 32mm 14mm 0;
 }
 .hoja-impresion .imp-sig div {
   border-top: 0.8pt solid #000;

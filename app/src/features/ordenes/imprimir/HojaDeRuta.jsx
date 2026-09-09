@@ -1,6 +1,5 @@
 import { getDatosParaImprimir } from "../../../shared/impresos/datosImpresionService"
 import { imprimirComponente } from "../../../shared/impresos/imprimir"
-import { descargarComoPdf, compartirComoPdf } from "../../../shared/impresos/descargarPdf"
 import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../../../shared/impresos/PlantillaImpreso"
 
 /* ---------------------------------------------------------------------
@@ -12,6 +11,11 @@ import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../..
    con las cuatro columnas en blanco: nada se cargó todavía, se llenan a
    mano en el puesto (ClickUp 03, criterio "las cuatro columnas en
    blanco, para escribir a mano").
+
+   Un solo motor para imprimir y para "descargar como PDF": el diálogo
+   de impresión del navegador (ver MenuImpreso.jsx). No hay una función
+   de descarga aparte — se sacó porque generaba el archivo con una
+   captura de pantalla (calidad muy inferior a imprimir de verdad).
    --------------------------------------------------------------------- */
 
 export function HojaDeRuta({ datos }) {
@@ -28,14 +32,4 @@ export function HojaDeRuta({ datos }) {
 export async function imprimirHojaDeRuta(ordenId) {
   const datos = await getDatosParaImprimir(ordenId)
   imprimirComponente(<HojaDeRuta datos={datos} />)
-}
-
-export async function descargarHojaDeRutaPdf(ordenId) {
-  const datos = await getDatosParaImprimir(ordenId)
-  await descargarComoPdf(<HojaDeRuta datos={datos} />, `hoja-de-ruta-${datos.numero}.pdf`)
-}
-
-export async function compartirHojaDeRuta(ordenId) {
-  const datos = await getDatosParaImprimir(ordenId)
-  await compartirComoPdf(<HojaDeRuta datos={datos} />, `hoja-de-ruta-${datos.numero}.pdf`, `Hoja de ruta — orden ${datos.numero}`)
 }

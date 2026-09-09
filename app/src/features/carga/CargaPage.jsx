@@ -23,9 +23,8 @@ import { ordenesService } from "./services/ordenesService"
 import { authService } from "../auth/services/authService"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
-import { puedeCompartirArchivos } from "../../shared/impresos/descargarPdf"
-import { imprimirHojaDeRuta, descargarHojaDeRutaPdf, compartirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
-import { imprimirProtocolo, descargarProtocoloPdf, compartirProtocolo } from "../aptitud/imprimir/Protocolo"
+import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
+import { imprimirProtocolo } from "../aptitud/imprimir/Protocolo"
 
 /* ---------------------------------------------------------------------
    ClickUp 06 · Pantalla de carga: las dos grillas (CU-07).
@@ -247,21 +246,12 @@ export default function CargaPage() {
         </span>
 
         <div className="ml-auto flex gap-2">
-          <MenuImpreso
-            etiqueta="Hoja de ruta"
-            disponibleCompartir={puedeCompartirArchivos()}
-            onImprimir={() => imprimirHojaDeRuta(orden.id)}
-            onDescargar={() => descargarHojaDeRutaPdf(orden.id)}
-            onCompartir={() => compartirHojaDeRuta(orden.id)}
-          />
+          <MenuImpreso etiqueta="Hoja de ruta" onImprimir={() => imprimirHojaDeRuta(orden.id)} />
           {orden.estado === "INFORMADA" && (
             <MenuImpreso
               etiqueta={`Protocolo (${ETIQUETA_APTITUD[orden.aptitud]})`}
               destacado
-              disponibleCompartir={puedeCompartirArchivos()}
               onImprimir={() => imprimirProtocolo(orden.id)}
-              onDescargar={() => descargarProtocoloPdf(orden.id)}
-              onCompartir={() => compartirProtocolo(orden.id)}
             />
           )}
         </div>
