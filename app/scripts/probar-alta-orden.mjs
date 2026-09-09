@@ -89,6 +89,7 @@ async function main() {
   limpiar()
   const recep = await crearUsuario("recep", "R2")
   const labo = await crearUsuario("labo", "R5")
+  const cAdmin2 = (await crearUsuario("adm", "R1")).cliente
   const c = recep.cliente
   const DOC = "90700001"
 
@@ -179,41 +180,88 @@ async function main() {
     !!e11 && /Recepción o el Administrador/.test(e11.message),
     e11 ? e11.message : "LA CREÓ, no debería")
 
+  /* ---------- agregar y quitar estudios · RF11 (c) ---------- */
+
+  const contarEstudios = async () =>
+    (await c.from("orden_estudio").select("*", { count: "exact", head: true }).eq("orden_id", ordenId)).count
+
+  const antesN = await contarEstudios()
+
+  /* 12 · agregar un estudio suelto que la batería no traía */
+  const { data: suelto } = await c.from("estudio")
+    .select("id, nombre, categoria:categoria_id ( id, nombre )")
+    .eq("activo", true).ilike("nombre", "%CAMPIMETRIA%").limit(1).maybeSingle()
+  await c.from("orden_categoria").upsert(
+    { orden_id: ordenId, categoria_id: suelto.categoria.id },
+    { onConflict: "orden_id,categoria_id", ignoreDuplicates: true })
+  const { error: e12 } = await c.from("orden_estudio").insert({ orden_id: ordenId, estudio_id: suelto.id })
+  const despuesN = await contarEstudios()
+  paso("recepción agrega un estudio suelto (RF11 c)", !e12 && despuesN === antesN + 1,
+    e12 ? e12.message : `${antesN} → ${despuesN} estudios (${suelto.nombre})`)
+
+  /* 13 · el mismo estudio no entra dos veces */
+  const { error: e13 } = await c.from("orden_estudio").insert({ orden_id: ordenId, estudio_id: suelto.id })
+  paso("el mismo estudio no se agrega dos veces", e13?.code === "23505",
+    e13 ? `${e13.code} — la base lo rechaza` : "lo dejó duplicar")
+
+  /* 14 · quitarlo deja la orden como estaba */
+  const { data: fila } = await c.from("orden_estudio").select("id")
+    .eq("orden_id", ordenId).eq("estudio_id", suelto.id).single()
+  const { data: borradas, error: e14 } = await c.from("orden_estudio").delete().eq("id", fila.id).select()
+  const finalN = await contarEstudios()
+  paso("quitar un estudio pendiente", !e14 && (borradas ?? []).length === 1 && finalN === antesN,
+    e14 ? e14.message : `${despuesN} → ${finalN} estudios`)
+
+  /* 15 · un estudio YA CARGADO no se puede quitar: se corrige */
+  const { data: unos } = await c.from("orden_estudio").select("id").eq("orden_id", ordenId).limit(1)
+  await cAdmin2.from("orden_estudio").update({ estado: "CARGADO", resultado: "NORMAL" }).eq("id", unos[0].id)
+  const { data: noBorra } = await c.from("orden_estudio").delete().eq("id", unos[0].id).select()
+  paso("un estudio ya cargado NO se puede quitar", (noBorra ?? []).length === 0,
+    `${(noBorra ?? []).length} filas borradas — se corrige, no se quita`)
+
+  /* 16 · el importe se recalcula, y recepción puede */
+  const { data: imp, error: e16 } = await c.rpc("calcular_presupuesto", { p_orden: ordenId })
+  paso("recepción puede recalcular el importe", !e16 && Number(imp) > 0,
+    e16 ? e16.message : "importe " + imp)
+
   /* ---------- las otras tres pantallas de recepción ---------- */
 
   /* 12 · alta de empresa (CU-05) */
-  const { data: emp, error: e12 } = await c.from("empresa").insert({
+  const { data: emp, error: f12 } = await c.from("empresa").insert({
     razon_social: `${MARCA} TRANSPORTES`, codigo: "ZZT", cuit: "30-99999999-9",
     domicilio: "Ruta 9 km 1300", telefono: "381-555-1111", activo: true,
   }).select().single()
-  paso("recepción da de alta una empresa", !e12 && !!emp?.id,
-    e12 ? e12.message : `id ${emp.id}`)
+  paso("recepción da de alta una empresa", !f12 && !!emp?.id,
+    f12 ? f12.message : `id ${emp.id}`)
 
   /* 13 · desactivar en vez de borrar */
-  const { error: e13 } = await c.from("empresa").update({ activo: false }).eq("id", emp.id)
+  const { error: f13 } = await c.from("empresa").update({ activo: false }).eq("id", emp.id)
   const { data: activas } = await c.from("empresa").select("id").eq("activo", true).eq("id", emp.id)
-  paso("una empresa desactivada deja de ofrecerse", !e13 && (activas?.length ?? 0) === 0,
-    e13 ? e13.message : "ya no figura entre las activas, pero sigue existiendo")
+  paso("una empresa desactivada deja de ofrecerse", !f13 && (activas?.length ?? 0) === 0,
+    f13 ? f13.message : "ya no figura entre las activas, pero sigue existiendo")
 
   /* 14 · pendientes del día (CP-26) */
   /* la fecha LOCAL, igual que la base: corre en la zona de la clínica.
      Con toISOString() esto fallaba después de las 21:00 (ver 012). */
   const hoy = comoISOLocal(new Date())
-  const { data: pend, error: e14 } = await c.from("v_orden_avance").select("*")
+  const { data: pend, error: f14 } = await c.from("v_orden_avance").select("*")
     .eq("fecha", hoy).neq("estado", "INFORMADA").order("numero", { ascending: false })
   const nuestra = pend?.find((o) => o.id === ordenId)
+  /* No se fija en cuántos van cargados: los pasos de arriba dejan uno
+     cargado a propósito. Lo que importa acá es que la orden aparezca con
+     su avance y que la cuenta la haga la vista, no la pantalla. */
   paso("pendientes del día trae la orden con su avance",
-    !e14 && !!nuestra && nuestra.estudios === 56 && nuestra.cargados === 0,
-    e14 ? e14.message : `${pend.length} sin informar · la nuestra ${nuestra?.cargados}/${nuestra?.estudios}`)
+    !f14 && !!nuestra && nuestra.estudios === 56 && nuestra.cargados < nuestra.estudios,
+    f14 ? f14.message : `${pend.length} sin informar · la nuestra ${nuestra?.cargados}/${nuestra?.estudios}`)
 
   /* 15 · listado por empresa con importes (CP-25) */
-  const { data: listado, error: e15 } = await c.from("v_orden_avance").select("*")
+  const { data: listado, error: f15 } = await c.from("v_orden_avance").select("*")
     .gte("fecha", hoy).lte("fecha", hoy).eq("empresa", empresas[0].razon_social)
     .order("numero", { ascending: false })
   const total = (listado ?? []).reduce((s2, o) => s2 + Number(o.importe ?? 0), 0)
   paso("el listado filtra por empresa y suma importes",
-    !e15 && listado.some((o) => o.id === ordenId) && total >= 160000,
-    e15 ? e15.message : `${listado.length} de ${empresas[0].razon_social} · ${total}`)
+    !f15 && listado.some((o) => o.id === ordenId) && total >= 160000,
+    f15 ? f15.message : `${listado.length} de ${empresas[0].razon_social} · ${total}`)
 
   /* limpieza */
   limpiar()

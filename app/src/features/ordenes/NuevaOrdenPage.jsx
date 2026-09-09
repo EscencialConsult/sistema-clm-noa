@@ -173,6 +173,12 @@ export default function NuevaOrdenPage() {
               onCompartir={() => compartirHojaDeRuta(creada.id)}
             />
             <button
+              onClick={() => navigate(`/orden/${creada.id}/estudios`)}
+              className="rounded-md border-2 border-ink-soft/20 px-4 py-2.5 text-sm font-medium text-ink-soft hover:border-primary/50 hover:text-primary"
+            >
+              Agregar o quitar estudios
+            </button>
+            <button
               onClick={() => navigate(`/carga/${creada.id}`)}
               className="rounded-md border-2 border-ink-soft/20 px-4 py-2.5 text-sm text-ink-soft hover:text-ink"
             >

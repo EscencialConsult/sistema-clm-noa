@@ -9,6 +9,7 @@ import AptitudPage from "../features/aptitud/AptitudPage"
 import DictamenPage from "../features/aptitud/DictamenPage"
 import LegajoPage from "../features/legajo/LegajoPage"
 import NuevaOrdenPage from "../features/ordenes/NuevaOrdenPage"
+import AjustarEstudiosPage from "../features/ordenes/AjustarEstudiosPage"
 import EmpresasPage from "../features/recepcion/EmpresasPage"
 import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
 import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
@@ -52,6 +53,8 @@ export default function AppRoutes() {
         {/* Recepción — G2, G4, G7 */}
         <Route path="/recepcion" element={<NuevaOrdenPage />} />
         <Route path="/recepcion/nueva-orden" element={<NuevaOrdenPage />} />
+        {/* RF11 (c): sumar o sacar un estudio suelto de una orden */}
+        <Route path="/orden/:ordenId/estudios" element={<AjustarEstudiosPage />} />
         <Route path="/recepcion/personas" element={<LegajoPage />} />
         <Route path="/recepcion/empresas" element={<EmpresasPage />} />
         <Route path="/recepcion/pendientes" element={<PendientesDelDiaPage />} />

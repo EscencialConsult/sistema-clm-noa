@@ -161,6 +161,101 @@ export const nuevaOrdenService = {
     return data
   },
 
+  /* ---------------- ajustar los estudios de la orden · RF11 (c) ----
+     «Se pueden agregar o quitar estudios tipeando el código o tildando».
+     La batería es un punto de partida, no una jaula: la empresa pide uno
+     más, o esta vez no corresponde alguno.
+
+     Las políticas para esto existen desde 008 (agregar_estudio,
+     quitar_estudio, agregar_categoria) y sólo permiten tocar una orden
+     que todavía no se informó. Un estudio ya CARGADO no se puede quitar:
+     se corrige. Borrarlo se llevaría el resultado sin dejar rastro.
+     -------------------------------------------------------------- */
+
+  /** Los estudios de la orden, agrupados por categoría. */
+  async getEstudiosDeOrden(ordenId) {
+    const { data, error } = await supabase
+      .from("orden_estudio")
+      .select(
+        `id, estado, resultado,
+         estudio:estudio_id ( id, codigo, nombre, unidad, orden,
+           categoria:categoria_id ( id, nombre, orden ) )`
+      )
+      .eq("orden_id", ordenId)
+      .order("orden", { referencedTable: "estudio", ascending: true })
+
+    if (error) throw new Error(error.message)
+
+    const porCategoria = new Map()
+    for (const f of data ?? []) {
+      const c = f.estudio.categoria
+      if (!porCategoria.has(c.id)) porCategoria.set(c.id, { ...c, items: [] })
+      porCategoria.get(c.id).items.push(f)
+    }
+    return [...porCategoria.values()].sort((a, b) => a.orden - b.orden)
+  },
+
+  /** Catálogo para el buscador: código o nombre. */
+  async buscarEstudios(texto) {
+    const t = (texto ?? "").trim()
+    if (t.length < 2) return []
+
+    const { data, error } = await supabase
+      .from("estudio")
+      .select("id, codigo, nombre, unidad, categoria:categoria_id ( id, nombre )")
+      .eq("activo", true)
+      .or(`codigo.ilike.%${t}%,nombre.ilike.%${t}%`)
+      .order("nombre")
+      .limit(30)
+
+    if (error) throw new Error(error.message)
+    return data ?? []
+  },
+
+  /** Suma un estudio. Si su categoría no estaba en la orden, la agrega:
+   *  sin esa fila el estudio no aparecería en la pantalla de carga. */
+  async agregarEstudio(ordenId, estudio) {
+    const { error: eCat } = await supabase
+      .from("orden_categoria")
+      .upsert(
+        { orden_id: ordenId, categoria_id: estudio.categoria.id },
+        { onConflict: "orden_id,categoria_id", ignoreDuplicates: true }
+      )
+    if (eCat) throw new Error(eCat.message)
+
+    const { error } = await supabase
+      .from("orden_estudio")
+      .insert({ orden_id: ordenId, estudio_id: estudio.id })
+    if (error) {
+      if (error.code === "23505") throw new Error("Ese estudio ya está en la orden.")
+      throw new Error(error.message)
+    }
+  },
+
+  /** Quita un estudio. La política sólo deja si sigue PENDIENTE. */
+  async quitarEstudio(ordenEstudioId) {
+    const { data, error } = await supabase
+      .from("orden_estudio")
+      .delete()
+      .eq("id", ordenEstudioId)
+      .select()
+    if (error) throw new Error(error.message)
+    if ((data ?? []).length === 0) {
+      throw new Error("No se pudo quitar: o ya tiene resultado cargado, o la orden está informada.")
+    }
+  },
+
+  /** Vuelve a calcular el importe y lo guarda. Se llama después de cada
+   *  cambio: si no, la orden queda diciendo un precio que ya no es. */
+  async recalcularImporte(ordenId) {
+    const { data: importe, error } = await supabase.rpc("calcular_presupuesto", { p_orden: ordenId })
+    if (error) throw new Error(error.message)
+
+    const { error: e2 } = await supabase.from("orden").update({ importe }).eq("id", ordenId)
+    if (e2) throw new Error(e2.message)
+    return importe
+  },
+
   /** La orden recién creada, para mostrar número e importe. */
   async getOrdenCreada(ordenId) {
     const { data, error } = await supabase
