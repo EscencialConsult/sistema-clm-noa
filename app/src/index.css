@@ -87,17 +87,17 @@ body {
 .hoja-impresion .imp-ph {
   text-align: center;
   border-bottom: 1.5pt solid #000;
-  padding-bottom: 3.5mm;
-  margin-bottom: 6mm;
+  padding-bottom: 2.5mm;
+  margin-bottom: 4mm;
   position: relative;
 }
 .hoja-impresion .imp-logo {
-  height: 17mm;
+  height: 18mm;
   width: auto;
   display: inline-block;
 }
 .hoja-impresion .imp-ph .imp-s {
-  font-size: 9pt;
+  font-size: 8.5pt;
   margin-top: 1.5mm;
   color: #333;
 }
@@ -105,26 +105,40 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  font-size: 9.5pt;
+  font-size: 10pt;
   font-weight: 700;
-  border: 1pt solid #000;
-  border-radius: 2pt;
-  padding: 1mm 2.5mm;
+}
+.hoja-impresion .imp-cat-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+/* Una página por categoría — se corta en tiras hoy a mano (CU-06, alt.
+   5a); el sistema ya la entrega separada. HojaDeRuta.jsx solo la aplica
+   entre categorías, nunca después de la última (si no, sale una hoja
+   en blanco de más al final). */
+.hoja-impresion .imp-salto-pagina {
+  page-break-after: always;
+  break-after: page;
 }
 .hoja-impresion .imp-pt {
   text-align: center;
-  font-size: 13pt;
+  font-size: 12pt;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  margin: 4mm 0 0;
+  letter-spacing: 0.1em;
+  margin: 1.5mm 0 0;
 }
 .hoja-impresion .imp-pd {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2mm 8mm;
-  font-size: 10pt;
-  padding: 3mm 4mm;
-  margin-bottom: 5mm;
+  gap: 0.5mm 8mm;
+  font-size: 9pt;
+  padding: 1.5mm 3mm;
+  margin-bottom: 3mm;
   border: 0.75pt solid #ccc;
   border-radius: 2pt;
   background: #fafafa;

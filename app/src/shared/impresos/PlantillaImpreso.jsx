@@ -7,7 +7,10 @@
      2.12 · Hoja de ruta).
    - Tabla "Estudio · Resultado · Observación · Valor" agrupada por
      categoría (misma sección).
-   - Firmas al pie: postulante + profesional (2.1 · Planilla clínica).
+   - Firmas al pie: postulante + profesional (2.1 · Planilla clínica) —
+     solo en el protocolo. La hoja de ruta no lleva firma (indicación
+     de la clínica): cada profesional carga en el sistema, no firma un
+     papel por categoría.
 
    Nada de tokens de marca acá (--color-primary, etc.): un impreso
    institucional que se lleva el paciente no es una pantalla de la app,
@@ -23,11 +26,26 @@
 // blanca queda invisible.
 import logo from "../../assets/logo/1.webp"
 
-export function CabeceraImpreso({ titulo, numero }) {
+/* Datos institucionales confirmados contra el papel real (la foto del
+   legajo, no un dato inventado): "Medicina del Trabajo" abajo del
+   nombre, dirección y teléfono. El médico NO va en el encabezado del
+   papel real — su nombre y matrícula van solo al pie, en la firma
+   (FirmasImpreso), así que no se repite acá arriba. */
+/** categoria: nombre de la especialidad de ESTA hoja — la hoja de ruta
+ *  sale una por categoría (se corta en tiras, CU-06 alt. 5a), así que
+ *  cada una necesita decir cuál es la suya. Va arriba a la izquierda,
+ *  espejada con el N° de orden a la derecha — no como fila dentro de
+ *  la tabla, que quedaba escondida. El protocolo no manda esta prop:
+ *  ese sí junta todas las categorías en un solo documento (el médico
+ *  laboral necesita verlas todas juntas para decidir la aptitud). */
+export function CabeceraImpreso({ titulo, numero, categoria }) {
   return (
     <div className="imp-ph">
       <img src={logo} alt="Centro Médico Laboral del NOA" className="imp-logo" />
-      <p className="imp-s">Dr. Rubén Mario Kaplan · Médico Cirujano – Laboral</p>
+      <p className="imp-s">
+        Medicina del Trabajo · Av. Avellaneda 338 · Tel. 4214114 – 4221541
+      </p>
+      {categoria && <p className="imp-cat-header">Categoría: {categoria}</p>}
       {numero != null && <p className="imp-num">N° {numero}</p>}
       <div className="imp-pt">{titulo}</div>
     </div>
@@ -79,7 +97,7 @@ export function DatosOrden({ orden }) {
  * ("4,8 (V 3,5-5,5)") — así lo pide ClickUp 09: "resultado y
  * observación juntos", no una grilla más ancha que la de siempre.
  */
-export function TablaEstudios({ categorias, modo }) {
+export function TablaEstudios({ categorias, modo, sinTituloCategoria }) {
   const conDatos = modo === "con-datos"
   return (
     <table className="imp-tabla">
@@ -93,19 +111,21 @@ export function TablaEstudios({ categorias, modo }) {
       </thead>
       <tbody>
         {categorias.map((cat) => (
-          <FragmentoCategoria key={cat.id} cat={cat} conDatos={conDatos} />
+          <FragmentoCategoria key={cat.id} cat={cat} conDatos={conDatos} sinTitulo={sinTituloCategoria} />
         ))}
       </tbody>
     </table>
   )
 }
 
-function FragmentoCategoria({ cat, conDatos }) {
+function FragmentoCategoria({ cat, conDatos, sinTitulo }) {
   return (
     <>
-      <tr className="imp-cat">
-        <td colSpan={4}>{cat.nombre}</td>
-      </tr>
+      {!sinTitulo && (
+        <tr className="imp-cat">
+          <td colSpan={4}>{cat.nombre}</td>
+        </tr>
+      )}
       {cat.items.map((it, i) => {
         const valor = conDatos
           ? [it.detalle, it.referencia && `(${it.referencia})`].filter(Boolean).join(" ") || "—"
