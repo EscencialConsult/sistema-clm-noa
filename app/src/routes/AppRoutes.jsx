@@ -16,6 +16,8 @@ import BateriasPage from "../features/baterias/BateriasPage"
 import PendientesPage from "../features/carga/PendientesPage"
 import AuditoriaPage from "../features/auditoria/AuditoriaPage"
 import UsuariosPage from "../features/usuarios/UsuariosPage"
+import ProfesionalesPage from "../features/usuarios/ProfesionalesPage"
+import VigenciasPage from "../features/aptitud/VigenciasPage"
 import EmpresasPage from "../features/recepcion/EmpresasPage"
 import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
 import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
@@ -32,14 +34,14 @@ export default function AppRoutes() {
         {/* Administrador — G1, G3 */}
         <Route path="/admin" element={<DashboardAdminPage />} />
         <Route path="/admin/usuarios" element={<UsuariosPage />} />
-        <Route path="/admin/profesionales" element={<Placeholder titulo="Maestro de Profesionales" />} />
+        <Route path="/admin/profesionales" element={<ProfesionalesPage />} />
         <Route path="/admin/empresas" element={<EmpresasPage />} />
         <Route path="/admin/personas" element={<LegajoPage />} />
         <Route path="/admin/ordenes" element={<ListadoOrdenesPage />} />
         <Route path="/admin/catalogo" element={<CatalogoPage />} />
         <Route path="/admin/baterias" element={<BateriasPage />} />
         <Route path="/admin/conceptos" element={<ConceptosPage />} />
-        <Route path="/admin/referencias" element={<Placeholder titulo="Valores de Referencia" />} />
+        <Route path="/admin/referencias" element={<CatalogoPage />} />
         <Route path="/admin/auditoria" element={<AuditoriaPage />} />
 
         {/* Profesionales — G5, G6 */}
@@ -49,12 +51,12 @@ export default function AppRoutes() {
         {/* Médico laboral · CU-11 */}
         <Route path="/aptitud" element={<AptitudPage />} />
         <Route path="/aptitud/:ordenId" element={<DictamenPage />} />
-        <Route path="/bandeja/pacientes" element={<Placeholder titulo="Pacientes" />} />
+        <Route path="/bandeja/pacientes" element={<LegajoPage />} />
         <Route path="/bandeja/pendientes" element={<PendientesPage />} />
         <Route path="/bandeja/legajos" element={<LegajoPage />} />
         <Route path="/bandeja/terceros" element={<Placeholder titulo="Informes de Terceros" />} />
-        <Route path="/bandeja/vigencias" element={<Placeholder titulo="Vigencias Próximas" />} />
-        <Route path="/bandeja/historial" element={<Placeholder titulo="Historial Personal" />} />
+        <Route path="/bandeja/vigencias" element={<VigenciasPage />} />
+        <Route path="/bandeja/historial" element={<LegajoPage />} />
 
         {/* Recepción — G2, G4, G7 */}
         <Route path="/recepcion" element={<NuevaOrdenPage />} />
