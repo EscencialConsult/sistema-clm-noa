@@ -12,6 +12,14 @@ import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../..
    mano en el puesto (ClickUp 03, criterio "las cuatro columnas en
    blanco, para escribir a mano").
 
+   Una página por categoría, no una tabla larga con todas juntas: el
+   papel real la corta en tiras, una por puesto (CU-06, alt. 5a — "la
+   hoja se corta en tiras, una por profesional"). Cada página repite el
+   encabezado completo y lleva el nombre de SU categoría arriba a la
+   izquierda, espejado con el N° de orden — así cada puesto recibe una
+   hoja que ya dice de qué es, en vez de una fila perdida en una tabla
+   de varias páginas.
+
    Un solo motor para imprimir y para "descargar como PDF": el diálogo
    de impresión del navegador (ver MenuImpreso.jsx). No hay una función
    de descarga aparte — se sacó porque generaba el archivo con una
@@ -21,10 +29,14 @@ import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../..
 export function HojaDeRuta({ datos }) {
   return (
     <div className="hoja-impresion">
-      <CabeceraImpreso titulo="EXAMEN PRELABORAL" numero={datos.numero} />
-      <DatosOrden orden={datos} />
-      <TablaEstudios categorias={datos.categorias} modo="blanco" />
-      <FirmasImpreso segunda="Firma del profesional" />
+      {datos.categorias.map((cat, i) => (
+        <div key={cat.id} className={i < datos.categorias.length - 1 ? "imp-salto-pagina" : undefined}>
+          <CabeceraImpreso titulo="EXAMEN PRELABORAL" numero={datos.numero} categoria={cat.nombre} />
+          <DatosOrden orden={datos} />
+          <TablaEstudios categorias={[cat]} modo="blanco" sinTituloCategoria />
+          <FirmasImpreso segunda="Firma del profesional" />
+        </div>
+      ))}
     </div>
   )
 }

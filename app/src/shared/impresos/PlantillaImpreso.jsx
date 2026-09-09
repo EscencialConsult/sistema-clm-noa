@@ -28,13 +28,21 @@ import logo from "../../assets/logo/1.webp"
    nombre, dirección y teléfono. El médico NO va en el encabezado del
    papel real — su nombre y matrícula van solo al pie, en la firma
    (FirmasImpreso), así que no se repite acá arriba. */
-export function CabeceraImpreso({ titulo, numero }) {
+/** categoria: nombre de la especialidad de ESTA hoja — la hoja de ruta
+ *  sale una por categoría (se corta en tiras, CU-06 alt. 5a), así que
+ *  cada una necesita decir cuál es la suya. Va arriba a la izquierda,
+ *  espejada con el N° de orden a la derecha — no como fila dentro de
+ *  la tabla, que quedaba escondida. El protocolo no manda esta prop:
+ *  ese sí junta todas las categorías en un solo documento (el médico
+ *  laboral necesita verlas todas juntas para decidir la aptitud). */
+export function CabeceraImpreso({ titulo, numero, categoria }) {
   return (
     <div className="imp-ph">
       <img src={logo} alt="Centro Médico Laboral del NOA" className="imp-logo" />
       <p className="imp-s">
         Medicina del Trabajo · Av. Avellaneda 338 · Tel. 4214114 – 4221541
       </p>
+      {categoria && <p className="imp-cat-header">{categoria}</p>}
       {numero != null && <p className="imp-num">{numero}</p>}
       <div className="imp-pt">{titulo}</div>
     </div>
@@ -86,7 +94,7 @@ export function DatosOrden({ orden }) {
  * ("4,8 (V 3,5-5,5)") — así lo pide ClickUp 09: "resultado y
  * observación juntos", no una grilla más ancha que la de siempre.
  */
-export function TablaEstudios({ categorias, modo }) {
+export function TablaEstudios({ categorias, modo, sinTituloCategoria }) {
   const conDatos = modo === "con-datos"
   return (
     <table className="imp-tabla">
@@ -100,19 +108,21 @@ export function TablaEstudios({ categorias, modo }) {
       </thead>
       <tbody>
         {categorias.map((cat) => (
-          <FragmentoCategoria key={cat.id} cat={cat} conDatos={conDatos} />
+          <FragmentoCategoria key={cat.id} cat={cat} conDatos={conDatos} sinTitulo={sinTituloCategoria} />
         ))}
       </tbody>
     </table>
   )
 }
 
-function FragmentoCategoria({ cat, conDatos }) {
+function FragmentoCategoria({ cat, conDatos, sinTitulo }) {
   return (
     <>
-      <tr className="imp-cat">
-        <td colSpan={4}>{cat.nombre}</td>
-      </tr>
+      {!sinTitulo && (
+        <tr className="imp-cat">
+          <td colSpan={4}>{cat.nombre}</td>
+        </tr>
+      )}
       {cat.items.map((it, i) => {
         const valor = conDatos
           ? [it.detalle, it.referencia && `(${it.referencia})`].filter(Boolean).join(" ") || "—"

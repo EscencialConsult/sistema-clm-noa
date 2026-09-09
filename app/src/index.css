@@ -108,6 +108,23 @@ body {
   font-size: 10pt;
   font-weight: 700;
 }
+.hoja-impresion .imp-cat-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  font-size: 9pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+/* Una página por categoría — se corta en tiras hoy a mano (CU-06, alt.
+   5a); el sistema ya la entrega separada. HojaDeRuta.jsx solo la aplica
+   entre categorías, nunca después de la última (si no, sale una hoja
+   en blanco de más al final). */
+.hoja-impresion .imp-salto-pagina {
+  page-break-after: always;
+  break-after: page;
+}
 .hoja-impresion .imp-pt {
   text-align: center;
   font-size: 12pt;
