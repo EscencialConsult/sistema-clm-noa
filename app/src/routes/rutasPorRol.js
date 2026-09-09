@@ -23,6 +23,7 @@ export const navegacionPorRol = {
     etiqueta: "MI ÁREA",
     home: "/bandeja",
     items: [
+      { label: "Aptitud", to: "/aptitud", icon: "Stamp" },
       { label: "Bandeja del Día", to: "/bandeja", icon: "LayoutGrid" },
       { label: "Pacientes", to: "/bandeja/pacientes", icon: "Users" },
       { label: "Estudios Pendientes", to: "/bandeja/pendientes", icon: "FlaskConical" },
@@ -85,6 +86,8 @@ export const navegacionPorRol = {
       { label: "Empresas", to: "/recepcion/empresas", icon: "Building2" },
       { label: "Pendientes del Día", to: "/recepcion/pendientes", icon: "ListChecks" },
       { label: "Listado de Órdenes", to: "/recepcion/listado", icon: "ClipboardList" },
+      { label: "Estudios y Categorías", to: "/recepcion/catalogo", icon: "FlaskConical" },
+      { label: "Baterías", to: "/recepcion/baterias", icon: "Layers" },
     ],
   },
 }

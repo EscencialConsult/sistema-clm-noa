@@ -133,10 +133,32 @@ async function crearUsuarios() {
   }
 }
 
+async function borrarCuentasSueltas() {
+  /* Las que crea crear_usuario_completo no pasan por crearUsuarios, así
+     que no están en USUARIOS: se buscan por el prefijo de la marca. */
+  const todas = await fetch(`${API}/auth/v1/admin/users`, {
+    headers: { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` },
+  }).then((r) => r.json()).catch(() => null)
+  for (const u of todas?.users ?? []) {
+    if (u.email?.startsWith(MARCA.toLowerCase())) {
+      await fetch(`${API}/auth/v1/admin/users/${u.id}`, {
+        method: "DELETE",
+        headers: { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` },
+      })
+    }
+  }
+}
+
 async function borrarUsuarios() {
+  await borrarCuentasSueltas()
   for (const u of USUARIOS) {
     if (!u.authId) continue
-    sql(`DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE auth_id='${u.authId}');
+    sql(`
+    -- La auditoría referencia al usuario y no se puede borrar desde la
+    -- aplicación: eso es correcto —en la clínica los usuarios se desactivan,
+    -- no se borran— pero una prueba tiene que poder limpiar lo suyo. Se hace
+    -- por psql, como el operador de la base, y sólo de sus propios usuarios.
+    DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE auth_id='${u.authId}');
          DELETE FROM usuario WHERE auth_id='${u.authId}';`)
     await fetch(`${API}/auth/v1/admin/users/${u.authId}`, {
       method: "DELETE",
@@ -151,6 +173,16 @@ function limpiarDatos() {
     DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
+    DELETE FROM estudio        WHERE nombre LIKE '${MARCA}%';
+    DELETE FROM categoria      WHERE nombre LIKE '${MARCA}%';
+    -- Los usuarios van acá y no sólo en borrarUsuarios(), que únicamente
+    -- conoce los que creó él. El caso RF01 crea uno POR LA APLICACIÓN, con
+    -- crear_usuario_completo: si no se limpia, la corrida siguiente choca
+    -- con el índice único y falla por basura de la anterior.
+    -- La auditoría primero: referencia al usuario y no deja borrarlo.
+    DELETE FROM auditoria      WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+    DELETE FROM usuario_rol    WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+    DELETE FROM usuario        WHERE usuario ILIKE '${MARCA}%';
   `)
 }
 
@@ -294,6 +326,30 @@ caso("CP-13", "Se marca el hemograma completo como NORMAL en una sola acción", 
   return { ok: true, detalle: `${r.datos} estudios en una llamada; y le rechaza una categoría ajena` }
 })
 
+/* --- RF07 · quién mantiene el catálogo ------------------------------ */
+/* «El Administrador y Recepción crean y mantienen las categorías y los
+   estudios.» La política de 005 dejaba sólo al administrador: recepción
+   podía armar una batería pero no crear el estudio que iba adentro.
+   Corregido en 013. Los precios NO: esos siguen siendo del admin. */
+caso("RF07", "Recepción mantiene el catálogo, pero no los precios", async () => {
+  const cat = await pedir("/rest/v1/categoria", { token: sesion.recep, metodo: "POST",
+    cuerpo: { nombre: `${MARCA} CATEGORIA`, orden: 99, rol_carga: "R5", valor_defecto: "NORMAL" },
+    prefer: "return=representation" })
+  if (cat.estado !== 201) return { ok: false, detalle: `no pudo crear la categoría: ${porQue(cat)}` }
+
+  const est = await pedir("/rest/v1/estudio", { token: sesion.recep, metodo: "POST",
+    cuerpo: { codigo: "ZZ9", nombre: `${MARCA} ESTUDIO`, categoria_id: cat.datos[0].id,
+              orden: 99, ref_h: "10-20", ref_m: "8-18" },
+    prefer: "return=representation" })
+  if (est.estado !== 201) return { ok: false, detalle: `no pudo crear el estudio: ${porQue(est)}` }
+
+  const con = await pedir("/rest/v1/concepto", { token: sesion.recep, metodo: "POST",
+    cuerpo: { nombre: `${MARCA} CONCEPTO`, precio: 1 }, prefer: "return=representation" })
+  if (con.estado < 400) return { ok: false, detalle: "recepción pudo fijar un precio, y no debería" }
+
+  return { ok: true, detalle: "crea categoría y estudio con sus referencias; el precio lo rechaza" }
+})
+
 /* --- CP-19 ★ · no se informa con estudios pendientes ---------------- */
 caso("CP-19", "Con un estudio pendiente no deja fijar la aptitud", async (ctx) => {
   const r = await rpc("emitir_protocolo",
@@ -334,6 +390,245 @@ caso("CP-21", "Ni el Administrador ni Recepción ni anon pueden fijar la aptitud
     : { ok: true, detalle: "los tres rebotan por rol, antes de mirar la regla de negocio" }
 })
 
+/* --- RF01 · el alta de usuarios, sin abrir una terminal -------------- */
+/* Crear una cuenta necesitaba la clave de servicio, que no puede viajar
+   al navegador. crear_usuario_completo (017) lo hace dentro de la base.
+   Lo único que prueba que funciona es que el usuario creado ENTRE. */
+caso("RF01", "El Administrador crea un usuario que después puede entrar", async () => {
+  const usuario = `${MARCA}_alta`.toLowerCase()
+  const clave = "Prueba-98765"
+  const fallas = []
+
+  /* recepción no puede */
+  const r2 = await rpc("crear_usuario_completo",
+    { p_usuario: usuario + "x", p_nombre: "X", p_rol: "R6", p_password: clave }, sesion.recep)
+  if (r2.estado < 400) fallas.push("recepción pudo crear un usuario")
+
+  /* el administrador sí */
+  const r1 = await rpc("crear_usuario_completo",
+    { p_usuario: usuario, p_nombre: "Alta de prueba", p_rol: "R6", p_password: clave }, sesion.admin)
+  if (typeof r1.datos !== "number") return { ok: false, detalle: `no lo creó: ${porQue(r1)}` }
+
+  /* y ese usuario entra de verdad */
+  let token = null
+  try {
+    const resp = await fetch(`${API}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: env.ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: `${usuario}@cmlnoa.local`, password: clave }),
+    })
+    token = (await resp.json()).access_token ?? null
+  } catch { token = null }
+  if (!token) fallas.push("se creó pero no puede iniciar sesión")
+
+  /* nace obligado a cambiar la contraseña */
+  const u = await pedir(`/rest/v1/usuario?usuario=eq.${usuario}&select=debe_cambiar,usuario_rol(rol_codigo)`,
+    { token: sesion.admin })
+  const fila = u.datos?.[0]
+  if (!fila?.debe_cambiar) fallas.push("no nace obligado a cambiar la contraseña")
+  if (fila?.usuario_rol?.[0]?.rol_codigo !== "R6") fallas.push("no quedó con el rol pedido")
+
+  /* un médico laboral sin profesional no se puede crear: no podría firmar */
+  const sinMat = await rpc("crear_usuario_completo",
+    { p_usuario: usuario + "med", p_nombre: "Med", p_rol: "R3", p_password: clave }, sesion.admin)
+  if (sinMat.estado < 400) fallas.push("dejó crear un médico laboral sin matrícula")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "creado por el admin, entra, nace con la clave por cambiar; recepción no puede y un R3 sin matrícula tampoco" }
+})
+
+/* --- RF27 / RNF-11 · la auditoría dice QUIÉN, y no se puede tocar --- */
+/* El caso viejo comprobaba que la fila apareciera y que nadie pudiera
+   borrarla. Pasaba igual con usuario_id en NULL: 10.454 registros sin
+   un solo nombre. Ahora se comprueba lo que RF27 pide de verdad. */
+caso("RF27", "La auditoría registra quién, y ni el Administrador la borra", async (ctx) => {
+  const fallas = []
+
+  /* un cambio sensible hecho por recepción */
+  const r = await pedir(`/rest/v1/persona?id=eq.${ctx.persona_m}`, {
+    token: sesion.recep, metodo: "PATCH", cuerpo: { nombre: "MUJER EDITADA" },
+    prefer: "return=representation" })
+  if (r.estado >= 400) return { ok: false, detalle: `no pude cambiar la persona: ${porQue(r)}` }
+
+  /* el administrador lo ve, con nombre y apellido */
+  const a = await pedir(
+    `/rest/v1/auditoria?tabla=eq.persona&registro_id=eq.${ctx.persona_m}` +
+    "&campo=eq.nombre&select=campo,valor_anterior,valor_nuevo,usuario:usuario_id(usuario)" +
+    "&order=id.desc&limit=1",
+    { token: sesion.admin })
+  const fila = a.datos?.[0]
+  if (!fila) fallas.push("el cambio no quedó registrado")
+  else {
+    if (!fila.usuario) fallas.push("quedó registrado pero SIN usuario")
+    else if (!fila.usuario.usuario.includes("recep"))
+      fallas.push(`lo atribuyó a ${fila.usuario.usuario}`)
+    if (fila.valor_nuevo !== "MUJER EDITADA") fallas.push("no guardó el valor nuevo")
+  }
+
+  /* recepción no puede leerla */
+  const leer = await pedir("/rest/v1/auditoria?select=id&limit=1", { token: sesion.recep })
+  if ((leer.datos ?? []).length > 0) fallas.push("recepción puede leer la auditoría")
+
+  /* y el administrador no puede borrarla */
+  const borrar = await pedir(`/rest/v1/auditoria?id=eq.${fila?.id ?? 0}`, {
+    token: sesion.admin, metodo: "DELETE", prefer: "return=representation" })
+  if (borrar.estado < 400 && (borrar.datos ?? []).length > 0)
+    fallas.push("el Administrador pudo borrar una fila de auditoría")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: `registrado a nombre de ${fila.usuario.usuario}; recepción no la lee y el admin no la borra` }
+})
+
+/* --- RF05 · corregir los datos de una persona ---------------------- */
+/* «Recepción da de alta Y MODIFICA.» Sólo estaba el alta: un apellido
+   mal tipeado no tenía dónde corregirse. */
+caso("RF05", "Recepción corrige los datos de una persona ya cargada", async (ctx) => {
+  const fallas = []
+
+  const r = await pedir(`/rest/v1/persona?id=eq.${ctx.persona_h}`, {
+    token: sesion.recep, metodo: "PATCH",
+    cuerpo: { apellido: `${MARCA} CORREGIDO`, telefono: "381-555-7777" },
+    prefer: "return=representation" })
+  if (r.estado >= 400) return { ok: false, detalle: `no dejó corregir: ${porQue(r)}` }
+  if (r.datos?.[0]?.apellido !== `${MARCA} CORREGIDO`) fallas.push("no guardó el apellido")
+  if (r.datos?.[0]?.telefono !== "381-555-7777") fallas.push("no guardó el teléfono")
+
+  /* el cambio queda en la auditoría, con quién */
+  const a = await pedir(
+    `/rest/v1/auditoria?tabla=eq.persona&registro_id=eq.${ctx.persona_h}&campo=eq.apellido&select=valor_nuevo,usuario:usuario_id(usuario)&order=id.desc&limit=1`,
+    { token: sesion.admin })
+  const fila = a.datos?.[0]
+  if (!fila) fallas.push("el cambio no quedó en la auditoría")
+  else if (!fila.usuario?.usuario?.includes("recep")) fallas.push("la auditoría no dice quién lo cambió")
+
+  /* no se puede pisar el documento de otra persona */
+  const choque = await pedir(`/rest/v1/persona?id=eq.${ctx.persona_h}`, {
+    token: sesion.recep, metodo: "PATCH", cuerpo: { nro_doc: "90000101" },
+    prefer: "return=representation" })
+  if (choque.estado < 400) fallas.push("dejó poner un documento que ya tiene otra persona")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "corrige apellido y teléfono, queda en la auditoría, y el documento repetido rebota" }
+})
+
+/* --- CP-18 · devolver un estudio al profesional (RF21) -------------- */
+/* No estaba implementado en ninguna parte. La orden retrocede sola a
+   EN_CURSO y no se puede informar hasta que vuelva. */
+caso("CP-18", "El médico laboral devuelve un estudio y la orden retrocede", async (ctx) => {
+  const fallas = []
+
+  /* dejar la orden completa */
+  await pedir(`/rest/v1/orden_estudio?orden_id=eq.${ctx.orden_h}&estado=neq.CARGADO`, {
+    token: sesion.admin, metodo: "PATCH",
+    cuerpo: { estado: "CARGADO", resultado: "NORMAL" }, prefer: "return=representation" })
+
+  const antes = await pedir(`/rest/v1/orden?id=eq.${ctx.orden_h}&select=estado`, { token: sesion.admin })
+  if (antes.datos?.[0]?.estado !== "COMPLETA") fallas.push(`la orden quedó en ${antes.datos?.[0]?.estado}, esperaba COMPLETA`)
+
+  const uno = await pedir(
+    `/rest/v1/orden_estudio?orden_id=eq.${ctx.orden_h}&estado=eq.CARGADO&select=id&limit=1`,
+    { token: sesion.admin })
+  const item = uno.datos?.[0]?.id
+  if (!item) return { ok: false, detalle: "no encontré un estudio cargado para devolver" }
+
+  /* sin motivo no se puede */
+  const sinMotivo = await rpc("devolver_estudio", { p_item: item, p_motivo: "  " }, sesion.medico)
+  if (sinMotivo.estado < 400) fallas.push("dejó devolver sin motivo")
+
+  /* recepción tampoco */
+  const otroRol = await rpc("devolver_estudio", { p_item: item, p_motivo: "porque sí" }, sesion.recep)
+  if (otroRol.estado < 400) fallas.push("recepción pudo devolver un estudio")
+
+  /* el médico sí */
+  const ok = await rpc("devolver_estudio",
+    { p_item: item, p_motivo: "El valor no coincide con el informe adjunto" }, sesion.medico)
+  if (ok.estado >= 400) return { ok: false, detalle: `no pudo devolver: ${porQue(ok)}` }
+
+  const despues = await pedir(
+    `/rest/v1/orden?id=eq.${ctx.orden_h}&select=estado`, { token: sesion.admin })
+  if (despues.datos?.[0]?.estado !== "EN_CURSO") fallas.push(`la orden quedó en ${despues.datos?.[0]?.estado}, esperaba EN_CURSO`)
+
+  /* el profesional lo ve, con el motivo */
+  const pend = await pedir(
+    `/rest/v1/v_pendientes?orden_id=eq.${ctx.orden_h}&select=estado_estudio,motivo_devolucion`,
+    { token: sesion.labo })
+  const dev = (pend.datos ?? []).find((x) => x.estado_estudio === "DEVUELTO")
+  if (!dev) fallas.push("el devuelto no aparece en los pendientes del profesional")
+  else if (!dev.motivo_devolucion?.includes("no coincide")) fallas.push("no se ve el motivo")
+
+  /* y ahora no se puede informar */
+  const informar = await rpc("emitir_protocolo", { p_orden: ctx.orden_h, p_aptitud: "APTO" }, sesion.medico)
+  if (informar.estado < 400) fallas.push("informó una orden con un estudio devuelto")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "COMPLETA → EN_CURSO; el profesional lo ve con el motivo y ya no se puede informar" }
+})
+/* --- SEG-01 · la aptitud NO se puede fijar salteando la función ----- */
+/* CP-21 comprobaba emitir_protocolo(). Pero la tabla también se podía
+   escribir: el médico laboral hacía PATCH /rest/v1/orden y declaraba
+   apta a una persona con 52 estudios sin cargar. Tercera vez que
+   aparece el mismo patrón — la regla en la función, la puerta abierta
+   al lado. Corregido en 019. */
+caso("SEG-01", "Nadie fija la aptitud por fuera de emitir_protocolo", async (ctx) => {
+  const fallas = []
+
+  /* la orden del varón sigue con estudios sin cargar */
+  const faltan = await pedir(
+    `/rest/v1/orden_estudio?orden_id=eq.${ctx.orden_h}&estado=neq.CARGADO&select=id`,
+    { token: sesion.admin })
+  if ((faltan.datos ?? []).length === 0) return { ok: false, detalle: "esperaba una orden incompleta" }
+
+  for (const [quien, token] of [["el Médico laboral", sesion.medico],
+                                ["el Administrador", sesion.admin],
+                                ["Recepción", sesion.recep]]) {
+    const r = await pedir(`/rest/v1/orden?id=eq.${ctx.orden_h}`, {
+      token, metodo: "PATCH", cuerpo: { aptitud: "APTO" }, prefer: "return=representation" })
+    if (r.estado < 400 && (r.datos ?? []).length > 0) {
+      fallas.push(`${quien} fijó el APTO con un PATCH directo`)
+    }
+  }
+
+  /* y la orden sigue como estaba */
+  const o = await pedir(`/rest/v1/orden?id=eq.${ctx.orden_h}&select=aptitud,estado`, { token: sesion.admin })
+  if (o.datos?.[0]?.aptitud !== "PENDIENTE") fallas.push(`la aptitud quedó en ${o.datos?.[0]?.aptitud}`)
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: `con ${faltan.datos.length} estudios sin cargar, los tres roles rebotan por RLS` }
+})
+
+/* --- SEG-02 · lo que se puede hacer con sólo la clave del navegador - */
+/* La clave anon viaja al navegador y cualquiera la lee. Lo único que
+   la separa de los datos es RLS. */
+caso("SEG-02", "Con la clave pública y sin sesión no se lee ni se escribe nada", async () => {
+  const fallas = []
+  const tablas = ["persona", "orden", "orden_estudio", "usuario", "auditoria",
+                  "empresa", "concepto", "v_orden_avance", "v_pendientes", "v_vencimientos"]
+
+  for (const t of tablas) {
+    const r = await pedir(`/rest/v1/${t}?select=*&limit=1`)
+    if (Array.isArray(r.datos) && r.datos.length > 0) fallas.push(`${t} devuelve filas sin sesión`)
+  }
+
+  /* las funciones de negocio no tienen que estar ni expuestas */
+  for (const f of ["crear_orden", "emitir_protocolo", "crear_usuario_completo",
+                   "devolver_estudio", "cargar_categoria_normal", "restablecer_password"]) {
+    const r = await pedir(`/rest/v1/rpc/${f}`, { metodo: "POST", cuerpo: {} })
+    if (r.estado !== 404) fallas.push(`${f}() responde ${r.estado} a anon, debería no existir`)
+  }
+
+  /* ni el esquema completo */
+  const esquema = await pedir("/rest/v1/")
+  if (esquema.estado === 200 && esquema.datos?.definitions) fallas.push("el esquema completo se lee sin sesión")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "10 tablas vacías, 6 funciones no expuestas, y el esquema cerrado" }
+})
 /* --- CP-22 ★ · el protocolo, y el cierre ---------------------------- */
 caso("CP-22", "Emitido el protocolo, salen las dos matrículas y los resultados no se editan", async (ctx) => {
   // completar lo que falta: el Administrador puede corregir cualquier categoría

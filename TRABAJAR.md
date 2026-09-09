@@ -195,11 +195,30 @@ eso: el componente llama al servicio, el servicio habla con la base.
 ## Para probar sin romper nada
 
 ```bash
-cd app && node scripts/probar-login.mjs
+node scripts/verificar-frontend.js       # el frontend y la base dicen lo mismo
+node scripts/probar-casos.js             # los casos bloqueantes
+cd app && node scripts/probar-permisos.mjs   # qué puede cada rol
+cd app && node scripts/probar-aptitud.mjs
+cd app && node scripts/probar-alta-orden.mjs
+cd app && node scripts/probar-terceros.mjs
 ```
 
-Entra como el navegador con cada rol y muestra qué ve. Si tocaste permisos,
-corré esto antes de commitear.
+Cada una se crea sus propios usuarios y sus propios datos, y borra todo al
+terminar. Se pueden correr sobre la clínica sin tocar nada real, y devuelven 1
+si algo falla.
+
+**Corrélas antes de commitear.** No porque sí: casi todo lo que rompimos este
+proyecto compilaba perfecto. Una columna renombrada, una vista sin la columna
+que la pantalla pide, una función sin permiso de ejecución — `npm run build`
+dice que está todo bien y la pantalla muestra «no hay datos».
+
+`verificar-frontend.js` es el que atrapa esa clase: lee el código, saca cada
+tabla, columna y función que nombra, y las compara contra la base.
+
+Las otras cuatro recorren circuitos con el mismo cliente que usa el navegador y
+sesiones reales de cada rol. Probar por psql como dueño de la base no sirve: ahí
+los permisos no se aplican, y un caso como «recepción no puede fijar la aptitud»
+da verde aunque recepción sí pueda. Ya pasó.
 
 Y si dudás de si algo se puede ver sin estar logueado:
 
@@ -218,12 +237,13 @@ las vistas mostraban nombre y DNI de pacientes sin ninguna sesión.
 
 | Carpeta | Qué va | Caso de uso |
 |---|---|---|
-| `features/padron/` | Buscar por documento, alta de persona y empresa | CU-05 |
-| `features/ordenes/` | Elegir empresa y batería, crear orden, hoja de ruta | CU-06 |
-| `features/carga/` | Las dos grillas: categorías arriba, estudios abajo | CU-07 |
-| `features/aptitud/` | Legajo consolidado, APTO/NO APTO, protocolo | CU-11, CU-12 |
-| `features/catalogo/` | Alta de categorías y estudios | CU-03 |
-| `features/baterias/` | Armado de baterías por empresa | CU-04 |
+| `features/padron/` | ✔ hecho — dentro de Nueva Orden y de Legajos | CU-05 |
+| `features/ordenes/` | ✔ hecho — admisión, empresa y batería, crear orden, hoja de ruta | CU-06 |
+| `features/carga/` | ✔ hecho — las dos grillas: categorías arriba, estudios abajo | CU-07 |
+| `features/aptitud/` | ✔ hecho — bandeja de dictamen, APTO/NO APTO, protocolo | CU-11, CU-12 |
+| `features/legajo/` | ✔ hecho — buscar persona y ver su historial | CU-11 |
+| `features/catalogo/` | ✔ hecho — categorías, estudios y conceptos | CU-03 |
+| `features/baterias/` | ✔ hecho — con el sexo por ítem | CU-04 |
 
 Los casos de uso completos, con sus caminos alternativos, están en
 `Documentacion_CML_NOA/02_Casos_de_Uso/`.

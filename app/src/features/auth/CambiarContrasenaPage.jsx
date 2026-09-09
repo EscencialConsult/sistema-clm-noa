@@ -23,7 +23,7 @@ export default function CambiarContrasena() {
     <div className="flex min-h-screen items-center justify-center bg-ink-soft/5">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm rounded-card border border-ink-soft/10 bg-white p-8 shadow-sm"
+        className="w-full max-w-sm rounded-card border-2 border-ink-soft/15 bg-white p-8 shadow-sm"
       >
         <img src={logoCompleto} alt="" className="mx-auto mb-4 h-14" />
         <h1 className="text-center text-lg font-semibold text-ink">Cambiar contraseña</h1>
@@ -35,14 +35,14 @@ export default function CambiarContrasena() {
           <input
             type="password"
             placeholder="Contraseña nueva"
-            className="rounded-md border border-ink-soft/20 px-3 py-2.5 text-sm outline-none focus:border-primary"
+            className="rounded-md border-2 border-ink-soft/20 px-3 py-2.5 text-sm outline-none focus:border-primary"
             value={clave}
             onChange={(e) => setClave(e.target.value)}
           />
           <input
             type="password"
             placeholder="Confirmar contraseña"
-            className="rounded-md border border-ink-soft/20 px-3 py-2.5 text-sm outline-none focus:border-primary"
+            className="rounded-md border-2 border-ink-soft/20 px-3 py-2.5 text-sm outline-none focus:border-primary"
             value={confirmar}
             onChange={(e) => setConfirmar(e.target.value)}
           />

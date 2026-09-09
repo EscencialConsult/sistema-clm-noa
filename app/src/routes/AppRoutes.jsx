@@ -5,7 +5,23 @@ import CambiarContrasenaPage from "../features/auth/CambiarContrasenaPage"
 import DashboardAdminPage from "../features/usuarios/DashboardAdminPage"
 import BandejaPage from "../features/carga/BandejaPage"
 import CargaPage from "../features/carga/CargaPage"
-import Placeholder from "../components/Placeholder"
+import AptitudPage from "../features/aptitud/AptitudPage"
+import DictamenPage from "../features/aptitud/DictamenPage"
+import LegajoPage from "../features/legajo/LegajoPage"
+import NuevaOrdenPage from "../features/ordenes/NuevaOrdenPage"
+import AjustarEstudiosPage from "../features/ordenes/AjustarEstudiosPage"
+import CatalogoPage from "../features/catalogo/CatalogoPage"
+import ConceptosPage from "../features/catalogo/ConceptosPage"
+import BateriasPage from "../features/baterias/BateriasPage"
+import PendientesPage from "../features/carga/PendientesPage"
+import AuditoriaPage from "../features/auditoria/AuditoriaPage"
+import UsuariosPage from "../features/usuarios/UsuariosPage"
+import ProfesionalesPage from "../features/usuarios/ProfesionalesPage"
+import VigenciasPage from "../features/aptitud/VigenciasPage"
+import TercerosPage from "../features/terceros/TercerosPage"
+import EmpresasPage from "../features/recepcion/EmpresasPage"
+import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
+import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
 
 // Regla de la Raíz Literal (DESIGN.md): "/" ES el login, no un redirect.
 export default function AppRoutes() {
@@ -17,34 +33,44 @@ export default function AppRoutes() {
 
         {/* Administrador — G1, G3 */}
         <Route path="/admin" element={<DashboardAdminPage />} />
-        <Route path="/admin/usuarios" element={<Placeholder titulo="Usuarios y Roles" />} />
-        <Route path="/admin/profesionales" element={<Placeholder titulo="Maestro de Profesionales" />} />
-        <Route path="/admin/empresas" element={<Placeholder titulo="Empresas" />} />
-        <Route path="/admin/personas" element={<Placeholder titulo="Personas" />} />
-        <Route path="/admin/ordenes" element={<Placeholder titulo="Órdenes de Servicio" />} />
-        <Route path="/admin/catalogo" element={<Placeholder titulo="Estudios y Categorías" />} />
-        <Route path="/admin/baterias" element={<Placeholder titulo="Baterías" />} />
-        <Route path="/admin/conceptos" element={<Placeholder titulo="Conceptos Facturables" />} />
-        <Route path="/admin/referencias" element={<Placeholder titulo="Valores de Referencia" />} />
-        <Route path="/admin/auditoria" element={<Placeholder titulo="Auditoría" />} />
+        <Route path="/admin/usuarios" element={<UsuariosPage />} />
+        <Route path="/admin/profesionales" element={<ProfesionalesPage />} />
+        <Route path="/admin/empresas" element={<EmpresasPage />} />
+        <Route path="/admin/personas" element={<LegajoPage />} />
+        <Route path="/admin/ordenes" element={<ListadoOrdenesPage />} />
+        <Route path="/admin/catalogo" element={<CatalogoPage />} />
+        <Route path="/admin/baterias" element={<BateriasPage />} />
+        <Route path="/admin/conceptos" element={<ConceptosPage />} />
+        <Route path="/admin/referencias" element={<CatalogoPage />} />
+        <Route path="/admin/auditoria" element={<AuditoriaPage />} />
 
         {/* Profesionales — G5, G6 */}
         <Route path="/bandeja" element={<BandejaPage />} />
         <Route path="/carga/:ordenId" element={<CargaPage />} />
-        <Route path="/bandeja/pacientes" element={<Placeholder titulo="Pacientes" />} />
-        <Route path="/bandeja/pendientes" element={<Placeholder titulo="Estudios Pendientes" />} />
-        <Route path="/bandeja/legajos" element={<Placeholder titulo="Legajos" />} />
-        <Route path="/bandeja/terceros" element={<Placeholder titulo="Informes de Terceros" />} />
-        <Route path="/bandeja/vigencias" element={<Placeholder titulo="Vigencias Próximas" />} />
-        <Route path="/bandeja/historial" element={<Placeholder titulo="Historial Personal" />} />
+
+        {/* Médico laboral · CU-11 */}
+        <Route path="/aptitud" element={<AptitudPage />} />
+        <Route path="/aptitud/:ordenId" element={<DictamenPage />} />
+        <Route path="/bandeja/pacientes" element={<LegajoPage />} />
+        <Route path="/bandeja/pendientes" element={<PendientesPage />} />
+        <Route path="/bandeja/legajos" element={<LegajoPage />} />
+        <Route path="/bandeja/terceros" element={<TercerosPage />} />
+        <Route path="/bandeja/vigencias" element={<VigenciasPage />} />
+        <Route path="/bandeja/historial" element={<LegajoPage />} />
 
         {/* Recepción — G2, G4, G7 */}
-        <Route path="/recepcion" element={<Placeholder titulo="Nueva Orden" />} />
-        <Route path="/recepcion/nueva-orden" element={<Placeholder titulo="Nueva Orden" />} />
-        <Route path="/recepcion/personas" element={<Placeholder titulo="Buscar Persona" />} />
-        <Route path="/recepcion/empresas" element={<Placeholder titulo="Empresas" />} />
-        <Route path="/recepcion/pendientes" element={<Placeholder titulo="Pendientes del Día" />} />
-        <Route path="/recepcion/listado" element={<Placeholder titulo="Listado de Órdenes" />} />
+        <Route path="/recepcion" element={<NuevaOrdenPage />} />
+        <Route path="/recepcion/nueva-orden" element={<NuevaOrdenPage />} />
+        {/* RF11 (c): sumar o sacar un estudio suelto de una orden */}
+        <Route path="/orden/:ordenId/estudios" element={<AjustarEstudiosPage />} />
+        <Route path="/recepcion/personas" element={<LegajoPage />} />
+        <Route path="/recepcion/empresas" element={<EmpresasPage />} />
+        <Route path="/recepcion/pendientes" element={<PendientesDelDiaPage />} />
+        <Route path="/recepcion/listado" element={<ListadoOrdenesPage />} />
+        {/* RF07: el catálogo lo mantienen el Administrador Y Recepción */}
+        <Route path="/recepcion/catalogo" element={<CatalogoPage />} />
+        {/* RF09: las baterías también las mantiene Recepción */}
+        <Route path="/recepcion/baterias" element={<BateriasPage />} />
       </Routes>
     </BrowserRouter>
   )

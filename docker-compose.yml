@@ -30,6 +30,11 @@ services:
       POSTGRES_DB: postgres
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXP: 3600
+      # La hora de la clínica, no UTC. La zona de la BASE la fija la
+      # migración 012 (ALTER DATABASE); esto alinea al contenedor, para
+      # que los logs y el backup nocturno hablen de la misma noche.
+      TZ: ${TZ:-America/Argentina/Tucuman}
+      PGTZ: ${TZ:-America/Argentina/Tucuman}
     volumes:
       - db-data:/var/lib/postgresql/data
       # zz- para que corra DESPUÉS de migrate.sh, el script propio de la imagen
@@ -64,6 +69,10 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       # nadie se registra solo: los usuarios los da de alta el Administrador (RF01)
+      # El mínimo de fábrica es 6: alguien podía dejar «123456» sobre una
+      # base de historias clínicas. Se sube a 8, que es lo que ya exige
+      # crear_usuario_completo(); las que genera el sistema tienen 13.
+      GOTRUE_PASSWORD_MIN_LENGTH: 8
       GOTRUE_DISABLE_SIGNUP: "true"
       GOTRUE_MAILER_AUTOCONFIRM: "true"
 
@@ -77,6 +86,11 @@ services:
     environment:
       PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
       PGRST_DB_SCHEMAS: public
+      # Sin sesión se podía leer el esquema entero: las 21 tablas con todas
+      # sus columnas. No hay datos ahí, pero sí el modelo completo de un
+      # sistema clínico, servido a cualquiera que tenga la clave pública
+      # — que es la que viaja al navegador.
+      PGRST_OPENAPI_MODE: disabled
       PGRST_DB_ANON_ROLE: anon
       PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_DB_USE_LEGACY_GUCS: "false"

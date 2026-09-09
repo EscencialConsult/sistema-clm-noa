@@ -21,7 +21,7 @@ import {
 import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
 import { authService } from "../auth/services/authService"
-import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ROL } from "../../types/dominio"
+import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO, ROL } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
 import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
 import { imprimirProtocolo } from "../aptitud/imprimir/Protocolo"
@@ -49,13 +49,6 @@ const ICONO_CATEGORIA = {
   RADIOGRAFIAS: Scan,
   CARDIOLOGIA: HeartPulse,
   ESPECIALIDADES: Brain,
-}
-
-const ESTADO_ESTILO = {
-  ABIERTA: "bg-warning/10 text-warning",
-  EN_CURSO: "bg-accent/15 text-primary",
-  COMPLETA: "bg-success/10 text-success",
-  INFORMADA: "bg-ink-soft/10 text-ink-soft",
 }
 
 const FILTROS = [
@@ -248,7 +241,7 @@ export default function CargaPage() {
         >
           <ArrowLeft size={15} /> Volver
         </button>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${ESTADO_ESTILO[orden.estado]}`}>
+        <span className={`rounded-full px-3 py-1 text-xs font-medium ${ESTILO_ESTADO[orden.estado]}`}>
           {ETIQUETA_ESTADO[orden.estado]}
         </span>
 

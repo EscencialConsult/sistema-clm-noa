@@ -21,8 +21,10 @@ export type Aptitud = (typeof APTITUD)[number]
 export const TIPO_EXAMEN = ["PRELABORAL", "PERIODICO", "EGRESO"] as const
 export type TipoExamen = (typeof TIPO_EXAMEN)[number]
 
-/** orden_estudio.estado — DERIVADO: fue a un laboratorio externo (RF19) */
-export const ESTADO_ESTUDIO = ["PENDIENTE", "DERIVADO", "CARGADO"] as const
+/** orden_estudio.estado
+ *  DERIVADO: fue a un laboratorio externo (RF19)
+ *  DEVUELTO: el médico laboral no acordó y lo mandó de vuelta (RF21) */
+export const ESTADO_ESTUDIO = ["PENDIENTE", "DERIVADO", "CARGADO", "DEVUELTO"] as const
 export type EstadoEstudio = (typeof ESTADO_ESTUDIO)[number]
 
 /** persona.sexo — define qué estudios se agregan y contra qué referencia se compara */
@@ -58,10 +60,27 @@ export const ETIQUETA_ESTADO: Record<EstadoOrden, string> = {
   INFORMADA: "Informada",
 }
 
+/** El color con que se muestra cada estado. Vivía suelto en CargaPage;
+ *  se comparte para que la misma orden no se vea de dos colores según
+ *  desde qué pantalla se la mire. */
+export const ESTILO_ESTADO: Record<EstadoOrden, string> = {
+  ABIERTA: "bg-warning/10 text-warning",
+  EN_CURSO: "bg-accent/15 text-primary",
+  COMPLETA: "bg-success/10 text-success",
+  INFORMADA: "bg-ink-soft/10 text-ink-soft",
+}
+
 export const ETIQUETA_APTITUD: Record<Aptitud, string> = {
   PENDIENTE: "Pendiente",
   APTO: "Apto",
   NO_APTO: "No apto",
+}
+
+export const ETIQUETA_ESTADO_ESTUDIO: Record<EstadoEstudio, string> = {
+  PENDIENTE: "Pendiente",
+  DERIVADO: "Derivado",
+  CARGADO: "Cargado",
+  DEVUELTO: "Devuelto",
 }
 
 export const ETIQUETA_ROL: Record<Rol, string> = {

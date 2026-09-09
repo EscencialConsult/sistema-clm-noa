@@ -11,7 +11,7 @@ import {
 import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
 import { alertasService } from "./services/alertasService"
-import { ESTADO_ORDEN, ETIQUETA_ESTADO } from "../../types/dominio"
+import { ESTADO_ORDEN, ETIQUETA_ESTADO, ESTILO_ESTADO } from "../../types/dominio"
 import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
 
 const TIPO_EXAMEN_LABEL = {
@@ -21,13 +21,6 @@ const TIPO_EXAMEN_LABEL = {
 }
 
 // Colores semánticos (DESIGN.md: nunca el azul de marca para estado clínico/operativo)
-const ESTADO_ESTILO = {
-  ABIERTA: "bg-warning/10 text-warning",
-  EN_CURSO: "bg-accent/15 text-primary",
-  COMPLETA: "bg-success/10 text-success",
-  INFORMADA: "bg-ink-soft/10 text-ink-soft",
-}
-
 const TABS = [{ key: "todos", label: "Todos" }, ...ESTADO_ORDEN.map((e) => ({ key: e, label: ETIQUETA_ESTADO[e] }))]
 
 export default function BandejaProfesional() {
@@ -148,7 +141,7 @@ export default function BandejaProfesional() {
                   <td className="py-2.5 text-ink-soft">{o.empresa?.razon_social}</td>
                   <td className="py-2.5 text-ink-soft">{TIPO_EXAMEN_LABEL[o.tipo_examen]}</td>
                   <td className="py-2.5">
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${ESTADO_ESTILO[o.estado]}`}>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${ESTILO_ESTADO[o.estado]}`}>
                       {ETIQUETA_ESTADO[o.estado]}
                     </span>
                   </td>
