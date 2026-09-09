@@ -4,6 +4,7 @@ import * as Icons from "lucide-react"
 import { Bell, LogOut, Search, PanelLeftClose, PanelLeftOpen, User, UserCog } from "lucide-react"
 import { authService } from "../features/auth/services/authService"
 import { navegacionPorRol } from "../routes/rutasPorRol"
+import PieVersion from "./PieVersion"
 import logoCompleto from "../assets/logo/2.webp"
 import logoIsotipo from "../assets/logo/5.webp"
 
@@ -190,6 +191,7 @@ export default function AppShell({ children, titulo, subtitulo }) {
         >
           {children}
         </main>
+        <PieVersion />
       </div>
     </div>
   )
