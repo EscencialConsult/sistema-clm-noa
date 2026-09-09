@@ -151,6 +151,8 @@ function limpiarDatos() {
     DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
+    DELETE FROM estudio        WHERE nombre LIKE '${MARCA}%';
+    DELETE FROM categoria      WHERE nombre LIKE '${MARCA}%';
   `)
 }
 
@@ -292,6 +294,30 @@ caso("CP-13", "Se marca el hemograma completo como NORMAL en una sola acción", 
     return { ok: false, detalle: "laboratorio pudo cargar RADIOGRAFIAS, que no es de su área" }
 
   return { ok: true, detalle: `${r.datos} estudios en una llamada; y le rechaza una categoría ajena` }
+})
+
+/* --- RF07 · quién mantiene el catálogo ------------------------------ */
+/* «El Administrador y Recepción crean y mantienen las categorías y los
+   estudios.» La política de 005 dejaba sólo al administrador: recepción
+   podía armar una batería pero no crear el estudio que iba adentro.
+   Corregido en 013. Los precios NO: esos siguen siendo del admin. */
+caso("RF07", "Recepción mantiene el catálogo, pero no los precios", async () => {
+  const cat = await pedir("/rest/v1/categoria", { token: sesion.recep, metodo: "POST",
+    cuerpo: { nombre: `${MARCA} CATEGORIA`, orden: 99, rol_carga: "R5", valor_defecto: "NORMAL" },
+    prefer: "return=representation" })
+  if (cat.estado !== 201) return { ok: false, detalle: `no pudo crear la categoría: ${porQue(cat)}` }
+
+  const est = await pedir("/rest/v1/estudio", { token: sesion.recep, metodo: "POST",
+    cuerpo: { codigo: "ZZ9", nombre: `${MARCA} ESTUDIO`, categoria_id: cat.datos[0].id,
+              orden: 99, ref_h: "10-20", ref_m: "8-18" },
+    prefer: "return=representation" })
+  if (est.estado !== 201) return { ok: false, detalle: `no pudo crear el estudio: ${porQue(est)}` }
+
+  const con = await pedir("/rest/v1/concepto", { token: sesion.recep, metodo: "POST",
+    cuerpo: { nombre: `${MARCA} CONCEPTO`, precio: 1 }, prefer: "return=representation" })
+  if (con.estado < 400) return { ok: false, detalle: "recepción pudo fijar un precio, y no debería" }
+
+  return { ok: true, detalle: "crea categoría y estudio con sus referencias; el precio lo rechaza" }
 })
 
 /* --- CP-19 ★ · no se informa con estudios pendientes ---------------- */
