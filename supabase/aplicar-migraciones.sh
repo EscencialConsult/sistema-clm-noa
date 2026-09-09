@@ -30,6 +30,26 @@ for f in "$DIR"/*.sql; do
   psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER:-supabase_admin}" --dbname "${POSTGRES_DB:-postgres}" -f "$f"
 done
 
+# ---------------------------------------------------------------------
+# Anotar en el registro qué se aplicó.
+#
+# Va DESPUÉS del bucle y no adentro, porque la tabla la crea una de las
+# migraciones: hasta que esa no corre, no hay dónde anotar.
+#
+# El hash se calcula sacando los \r antes de resumir, igual que
+# scripts/migrar.js. Tiene que dar idéntico: si no, una instalación
+# limpia quedaría con hashes que el actualizador leería como archivos
+# editados, y se negaría a actualizar acusando algo que no pasó.
+# ---------------------------------------------------------------------
+echo "--> anotando las migraciones aplicadas"
+for f in "$DIR"/*.sql; do
+  n=$(basename "$f")
+  h=$(tr -d '\r' < "$f" | sha256sum | cut -d' ' -f1)
+  psql -v ON_ERROR_STOP=1 --username "supabase_admin" --dbname "postgres" -c \
+    "INSERT INTO migracion (nombre, hash, aplicada_por) VALUES ('$n', '$h', 'instalacion')
+       ON CONFLICT (nombre) DO UPDATE SET hash = EXCLUDED.hash;" > /dev/null
+done
+
 echo "--> contraseñas de los roles internos"
 # La imagen crea authenticator, supabase_auth_admin y supabase_storage_admin
 # sin contraseña utilizable. Sin esto, PostgREST y Storage no conectan:

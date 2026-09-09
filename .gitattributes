@@ -1,0 +1,41 @@
+# =====================================================================
+#  Finales de línea
+#
+#  Git para Windows viene con core.autocrlf=true: al clonar convierte
+#  los archivos de texto a CRLF. Para casi todo da igual, pero no para
+#  lo que se monta adentro de un contenedor Linux.
+#
+#  Sin esto, un clone nuevo en Windows deja aplicar-migraciones.sh con
+#  "#!/bin/bash\r", y adentro del contenedor eso es:
+#
+#      bad interpreter: /bin/bash^M: no such file or directory
+#
+#  La instalación falla entera, y el mensaje no ayuda a entender por qué.
+#  Se comprobó clonando de verdad el repositorio en Windows.
+#
+#  Regla simple: todo lo que cruza al contenedor va con LF, siempre,
+#  independientemente del sistema donde se clone.
+# =====================================================================
+
+* text=auto
+
+# Se ejecutan adentro del contenedor
+*.sh        text eol=lf
+
+# Los lee psql adentro del contenedor
+*.sql       text eol=lf
+
+# nginx.conf se copia a la imagen del front
+*.conf      text eol=lf
+Dockerfile  text eol=lf
+
+# El .env de ejemplo termina copiado como .env y lo lee docker compose
+.env.example text eol=lf
+
+# Binarios: que git no los toque nunca
+*.webp      binary
+*.png       binary
+*.jpg       binary
+*.svg       text eol=lf
+*.pdf       binary
+*.ico       binary

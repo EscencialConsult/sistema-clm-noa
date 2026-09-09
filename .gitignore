@@ -15,3 +15,6 @@ app/.env
 # Están cifradas, pero el repositorio es público y son datos de pacientes.
 backups/
 *.sql.enc
+
+# bitácora del arranque automático del servidor
+arranque.log
