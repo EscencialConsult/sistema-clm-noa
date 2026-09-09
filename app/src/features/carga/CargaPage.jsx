@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Circle,
+  RotateCcw,
   Eraser,
   PencilLine,
   X,
@@ -537,6 +538,10 @@ function FilaEstudio({ item, seleccionado, onToggleSeleccion, onGuardar }) {
   const est = item.estudio
   const referencia = est.ref_h && est.ref_m ? `H ${est.ref_h} · M ${est.ref_m}` : est.ref_h || est.ref_m || "—"
   const cargado = item.estado === "CARGADO"
+  // RF21: un DEVUELTO no es lo mismo que un PENDIENTE que nunca se tocó —
+  // el médico laboral lo rechazó con un motivo, y eso hay que verlo acá,
+  // no solo saber que "falta". Antes se veía igual que un pendiente común.
+  const devuelto = item.estado === "DEVUELTO"
 
   function guardarSiCambio(campo, valor) {
     if (valor === (item[campo] ?? "")) return
@@ -549,26 +554,29 @@ function FilaEstudio({ item, seleccionado, onToggleSeleccion, onGuardar }) {
     }`
 
   return (
-    <tr className={seleccionado ? "bg-primary/5" : undefined}>
-      <td className="py-2.5 pl-3">
-        <input
-          type="checkbox"
-          checked={seleccionado}
-          onChange={onToggleSeleccion}
-          className="h-3.5 w-3.5 cursor-pointer rounded border-2 border-ink-soft/30 accent-primary"
-        />
-      </td>
-      <td className="py-2.5 pl-1 text-ink">
-        <span className="inline-flex items-center gap-1.5">
-          {cargado ? (
-            <CheckCircle2 size={13} className="shrink-0 text-success" />
-          ) : (
-            <Circle size={13} className="shrink-0 text-ink-soft/30" />
-          )}
-          {est.nombre}
-          {est.unidad ? <span className="text-ink-soft"> ({est.unidad})</span> : null}
-        </span>
-      </td>
+    <>
+      <tr className={seleccionado ? "bg-primary/5" : devuelto ? "bg-danger/5" : undefined}>
+        <td className="py-2.5 pl-3">
+          <input
+            type="checkbox"
+            checked={seleccionado}
+            onChange={onToggleSeleccion}
+            className="h-3.5 w-3.5 cursor-pointer rounded border-2 border-ink-soft/30 accent-primary"
+          />
+        </td>
+        <td className="py-2.5 pl-1 text-ink">
+          <span className="inline-flex items-center gap-1.5">
+            {cargado ? (
+              <CheckCircle2 size={13} className="shrink-0 text-success" />
+            ) : devuelto ? (
+              <RotateCcw size={13} className="shrink-0 text-danger" />
+            ) : (
+              <Circle size={13} className="shrink-0 text-ink-soft/30" />
+            )}
+            {est.nombre}
+            {est.unidad ? <span className="text-ink-soft"> ({est.unidad})</span> : null}
+          </span>
+        </td>
       <td className="py-2.5">
         <input
           className={inputClase("w-28")}
@@ -601,6 +609,20 @@ function FilaEstudio({ item, seleccionado, onToggleSeleccion, onGuardar }) {
           onBlur={(e) => guardarSiCambio("observacion", e.target.value)}
         />
       </td>
-    </tr>
+      </tr>
+      {devuelto && (
+        <tr className="bg-danger/5">
+          <td></td>
+          <td colSpan={5} className="pb-2.5 pl-1">
+            <p className="flex items-start gap-1.5 text-xs text-danger">
+              <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+              <span>
+                <b>El médico laboral lo devolvió:</b> {item.motivo_devolucion || "sin motivo registrado"}
+              </span>
+            </p>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

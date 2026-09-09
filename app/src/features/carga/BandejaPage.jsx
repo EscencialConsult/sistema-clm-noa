@@ -206,16 +206,33 @@ export default function BandejaProfesional() {
               <th className="pb-2 font-normal">Categoría</th>
               <th className="pb-2 font-normal">Empresa</th>
               <th className="pb-2 font-normal">Lo carga</th>
+              <th className="pb-2 font-normal">Estado</th>
             </tr>
           </thead>
           <tbody>
             {pendientes.map((e, i) => (
-              <tr key={`${e.numero}-${e.estudio}-${i}`} className="border-t border-ink-soft/10">
+              <tr
+                key={`${e.numero}-${e.estudio}-${i}`}
+                className="cursor-pointer border-t border-ink-soft/10 hover:bg-ink-soft/5"
+                onClick={() => e.orden_id && navigate(`/carga/${e.orden_id}`)}
+              >
                 <td className="py-2.5 text-ink">{e.paciente}</td>
                 <td className="py-2.5 text-ink-soft">{e.estudio}</td>
                 <td className="py-2.5 text-ink-soft">{e.categoria}</td>
                 <td className="py-2.5 text-ink-soft">{e.empresa}</td>
                 <td className="py-2.5 text-ink-soft">{e.rol_responsable}</td>
+                <td className="py-2.5">
+                  {e.estado_estudio === "DEVUELTO" ? (
+                    <span
+                      title={e.motivo_devolucion || "sin motivo registrado"}
+                      className="rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-medium text-danger"
+                    >
+                      Devuelto
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-ink-soft">Pendiente</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
