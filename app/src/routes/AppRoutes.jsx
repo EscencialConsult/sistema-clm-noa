@@ -18,10 +18,10 @@ import AuditoriaPage from "../features/auditoria/AuditoriaPage"
 import UsuariosPage from "../features/usuarios/UsuariosPage"
 import ProfesionalesPage from "../features/usuarios/ProfesionalesPage"
 import VigenciasPage from "../features/aptitud/VigenciasPage"
+import TercerosPage from "../features/terceros/TercerosPage"
 import EmpresasPage from "../features/recepcion/EmpresasPage"
 import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
 import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
-import Placeholder from "../components/Placeholder"
 
 // Regla de la Raíz Literal (DESIGN.md): "/" ES el login, no un redirect.
 export default function AppRoutes() {
@@ -54,7 +54,7 @@ export default function AppRoutes() {
         <Route path="/bandeja/pacientes" element={<LegajoPage />} />
         <Route path="/bandeja/pendientes" element={<PendientesPage />} />
         <Route path="/bandeja/legajos" element={<LegajoPage />} />
-        <Route path="/bandeja/terceros" element={<Placeholder titulo="Informes de Terceros" />} />
+        <Route path="/bandeja/terceros" element={<TercerosPage />} />
         <Route path="/bandeja/vigencias" element={<VigenciasPage />} />
         <Route path="/bandeja/historial" element={<LegajoPage />} />
 

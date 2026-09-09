@@ -204,6 +204,7 @@ corré esto antes de commitear.
 ```bash
 cd app && node scripts/probar-aptitud.mjs
 cd app && node scripts/probar-alta-orden.mjs
+cd app && node scripts/probar-terceros.mjs
 ```
 
 Recorre el circuito entero con el mismo cliente que usa el navegador: recepción
@@ -240,8 +241,8 @@ las vistas mostraban nombre y DNI de pacientes sin ninguna sesión.
 | `features/carga/` | ✔ hecho — las dos grillas: categorías arriba, estudios abajo | CU-07 |
 | `features/aptitud/` | ✔ hecho — bandeja de dictamen, APTO/NO APTO, protocolo | CU-11, CU-12 |
 | `features/legajo/` | ✔ hecho — buscar persona y ver su historial | CU-11 |
-| `features/catalogo/` | Alta de categorías y estudios | CU-03 |
-| `features/baterias/` | Armado de baterías por empresa | CU-04 |
+| `features/catalogo/` | ✔ hecho — categorías, estudios y conceptos | CU-03 |
+| `features/baterias/` | ✔ hecho — con el sexo por ítem | CU-04 |
 
 Los casos de uso completos, con sus caminos alternativos, están en
 `Documentacion_CML_NOA/02_Casos_de_Uso/`.
