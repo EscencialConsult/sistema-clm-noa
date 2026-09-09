@@ -5,8 +5,7 @@ import AppShell from "../../layouts/AppShell"
 import { nuevaOrdenService } from "./services/nuevaOrdenService"
 import { TIPO_DOC, TIPO_EXAMEN, ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
-import { puedeCompartirArchivos } from "../../shared/impresos/descargarPdf"
-import { imprimirHojaDeRuta, descargarHojaDeRutaPdf, compartirHojaDeRuta } from "./imprimir/HojaDeRuta"
+import { imprimirHojaDeRuta } from "./imprimir/HojaDeRuta"
 
 /* ---------------------------------------------------------------------
    Alta de orden — CU-05 + CU-06 · RF11, RF12, RF14.
@@ -167,10 +166,7 @@ export default function NuevaOrdenPage() {
             <MenuImpreso
               etiqueta="Hoja de ruta"
               destacado
-              disponibleCompartir={puedeCompartirArchivos()}
               onImprimir={() => imprimirHojaDeRuta(creada.id)}
-              onDescargar={() => descargarHojaDeRutaPdf(creada.id)}
-              onCompartir={() => compartirHojaDeRuta(creada.id)}
             />
             <button
               onClick={() => navigate(`/orden/${creada.id}/estudios`)}

@@ -5,8 +5,7 @@ import AppShell from "../../layouts/AppShell"
 import { aptitudService } from "./services/aptitudService"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
-import { puedeCompartirArchivos } from "../../shared/impresos/descargarPdf"
-import { imprimirProtocolo, descargarProtocoloPdf, compartirProtocolo } from "./imprimir/Protocolo"
+import { imprimirProtocolo } from "./imprimir/Protocolo"
 
 /* ---------------------------------------------------------------------
    ClickUp · Aptitud y legajo — CU-11, RF22/RF23.
@@ -156,10 +155,7 @@ export default function DictamenPage() {
             <MenuImpreso
               etiqueta={`Protocolo (${ETIQUETA_APTITUD[orden.aptitud]})`}
               destacado
-              disponibleCompartir={puedeCompartirArchivos()}
               onImprimir={() => imprimirProtocolo(orden.id)}
-              onDescargar={() => descargarProtocoloPdf(orden.id)}
-              onCompartir={() => compartirProtocolo(orden.id)}
             />
           </div>
         )}
