@@ -393,6 +393,34 @@ async function main() {
   paso("la orden emitida antes conserva sus estudios (CP-09)", nVdespues === nV,
     `la orden vieja sigue en ${nVdespues}, no se tocó`)
 
+  /* ---------- RF16 · pendientes por área ---------- */
+
+  /* 31 · la vista trae el id de la orden, para poder abrirla */
+  const { data: pendArea, error: k1 } = await labo.cliente.from("v_pendientes")
+    .select("numero, paciente, categoria, estudio, rol_responsable, orden_id, estudio_id, categoria_id")
+    .order("numero")
+  paso("v_pendientes dice a qué orden pertenece cada estudio",
+    !k1 && (pendArea ?? []).length > 0 && pendArea.every((f) => !!f.orden_id),
+    k1 ? k1.message : `${pendArea.length} pendientes, todos con orden_id`)
+
+  /* 32 · filtrar por el área de laboratorio deja sólo lo suyo */
+  const mios = (pendArea ?? []).filter((f) => f.rol_responsable === "R5")
+  const ajenos = (pendArea ?? []).filter((f) => f.rol_responsable !== "R5")
+  paso("el filtro «mi área» separa lo de laboratorio del resto",
+    mios.length > 0 && ajenos.length > 0,
+    `${mios.length} de laboratorio · ${ajenos.length} de otras áreas`)
+
+  /* 33 · agrupar por orden, que es como se trabaja */
+  const ordenes = new Set(mios.map((f) => f.orden_id))
+  paso("los pendientes se agrupan por orden", ordenes.size > 0,
+    `${mios.length} estudios en ${ordenes.size} ${ordenes.size === 1 ? "orden" : "órdenes"}`)
+
+  /* 34 · y sin sesión la vista no devuelve nada */
+  const anonimo = createClient(API, env.ANON_KEY, { auth: { persistSession: false } })
+  const { data: sinSesion } = await anonimo.from("v_pendientes").select("paciente")
+  paso("sin sesión la vista no muestra ningún paciente", (sinSesion ?? []).length === 0,
+    `${(sinSesion ?? []).length} filas`)
+
   /* limpieza */
   limpiar()
   for (const u of [recep, labo]) await admin(`/auth/v1/admin/users/${u.authId}`, { method: "DELETE" })

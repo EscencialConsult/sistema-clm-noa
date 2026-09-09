@@ -13,6 +13,7 @@ import AjustarEstudiosPage from "../features/ordenes/AjustarEstudiosPage"
 import CatalogoPage from "../features/catalogo/CatalogoPage"
 import ConceptosPage from "../features/catalogo/ConceptosPage"
 import BateriasPage from "../features/baterias/BateriasPage"
+import PendientesPage from "../features/carga/PendientesPage"
 import EmpresasPage from "../features/recepcion/EmpresasPage"
 import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
 import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
@@ -47,7 +48,7 @@ export default function AppRoutes() {
         <Route path="/aptitud" element={<AptitudPage />} />
         <Route path="/aptitud/:ordenId" element={<DictamenPage />} />
         <Route path="/bandeja/pacientes" element={<Placeholder titulo="Pacientes" />} />
-        <Route path="/bandeja/pendientes" element={<Placeholder titulo="Estudios Pendientes" />} />
+        <Route path="/bandeja/pendientes" element={<PendientesPage />} />
         <Route path="/bandeja/legajos" element={<LegajoPage />} />
         <Route path="/bandeja/terceros" element={<Placeholder titulo="Informes de Terceros" />} />
         <Route path="/bandeja/vigencias" element={<Placeholder titulo="Vigencias Próximas" />} />
