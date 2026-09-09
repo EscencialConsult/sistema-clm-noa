@@ -4,7 +4,9 @@ import { Search, UserPlus, Printer, AlertTriangle, Check, ArrowRight } from "luc
 import AppShell from "../../layouts/AppShell"
 import { nuevaOrdenService } from "./services/nuevaOrdenService"
 import { TIPO_DOC, TIPO_EXAMEN, ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
-import { imprimirHojaDeRuta } from "./imprimir/HojaDeRuta"
+import MenuImpreso from "../../shared/impresos/MenuImpreso"
+import { puedeCompartirArchivos } from "../../shared/impresos/descargarPdf"
+import { imprimirHojaDeRuta, descargarHojaDeRutaPdf, compartirHojaDeRuta } from "./imprimir/HojaDeRuta"
 
 /* ---------------------------------------------------------------------
    Alta de orden — CU-05 + CU-06 · RF11, RF12, RF14.
@@ -140,7 +142,7 @@ export default function NuevaOrdenPage() {
     const p = creada.persona
     return (
       <AppShell titulo="Orden creada" subtitulo={`N° ${creada.numero}`}>
-        <div className="max-w-2xl rounded-card border border-success/30 bg-success/5 p-6">
+        <div className="max-w-2xl rounded-card border-2 border-success/30 bg-success/5 p-6">
           <div className="mb-4 flex items-center gap-2">
             <Check size={20} className="text-success" />
             <p className="text-base font-medium text-success">
@@ -162,21 +164,23 @@ export default function NuevaOrdenPage() {
           </dl>
 
           <div className="flex gap-2">
-            <button
-              onClick={() => imprimirHojaDeRuta(creada.id)}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-4 py-2.5 text-sm text-white hover:opacity-90"
-            >
-              <Printer size={15} /> Imprimir hoja de ruta
-            </button>
+            <MenuImpreso
+              etiqueta="Hoja de ruta"
+              destacado
+              disponibleCompartir={puedeCompartirArchivos()}
+              onImprimir={() => imprimirHojaDeRuta(creada.id)}
+              onDescargar={() => descargarHojaDeRutaPdf(creada.id)}
+              onCompartir={() => compartirHojaDeRuta(creada.id)}
+            />
             <button
               onClick={() => navigate(`/carga/${creada.id}`)}
-              className="rounded-md border border-ink-soft/20 px-4 py-2.5 text-sm text-ink-soft hover:text-ink"
+              className="rounded-md border-2 border-ink-soft/20 px-4 py-2.5 text-sm text-ink-soft hover:text-ink"
             >
               Ver la orden
             </button>
             <button
               onClick={empezarDeNuevo}
-              className="ml-auto rounded-md border border-ink-soft/20 px-4 py-2.5 text-sm text-ink-soft hover:text-ink"
+              className="ml-auto rounded-md border-2 border-ink-soft/20 px-4 py-2.5 text-sm text-ink-soft hover:text-ink"
             >
               Cargar otra
             </button>
@@ -197,7 +201,7 @@ export default function NuevaOrdenPage() {
   return (
     <AppShell titulo="Nueva Orden" subtitulo="Admisión y alta de orden">
       {error && (
-        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -206,14 +210,14 @@ export default function NuevaOrdenPage() {
       <div className="grid max-w-5xl grid-cols-3 gap-4">
         <div className="col-span-2 flex flex-col gap-4">
           {/* Paso 1 */}
-          <section className="rounded-card border border-ink-soft/10 bg-white p-5">
+          <section className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
             <p className="mb-3 text-sm font-medium text-ink">1 · El documento</p>
 
             <form onSubmit={buscar} className="flex gap-2">
               <select
                 value={tipoDoc}
                 onChange={(e) => setTipoDoc(e.target.value)}
-                className="rounded-md border border-ink-soft/20 px-2.5 py-2.5 text-sm outline-none focus:border-primary"
+                className="rounded-md border-2 border-ink-soft/20 px-2.5 py-2.5 text-sm outline-none focus:border-primary"
               >
                 {TIPO_DOC.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -224,7 +228,7 @@ export default function NuevaOrdenPage() {
                   value={nroDoc}
                   onChange={(e) => setNroDoc(e.target.value)}
                   placeholder="Número de documento"
-                  className="w-full rounded-md border border-ink-soft/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
+                  className="w-full rounded-md border-2 border-ink-soft/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
                 />
               </div>
               <button
@@ -237,7 +241,7 @@ export default function NuevaOrdenPage() {
             </form>
 
             {persona && (
-              <div className="mt-4 rounded-md border border-success/30 bg-success/5 p-3.5">
+              <div className="mt-4 rounded-md border-2 border-success/30 bg-success/5 p-3.5">
                 <p className="text-sm text-ink">
                   {persona.apellido}, {persona.nombre}
                 </p>
@@ -272,14 +276,14 @@ export default function NuevaOrdenPage() {
             )}
 
             {noEncontrada && !alta && (
-              <div className="mt-4 rounded-md border border-ink-soft/20 p-3.5">
+              <div className="mt-4 rounded-md border-2 border-ink-soft/20 p-3.5">
                 <p className="text-sm text-ink">No está en el padrón.</p>
                 <p className="mb-3 text-xs text-ink-soft">
                   {tipoDoc} {nroDoc} no figura. Si es la primera vez que viene, dala de alta.
                 </p>
                 <button
                   onClick={() => setAlta({ apellido: "", nombre: "", sexo: "M", fecha_nac: "" })}
-                  className="flex items-center gap-1.5 rounded-md border border-primary/40 px-3 py-2 text-xs text-primary hover:bg-primary/5"
+                  className="flex items-center gap-1.5 rounded-md border-2 border-primary/40 px-3 py-2 text-xs text-primary hover:bg-primary/5"
                 >
                   <UserPlus size={14} /> Dar de alta
                 </button>
@@ -287,7 +291,7 @@ export default function NuevaOrdenPage() {
             )}
 
             {alta && (
-              <form onSubmit={darDeAlta} className="mt-4 rounded-md border border-ink-soft/20 p-3.5">
+              <form onSubmit={darDeAlta} className="mt-4 rounded-md border-2 border-ink-soft/20 p-3.5">
                 <p className="mb-3 text-sm font-medium text-ink">
                   Alta de {tipoDoc} {nroDoc}
                 </p>
@@ -303,7 +307,7 @@ export default function NuevaOrdenPage() {
                     <select
                       value={alta.sexo}
                       onChange={(e) => setAlta({ ...alta, sexo: e.target.value })}
-                      className="w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary"
+                      className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary"
                     >
                       <option value="M">Masculino</option>
                       <option value="F">Femenino</option>
@@ -330,7 +334,7 @@ export default function NuevaOrdenPage() {
                   <button
                     type="button"
                     onClick={() => setAlta(null)}
-                    className="rounded-md border border-ink-soft/20 px-4 py-2 text-sm text-ink-soft"
+                    className="rounded-md border-2 border-ink-soft/20 px-4 py-2 text-sm text-ink-soft"
                   >
                     Cancelar
                   </button>
@@ -340,7 +344,7 @@ export default function NuevaOrdenPage() {
           </section>
 
           {/* Paso 2 */}
-          <section className={`rounded-card border border-ink-soft/10 bg-white p-5 ${persona ? "" : "opacity-50"}`}>
+          <section className={`rounded-card border-2 border-ink-soft/15 bg-white p-5 ${persona ? "" : "opacity-50"}`}>
             <p className="mb-3 text-sm font-medium text-ink">2 · Empresa y batería</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -351,7 +355,7 @@ export default function NuevaOrdenPage() {
                   disabled={!persona}
                   value={empresaId}
                   onChange={(e) => setEmpresaId(e.target.value)}
-                  className="w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
+                  className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
                 >
                   <option value="">Elegir…</option>
                   {empresas.map((e) => (
@@ -367,7 +371,7 @@ export default function NuevaOrdenPage() {
                   disabled={!persona}
                   value={plantillaId}
                   onChange={(e) => setPlantillaId(e.target.value)}
-                  className="w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
+                  className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
                 >
                   <option value="">Elegir…</option>
                   {baterias.map((b) => (
@@ -381,7 +385,7 @@ export default function NuevaOrdenPage() {
                   disabled={!persona}
                   value={tipoExamen}
                   onChange={(e) => setTipoExamen(e.target.value)}
-                  className="w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
+                  className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
                 >
                   {TIPO_EXAMEN.map((t) => (
                     <option key={t} value={t}>{TIPO_EXAMEN_LABEL[t]}</option>
@@ -396,7 +400,7 @@ export default function NuevaOrdenPage() {
 
         {/* Paso 3 · lo que va a pasar */}
         <aside className="flex flex-col gap-4">
-          <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+          <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
             <p className="mb-3 text-sm font-medium text-ink">3 · Qué se va a abrir</p>
 
             {!previa ? (
@@ -457,7 +461,7 @@ function Campo({ label, valor, onCambio, tipo = "text", requerido, deshabilitado
         value={valor}
         disabled={deshabilitado}
         onChange={(e) => onCambio(e.target.value)}
-        className="w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
+        className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
       />
     </div>
   )

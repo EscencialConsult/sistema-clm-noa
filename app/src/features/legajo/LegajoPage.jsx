@@ -69,7 +69,7 @@ export default function LegajoPage() {
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             placeholder="Documento o apellido"
-            className="w-full rounded-md border border-ink-soft/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
+            className="w-full rounded-md border-2 border-ink-soft/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
           />
         </div>
         <button
@@ -82,14 +82,14 @@ export default function LegajoPage() {
       </form>
 
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="mb-4 flex items-start gap-2 rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+        <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
           <p className="mb-3 text-sm font-medium text-ink">Personas ({personas.length})</p>
           {buscoAlgunaVez && personas.length === 0 && (
             <p className="text-xs text-ink-soft">
@@ -113,7 +113,7 @@ export default function LegajoPage() {
           </ul>
         </div>
 
-        <div className="col-span-2 rounded-card border border-ink-soft/10 bg-white p-5">
+        <div className="col-span-2 rounded-card border-2 border-ink-soft/15 bg-white p-5">
           {!elegida ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FolderOpen size={28} className="mb-2 text-ink-soft/40" strokeWidth={1.5} />
@@ -138,7 +138,7 @@ export default function LegajoPage() {
               ) : (
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="text-xs text-ink-soft">
+                    <tr className="text-[11px] text-ink-soft">
                       <th className="pb-2 font-normal">N°</th>
                       <th className="pb-2 font-normal">Fecha</th>
                       <th className="pb-2 font-normal">Empresa</th>
@@ -166,7 +166,7 @@ export default function LegajoPage() {
                             <span className="text-xs text-ink-soft">—</span>
                           ) : (
                             <span
-                              className={`rounded-full px-2 py-0.5 text-xs ${
+                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                                 o.aptitud === "APTO"
                                   ? "bg-success/10 text-success"
                                   : "bg-danger/10 text-danger"

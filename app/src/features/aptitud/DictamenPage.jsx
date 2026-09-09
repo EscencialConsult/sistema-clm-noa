@@ -3,8 +3,10 @@ import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Printer, AlertTriangle, ShieldCheck, ShieldX } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { aptitudService } from "./services/aptitudService"
-import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
-import { imprimirProtocolo } from "./imprimir/Protocolo"
+import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO } from "../../types/dominio"
+import MenuImpreso from "../../shared/impresos/MenuImpreso"
+import { puedeCompartirArchivos } from "../../shared/impresos/descargarPdf"
+import { imprimirProtocolo, descargarProtocoloPdf, compartirProtocolo } from "./imprimir/Protocolo"
 
 /* ---------------------------------------------------------------------
    ClickUp · Aptitud y legajo — CU-11, RF22/RF23.
@@ -107,7 +109,7 @@ export default function DictamenPage() {
   if (error && !orden) {
     return (
       <AppShell titulo="Aptitud">
-        <div className="rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           No se pudo abrir la orden: {error}
         </div>
       </AppShell>
@@ -125,32 +127,36 @@ export default function DictamenPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 rounded-md border border-ink-soft/20 px-3 py-2 text-xs text-ink-soft hover:text-ink"
+          className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/20 px-3 py-2 text-xs font-medium text-ink-soft hover:text-ink"
         >
           <ArrowLeft size={15} /> Volver
         </button>
-        <span className="rounded-full bg-ink-soft/10 px-2.5 py-1 text-xs text-ink-soft">
+        <span className={`rounded-full px-3 py-1 text-xs font-medium ${ESTILO_ESTADO[orden.estado]}`}>
           {ETIQUETA_ESTADO[orden.estado]}
         </span>
         {informada && (
-          <button
-            onClick={() => imprimirProtocolo(orden.id)}
-            className="ml-auto flex items-center gap-1.5 rounded-md border border-primary/40 px-3 py-2 text-xs text-primary hover:bg-primary/5"
-          >
-            <Printer size={15} /> Protocolo ({ETIQUETA_APTITUD[orden.aptitud]})
-          </button>
+          <div className="ml-auto">
+            <MenuImpreso
+              etiqueta={`Protocolo (${ETIQUETA_APTITUD[orden.aptitud]})`}
+              destacado
+              disponibleCompartir={puedeCompartirArchivos()}
+              onImprimir={() => imprimirProtocolo(orden.id)}
+              onDescargar={() => descargarProtocoloPdf(orden.id)}
+              onCompartir={() => compartirProtocolo(orden.id)}
+            />
+          </div>
         )}
       </div>
 
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="mb-4 flex items-start gap-2 rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
       )}
 
       {informada && (
-        <div className="mb-5 rounded-card border border-success/30 bg-success/5 p-4 text-sm">
+        <div className="mb-5 rounded-card border-2 border-success/30 bg-success/5 p-4 text-sm">
           <p className="font-medium text-success">
             Informada como {ETIQUETA_APTITUD[orden.aptitud]}
           </p>
@@ -169,7 +175,7 @@ export default function DictamenPage() {
       <div className="grid grid-cols-3 gap-4">
         {/* Lo que hay que mirar */}
         <div className="col-span-2 flex flex-col gap-4">
-          <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+          <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
             <p className="mb-3 text-sm font-medium text-ink">
               Valores fuera de rango ({fueraDeRango.length})
             </p>
@@ -180,7 +186,7 @@ export default function DictamenPage() {
             ) : (
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="text-xs text-ink-soft">
+                  <tr className="text-[11px] text-ink-soft">
                     <th className="pb-2 font-normal">Estudio</th>
                     <th className="pb-2 font-normal">Valor</th>
                     <th className="pb-2 font-normal">Referencia</th>
@@ -206,7 +212,7 @@ export default function DictamenPage() {
             )}
           </div>
 
-          <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+          <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
             <p className="mb-3 text-sm font-medium text-ink">Todos los estudios</p>
             {categorias.map((c) => (
               <div key={c.id} className="mb-4 last:mb-0">
@@ -236,11 +242,11 @@ export default function DictamenPage() {
 
         {/* El dictamen */}
         <div className="flex flex-col gap-4">
-          <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+          <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
             <p className="mb-3 text-sm font-medium text-ink">Dictamen</p>
 
             {sinCargar.length > 0 && (
-              <p className="mb-3 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
+              <p className="mb-3 rounded-md border-2 border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
                 Quedan {sinCargar.length} estudio{sinCargar.length === 1 ? "" : "s"} sin cargar.
                 No se puede informar hasta que estén todos.
               </p>
@@ -268,7 +274,7 @@ export default function DictamenPage() {
               value={preexistencias}
               onChange={(e) => setPreexistencias(e.target.value)}
               placeholder="Lo que se detectó y queda registrado"
-              className="mb-1 w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-xs outline-none focus:border-primary disabled:bg-ink-soft/5"
+              className="mb-1 w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-xs outline-none focus:border-primary disabled:bg-ink-soft/5"
             />
             <p className="mb-3 text-[11px] text-ink-soft">
               Registrar una preexistencia no cambia la aptitud: se puede ser apto y
@@ -284,7 +290,7 @@ export default function DictamenPage() {
               step="0.01"
               value={incapacidad}
               onChange={(e) => setIncapacidad(e.target.value)}
-              className="mb-3 w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-xs outline-none focus:border-primary disabled:bg-ink-soft/5"
+              className="mb-3 w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-xs outline-none focus:border-primary disabled:bg-ink-soft/5"
             />
 
             <label className="mb-1 block text-xs text-ink-soft">
@@ -295,7 +301,7 @@ export default function DictamenPage() {
               rows={3}
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
-              className="mb-4 w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-xs outline-none focus:border-primary disabled:bg-ink-soft/5"
+              className="mb-4 w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-xs outline-none focus:border-primary disabled:bg-ink-soft/5"
             />
 
             {!informada && (
@@ -309,7 +315,7 @@ export default function DictamenPage() {
             )}
           </div>
 
-          <div className="rounded-card border border-ink-soft/10 bg-white p-5 text-xs text-ink-soft">
+          <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5 text-xs text-ink-soft">
             <p className="mb-2 font-medium text-ink">Paciente</p>
             <p>{p.apellido_nombre}</p>
             <p>{p.documento}</p>

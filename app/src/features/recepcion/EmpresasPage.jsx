@@ -71,7 +71,7 @@ export default function EmpresasPage() {
   return (
     <AppShell titulo="Empresas" subtitulo="Las que mandan gente a revisar">
       {error && (
-        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -84,7 +84,7 @@ export default function EmpresasPage() {
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             placeholder="Razón social, código o CUIT"
-            className="w-full rounded-md border border-ink-soft/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
+            className="w-full rounded-md border-2 border-ink-soft/20 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
           />
         </div>
         <button
@@ -96,7 +96,7 @@ export default function EmpresasPage() {
       </div>
 
       {editando && (
-        <form onSubmit={guardar} className="mb-5 max-w-3xl rounded-card border border-primary/30 bg-white p-5">
+        <form onSubmit={guardar} className="mb-5 max-w-3xl rounded-card border-2 border-primary/30 bg-white p-5">
           <p className="mb-3 text-sm font-medium text-ink">
             {editando.id ? `Editar ${editando.razon_social}` : "Nueva empresa"}
           </p>
@@ -123,7 +123,7 @@ export default function EmpresasPage() {
             <button
               type="button"
               onClick={() => setEditando(null)}
-              className="rounded-md border border-ink-soft/20 px-4 py-2 text-sm text-ink-soft"
+              className="rounded-md border-2 border-ink-soft/20 px-4 py-2 text-sm text-ink-soft"
             >
               Cancelar
             </button>
@@ -131,13 +131,13 @@ export default function EmpresasPage() {
         </form>
       )}
 
-      <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+      <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
         <p className="mb-4 text-sm font-medium text-ink">
           {visibles.length} de {empresas.length}
         </p>
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="text-xs text-ink-soft">
+            <tr className="text-[11px] text-ink-soft">
               <th className="pb-2 font-normal">Razón social</th>
               <th className="pb-2 font-normal">Código</th>
               <th className="pb-2 font-normal">CUIT</th>
@@ -201,7 +201,7 @@ function Campo({ label, valor, onCambio, requerido }) {
       <input
         value={valor ?? ""}
         onChange={(e) => onCambio(e.target.value)}
-        className="w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary"
+        className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary"
       />
     </div>
   )

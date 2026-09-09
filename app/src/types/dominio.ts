@@ -58,6 +58,16 @@ export const ETIQUETA_ESTADO: Record<EstadoOrden, string> = {
   INFORMADA: "Informada",
 }
 
+/** El color con que se muestra cada estado. Vivía suelto en CargaPage;
+ *  se comparte para que la misma orden no se vea de dos colores según
+ *  desde qué pantalla se la mire. */
+export const ESTILO_ESTADO: Record<EstadoOrden, string> = {
+  ABIERTA: "bg-warning/10 text-warning",
+  EN_CURSO: "bg-accent/15 text-primary",
+  COMPLETA: "bg-success/10 text-success",
+  INFORMADA: "bg-ink-soft/10 text-ink-soft",
+}
+
 export const ETIQUETA_APTITUD: Record<Aptitud, string> = {
   PENDIENTE: "Pendiente",
   APTO: "Apto",

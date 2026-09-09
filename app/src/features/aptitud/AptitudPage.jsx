@@ -48,19 +48,19 @@ export default function AptitudPage() {
       subtitulo="Órdenes completas, listas para dictaminar"
     >
       {error && (
-        <div className="mb-4 flex items-start gap-2 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="mb-4 flex items-start gap-2 rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="mb-5 rounded-card border border-ink-soft/10 bg-white p-5">
+      <div className="mb-5 rounded-card border-2 border-ink-soft/15 bg-white p-5">
         <p className="mb-4 text-sm font-medium text-ink">
           Para dictaminar ({paraInformar.length})
         </p>
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="text-xs text-ink-soft">
+            <tr className="text-[11px] text-ink-soft">
               <th className="pb-2 font-normal">N°</th>
               <th className="pb-2 font-normal">Paciente</th>
               <th className="pb-2 font-normal">Empresa</th>
@@ -94,7 +94,7 @@ export default function AptitudPage() {
         </table>
       </div>
 
-      <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+      <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
         <p className="mb-4 text-sm font-medium text-ink">
           Informadas hoy ({informadas.length})
         </p>
@@ -113,7 +113,7 @@ export default function AptitudPage() {
                   <td className="py-2.5 text-ink">{o.persona?.apellido_nombre}</td>
                   <td className="py-2.5">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs ${
+                      className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                         o.aptitud === "APTO"
                           ? "bg-success/10 text-success"
                           : "bg-danger/10 text-danger"

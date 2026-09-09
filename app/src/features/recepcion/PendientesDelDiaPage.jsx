@@ -42,7 +42,7 @@ export default function PendientesDelDiaPage() {
   return (
     <AppShell titulo="Pendientes del día" subtitulo="Lo que todavía no se informó">
       {error && (
-        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -51,7 +51,7 @@ export default function PendientesDelDiaPage() {
       <div className="mb-4 flex items-center gap-3">
         <button
           onClick={recargar}
-          className="flex items-center gap-1.5 rounded-md border border-ink-soft/20 px-3 py-2 text-xs text-ink-soft hover:text-ink"
+          className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/20 px-3 py-2 text-xs font-medium text-ink-soft hover:text-ink"
         >
           <RefreshCw size={14} /> Actualizar
         </button>
@@ -86,7 +86,7 @@ export default function PendientesDelDiaPage() {
 
 function Bloque({ titulo, descripcion, vacio, ordenes, cargando, onAbrir }) {
   return (
-    <section className="rounded-card border border-ink-soft/10 bg-white p-5">
+    <section className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
       <p className="text-sm font-medium text-ink">
         {titulo} ({ordenes.length})
       </p>
@@ -97,7 +97,7 @@ function Bloque({ titulo, descripcion, vacio, ordenes, cargando, onAbrir }) {
       ) : (
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="text-xs text-ink-soft">
+            <tr className="text-[11px] text-ink-soft">
               <th className="pb-2 font-normal">N°</th>
               <th className="pb-2 font-normal">Paciente</th>
               <th className="pb-2 font-normal">Empresa</th>

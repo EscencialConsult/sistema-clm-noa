@@ -75,7 +75,7 @@ export default function ListadoOrdenesPage() {
   return (
     <AppShell titulo="Listado de órdenes" subtitulo="Para el cierre del mes">
       {error && (
-        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border border-danger/30 bg-danger/5 px-3.5 py-2.5 text-sm text-danger">
+        <div className="mb-4 flex max-w-3xl items-start gap-2 rounded-md border-2 border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger">
           <AlertTriangle size={15} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -85,17 +85,17 @@ export default function ListadoOrdenesPage() {
         <div>
           <label className="mb-1 block text-xs text-ink-soft">Desde</label>
           <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)}
-            className="rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary" />
+            className="rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary" />
         </div>
         <div>
           <label className="mb-1 block text-xs text-ink-soft">Hasta</label>
           <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)}
-            className="rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary" />
+            className="rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary" />
         </div>
         <div className="min-w-64">
           <label className="mb-1 block text-xs text-ink-soft">Empresa</label>
           <select value={empresa} onChange={(e) => setEmpresa(e.target.value)}
-            className="w-full rounded-md border border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary">
+            className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary">
             <option value="">Todas</option>
             {empresas.map((e) => (
               <option key={e.id} value={e.razon_social}>{e.razon_social}</option>
@@ -107,12 +107,12 @@ export default function ListadoOrdenesPage() {
           {cargando ? "Buscando…" : "Buscar"}
         </button>
         <button onClick={descargar} disabled={ordenes.length === 0}
-          className="flex items-center gap-1.5 rounded-md border border-ink-soft/20 px-4 py-2 text-sm text-ink-soft hover:border-primary/40 hover:text-primary disabled:opacity-40">
+          className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/20 px-4 py-2 text-sm text-ink-soft hover:border-primary/40 hover:text-primary disabled:opacity-40">
           <Download size={15} /> Descargar CSV
         </button>
       </div>
 
-      <div className="rounded-card border border-ink-soft/10 bg-white p-5">
+      <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
         <div className="mb-4 flex items-baseline justify-between">
           <p className="text-sm font-medium text-ink">
             {ordenes.length} {ordenes.length === 1 ? "orden" : "órdenes"}
@@ -126,7 +126,7 @@ export default function ListadoOrdenesPage() {
 
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="text-xs text-ink-soft">
+            <tr className="text-[11px] text-ink-soft">
               <th className="pb-2 font-normal">N°</th>
               <th className="pb-2 font-normal">Fecha</th>
               <th className="pb-2 font-normal">Paciente</th>
@@ -159,7 +159,7 @@ export default function ListadoOrdenesPage() {
                   {o.aptitud === "PENDIENTE" ? (
                     <span className="text-xs text-ink-soft">—</span>
                   ) : (
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${
+                    <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
                       o.aptitud === "APTO" ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
                     }`}>
                       {ETIQUETA_APTITUD[o.aptitud]}
