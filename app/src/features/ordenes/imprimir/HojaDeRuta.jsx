@@ -35,7 +35,16 @@ export function HojaDeRuta({ datos }) {
     <div className="hoja-impresion">
       {datos.categorias.map((cat, i) => (
         <div key={cat.id} className={i < datos.categorias.length - 1 ? "imp-salto-pagina" : undefined}>
-          <CabeceraImpreso titulo="EXAMEN PRELABORAL" numero={datos.numero} categoria={cat.nombre} />
+          {/* El título sale del tipo de examen de la orden, no fijo.
+              Estaba escrito "EXAMEN PRELABORAL" a mano: si recepción
+              elegía Periódico o Egreso —las tres opciones que pide
+              RF11— el protocolo salía bien, pero el papel que lleva el
+              paciente seguía diciendo PRELABORAL. */}
+          <CabeceraImpreso
+            titulo={`EXAMEN ${datos.tipo_examen ?? "PRELABORAL"}`}
+            numero={datos.numero}
+            categoria={cat.nombre}
+          />
           <DatosOrden orden={datos} />
           <TablaEstudios categorias={[cat]} modo="blanco" sinTituloCategoria />
         </div>

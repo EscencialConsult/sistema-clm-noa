@@ -338,6 +338,41 @@ las 11 con la sala llena.
 se planta y no sigue: un cambio hecho a mano en la clínica se pierde en la
 próxima actualización y nadie se acuerda de que existía.
 
+### Que avise solo cuando hay algo nuevo
+
+Nadie va a acordarse de correr `--ver` todos los días. Esta tarea lo consulta a
+la mañana y deja el aviso **abajo en la pantalla del sistema**, junto a la
+versión:
+
+```bat
+schtasks /Create /TN "CML NOA - Revisar actualizaciones" /SC DAILY /ST 07:30 ^
+  /RU "%USERNAME%" /IT ^
+  /TR "cmd /c cd /d C:\cmlnoa\sistema-clm-noa && node scripts\revisar-actualizacion.js"
+```
+
+**Sólo avisa. No actualiza nada.** Es a propósito: reiniciar el sistema es una
+decisión de quien sabe si hay gente esperando, no del reloj. Un despliegue
+automático a las 10:40 tira abajo la carga de un examen y nadie entiende por qué.
+
+Sin internet no falla: informa y termina bien, para que la tarea no aparezca
+como fallida todos los días y se termine ignorando.
+
+### No hace falta ninguna clave para actualizar
+
+El repositorio es **público**, así que `git pull` en el servidor funciona sin
+usuario ni contraseña ni token. No hay credenciales de GitHub en la clínica, que
+es una cosa menos que cuidar y una menos que se pueda filtrar.
+
+**Si algún día el repositorio pasa a privado**, el servidor necesita una llave de
+sólo lectura (*deploy key*): se genera con `ssh-keygen` en el servidor, se carga
+la parte pública en Settings → Deploy keys del repositorio **sin marcar
+"Allow write access"**, y el `git clone` pasa a hacerse por SSH. Es lectura
+solamente: desde el servidor no se puede escribir al repositorio.
+
+Lo que **no** se instala en la clínica es nada de GitHub Actions. Eso corre en
+las máquinas de GitHub cada vez que alguien sube un cambio, y ahí se entera antes
+de que llegue acá.
+
 ### Qué migraciones tiene aplicadas esta base
 
 ```bash

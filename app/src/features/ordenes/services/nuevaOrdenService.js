@@ -212,6 +212,38 @@ export const nuevaOrdenService = {
     return data ?? []
   },
 
+  /** Categorías cuyo nombre coincide, con todos sus estudios activos.
+   *
+   *  Existe para no pedir quince clics cuando lo que se quiere son las
+   *  quince radiografías. El buscador de estudios sueltos ofrece la
+   *  categoría entera además de los estudios uno por uno.
+   */
+  async buscarCategorias(texto) {
+    const t = (texto ?? "").trim()
+    if (t.length < 2) return []
+
+    const { data, error } = await supabase
+      .from("categoria")
+      .select("id, nombre, estudio:estudio ( id, nombre, categoria_id, activo )")
+      .eq("activo", true)
+      .ilike("nombre", `%${t}%`)
+      .order("orden")
+
+    if (error) throw new Error(error.message)
+
+    /* El filtro por activo no se puede poner en la relación embebida
+       sin excluir la categoría entera, así que se filtra acá. */
+    return (data ?? [])
+      .map((c) => ({
+        id: c.id,
+        nombre: c.nombre,
+        estudios: (c.estudio ?? [])
+          .filter((e) => e.activo)
+          .map((e) => ({ id: e.id, nombre: e.nombre, categoria: { id: c.id, nombre: c.nombre } })),
+      }))
+      .filter((c) => c.estudios.length > 0)
+  },
+
   /** Suma un estudio. Si su categoría no estaba en la orden, la agrega:
    *  sin esa fila el estudio no aparecería en la pantalla de carga. */
   async agregarEstudio(ordenId, estudio) {

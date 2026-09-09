@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, UserPlus, Printer, AlertTriangle, Check, ArrowRight } from "lucide-react"
+import { Search, UserPlus, Printer, AlertTriangle, Check, ArrowRight, Plus, X, Layers } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { nuevaOrdenService } from "./services/nuevaOrdenService"
 import { TIPO_DOC, TIPO_EXAMEN, ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
@@ -43,10 +43,18 @@ export default function NuevaOrdenPage() {
 
   /* paso 2 */
   const [empresaId, setEmpresaId] = useState("")
+  const [busquedaEmpresa, setBusquedaEmpresa] = useState("")
+  const [empresaAbierta, setEmpresaAbierta] = useState(false)
   const [plantillaId, setPlantillaId] = useState("")
   const [tarea, setTarea] = useState("")
   const [tipoExamen, setTipoExamen] = useState("PRELABORAL")
   const [previa, setPrevia] = useState(null)
+
+  /* paso 2 · estudios sueltos, además de la batería */
+  const [busquedaExtra, setBusquedaExtra] = useState("")
+  const [resultadosExtra, setResultadosExtra] = useState([])
+  const [categoriasExtra, setCategoriasExtra] = useState([])
+  const [extras, setExtras] = useState([])
 
   /* paso 3 */
   const [creando, setCreando] = useState(false)
@@ -105,6 +113,53 @@ export default function NuevaOrdenPage() {
     }
   }
 
+  /* Buscar estudios sueltos y categorías enteras. Con retardo, para no
+     consultar en cada tecla: la recepcionista escribe rápido y el
+     mostrador tiene gente esperando. */
+  useEffect(() => {
+    const t = busquedaExtra.trim()
+    if (t.length < 2) { setResultadosExtra([]); setCategoriasExtra([]); return }
+    const id = setTimeout(() => {
+      Promise.all([
+        nuevaOrdenService.buscarEstudios(t),
+        nuevaOrdenService.buscarCategorias(t),
+      ])
+        .then(([est, cats]) => {
+          setResultadosExtra(est.filter((e) => !extras.some((x) => x.id === e.id)))
+          /* Sólo tiene sentido ofrecer la categoría si queda algo por
+             sumar: si ya están todos sus estudios, el renglón sobra. */
+          setCategoriasExtra(
+            cats
+              .map((c) => ({ ...c, faltan: c.estudios.filter((e) => !extras.some((x) => x.id === e.id)) }))
+              .filter((c) => c.faltan.length > 0)
+          )
+        })
+        .catch(() => { setResultadosExtra([]); setCategoriasExtra([]) })
+    }, 250)
+    return () => clearTimeout(id)
+  }, [busquedaExtra, extras])
+
+  function sumarExtra(estudio) {
+    setExtras((prev) => (prev.some((e) => e.id === estudio.id) ? prev : [...prev, estudio]))
+    limpiarBusqueda()
+  }
+
+  function sumarCategoria(categoria) {
+    setExtras((prev) => {
+      const tengo = new Set(prev.map((e) => e.id))
+      return [...prev, ...categoria.faltan.filter((e) => !tengo.has(e.id))]
+    })
+    limpiarBusqueda()
+  }
+
+  function limpiarBusqueda() {
+    setBusquedaExtra("")
+    setResultadosExtra([])
+    setCategoriasExtra([])
+  }
+
+  const quitarExtra = (id) => setExtras((prev) => prev.filter((e) => e.id !== id))
+
   async function crear() {
     setCreando(true)
     setError(null)
@@ -112,10 +167,34 @@ export default function NuevaOrdenPage() {
       const id = await nuevaOrdenService.crear({
         personaId: persona.id,
         empresaId: Number(empresaId),
-        plantillaId: Number(plantillaId),
+        /* Sin batería va en nulo, NO en cero: Number("") es 0, y un cero
+           haría fallar la clave foránea contra plantilla. */
+        plantillaId: plantillaId ? Number(plantillaId) : null,
         tarea,
         tipoExamen,
       })
+
+      /* Los sueltos van después de crear la orden: crear_orden() arma la
+         batería, y esto agrega lo que la batería no traía.
+
+         Si el estudio YA venía en la batería, agregarEstudio() rechaza
+         por clave repetida. Eso no es un error para quien está en el
+         mostrador —el estudio va a estar igual, que es lo que quería— y
+         no puede tirar abajo un alta que ya se hizo. Se saltea y se
+         sigue; cualquier otra falla sí se informa. */
+      if (extras.length) {
+        const fallaron = []
+        for (const e of extras) {
+          try {
+            await nuevaOrdenService.agregarEstudio(id, e)
+          } catch (err) {
+            if (!/ya está en la orden/i.test(err.message)) fallaron.push(e.nombre)
+          }
+        }
+        await nuevaOrdenService.recalcularImporte(id)
+        if (fallaron.length) setError(`No se pudieron agregar: ${fallaron.join(", ")}`)
+      }
+
       setCreada(await nuevaOrdenService.getOrdenCreada(id))
     } catch (err) {
       setError(err.message)
@@ -130,10 +209,18 @@ export default function NuevaOrdenPage() {
     setHistorial([])
     setNroDoc("")
     setEmpresaId("")
+    setBusquedaEmpresa("")
+    setEmpresaAbierta(false)
     setPlantillaId("")
     setTarea("")
     setPrevia(null)
     setNoEncontrada(false)
+    /* Sin esto, el siguiente paciente hereda los estudios sueltos del
+       anterior: se los cobran y se los hacen, sin que nadie lo note. */
+    setExtras([])
+    setBusquedaExtra("")
+    setResultadosExtra([])
+    setError(null)
   }
 
   /* ---------------- orden creada ---------------- */
@@ -198,7 +285,23 @@ export default function NuevaOrdenPage() {
   }
 
   /* ---------------- el formulario ---------------- */
-  const listoParaCrear = persona && empresaId && plantillaId
+  /* La batería dejó de ser obligatoria: alguien puede venir sólo por una
+     audiometría. Lo que sí hace falta es que la orden tenga ALGO — una
+     batería, o al menos un estudio suelto—, para que nadie cree por
+     descuido una orden vacía que después nadie entiende. */
+  const listoParaCrear = persona && empresaId && (plantillaId || extras.length > 0)
+
+  const empresaElegida = empresas.find((e) => String(e.id) === String(empresaId)) ?? null
+
+  /* Se compara sin acentos y sin distinguir mayúsculas: quien escribe
+     "belgrano" tiene que encontrar "BELGRANO CARGAS", y quien escribe
+     "capo" tiene que encontrar "AUTOSERVICIO CAPO" aunque no empiece
+     con eso. */
+  const sinTildes = (s) =>
+    (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  const empresasFiltradas = busquedaEmpresa.trim()
+    ? empresas.filter((e) => sinTildes(e.razon_social).includes(sinTildes(busquedaEmpresa.trim())))
+    : empresas
 
   return (
     <AppShell titulo="Nueva Orden" subtitulo="Admisión y alta de orden">
@@ -353,21 +456,59 @@ export default function NuevaOrdenPage() {
                 <label className="mb-1 block text-xs text-ink-soft">
                   Empresa <span className="text-danger">*</span>
                 </label>
-                <select
-                  disabled={!persona}
-                  value={empresaId}
-                  onChange={(e) => setEmpresaId(e.target.value)}
-                  className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
-                >
-                  <option value="">Elegir…</option>
-                  {empresas.map((e) => (
-                    <option key={e.id} value={e.id}>{e.razon_social}</option>
-                  ))}
-                </select>
+                {/* Se escribe y filtra, en vez de un desplegable de 38
+                    que obliga a scrollear con el paciente adelante. La
+                    lista está toda en memoria, así que filtra sin ir a
+                    la base: no hay espera entre tecla y tecla. */}
+                <div className="relative">
+                  <div className={`flex items-center gap-2 rounded-md border-2 px-2.5 py-2 ${
+                    empresaElegida ? "border-ink-soft/20" : "border-ink-soft/20 focus-within:border-primary"
+                  } ${!persona ? "bg-ink-soft/5" : ""}`}>
+                    <Search size={15} className="shrink-0 text-ink-soft" />
+                    <input
+                      disabled={!persona}
+                      value={empresaElegida ? empresaElegida.razon_social : busquedaEmpresa}
+                      onChange={(e) => { setBusquedaEmpresa(e.target.value); setEmpresaId("") }}
+                      onFocus={() => setEmpresaAbierta(true)}
+                      onBlur={() => setTimeout(() => setEmpresaAbierta(false), 150)}
+                      placeholder="Escribí el nombre…"
+                      className="w-full bg-transparent text-sm outline-none disabled:cursor-not-allowed"
+                    />
+                    {empresaElegida && (
+                      <button
+                        onClick={() => { setEmpresaId(""); setBusquedaEmpresa(""); setEmpresaAbierta(true) }}
+                        title="Cambiar de empresa"
+                        className="shrink-0 text-ink-soft hover:text-danger"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+
+                  {empresaAbierta && !empresaElegida && (
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-soft/15 bg-white shadow-lg">
+                      {empresasFiltradas.length === 0 ? (
+                        <p className="px-3 py-2 text-xs text-ink-soft">
+                          Ninguna empresa con «{busquedaEmpresa}». Se dan de alta en Empresas.
+                        </p>
+                      ) : (
+                        empresasFiltradas.map((e) => (
+                          <button
+                            key={e.id}
+                            onMouseDown={() => { setEmpresaId(String(e.id)); setBusquedaEmpresa(""); setEmpresaAbierta(false) }}
+                            className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-ink-soft/5"
+                          >
+                            {e.razon_social}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="mb-1 block text-xs text-ink-soft">
-                  Batería <span className="text-danger">*</span>
+                  Batería <span className="text-ink-soft/60">(o estudios sueltos)</span>
                 </label>
                 <select
                   disabled={!persona}
@@ -397,6 +538,78 @@ export default function NuevaOrdenPage() {
               <Campo label="Tarea / puesto" deshabilitado={!persona}
                 valor={tarea} onCambio={setTarea} />
             </div>
+
+            {/* Estudios sueltos, además de la batería.
+                Antes esto obligaba a crear la orden, irse a otra pantalla,
+                buscar el estudio entre 120 y volver — con el paciente
+                esperando en el mostrador. Ahora se agregan acá y salen ya
+                en la hoja de ruta, sin salir de la pantalla. */}
+            <div className="mt-5 border-t border-ink-soft/10 pt-4">
+              <label className="mb-1 block text-xs text-ink-soft">
+                ¿Algo más, además de la batería? <span className="text-ink-soft/60">(opcional)</span>
+              </label>
+
+              <div className="relative">
+                <div className="flex items-center gap-2 rounded-md border-2 border-ink-soft/20 px-2.5 py-2 focus-within:border-primary">
+                  <Search size={15} className="shrink-0 text-ink-soft" />
+                  <input
+                    disabled={!persona}
+                    value={busquedaExtra}
+                    onChange={(e) => setBusquedaExtra(e.target.value)}
+                    placeholder="Buscar un estudio por nombre o código…"
+                    className="w-full bg-transparent text-sm outline-none disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                {(categoriasExtra.length > 0 || resultadosExtra.length > 0) && (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-soft/15 bg-white shadow-lg">
+                    {/* Las categorías van arriba: si alguien busca "radio"
+                        casi seguro quiere las quince radiografías, no ir
+                        eligiéndolas de a una. */}
+                    {categoriasExtra.map((c) => (
+                      <button
+                        key={`cat-${c.id}`}
+                        onClick={() => sumarCategoria(c)}
+                        className="flex w-full items-center gap-2 border-b border-ink-soft/10 bg-primary/5 px-3 py-2 text-left text-sm hover:bg-primary/10"
+                      >
+                        <Layers size={14} className="shrink-0 text-primary" />
+                        <span className="flex-1 font-medium text-primary">{c.nombre}</span>
+                        <span className="text-xs text-primary/70">
+                          {c.faltan.length} estudio{c.faltan.length === 1 ? "" : "s"}
+                        </span>
+                      </button>
+                    ))}
+                    {resultadosExtra.map((e) => (
+                      <button
+                        key={e.id}
+                        onClick={() => sumarExtra(e)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-ink-soft/5"
+                      >
+                        <Plus size={14} className="shrink-0 text-primary" />
+                        <span className="flex-1 text-ink">{e.nombre}</span>
+                        <span className="text-xs text-ink-soft">{e.categoria?.nombre}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {extras.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {extras.map((e) => (
+                    <span
+                      key={e.id}
+                      className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs text-primary"
+                    >
+                      {e.nombre}
+                      <button onClick={() => quitarExtra(e.id)} title="Quitar">
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
         </div>
 
@@ -405,18 +618,58 @@ export default function NuevaOrdenPage() {
           <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
             <p className="mb-3 text-sm font-medium text-ink">3 · Qué se va a abrir</p>
 
-            {!previa ? (
+            {!previa && extras.length === 0 ? (
               <p className="text-xs text-ink-soft">
-                Elegí la persona y la batería para ver los estudios.
+                Elegí la persona y la batería para ver los estudios. Si viene
+                por un estudio suelto, alcanza con buscarlo abajo.
               </p>
+            ) : !previa ? (
+              /* Sin batería, pero con estudios sueltos: es el caso de
+                 quien viene sólo por una audiometría. */
+              <>
+                <p className="mb-3 text-sm text-ink">
+                  {extras.length} estudio{extras.length === 1 ? "" : "s"}
+                  <span className="text-ink-soft"> · sin batería</span>
+                </p>
+                <ul className="mb-3 flex flex-col gap-1 rounded-md border border-primary/25 bg-primary/5 p-2 text-xs">
+                  {extras.map((e) => (
+                    <li key={e.id} className="flex items-center gap-1.5 text-primary">
+                      <Plus size={11} className="shrink-0" />
+                      {e.nombre}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[11px] text-ink-soft">
+                  El importe lo calcula la base al crear la orden.
+                </p>
+              </>
             ) : (
               <>
                 <p className="mb-3 text-sm text-ink">
-                  {previa.total} estudios
+                  {previa.total}
+                  {extras.length > 0 && (
+                    <span className="text-primary"> + {extras.length}</span>
+                  )}
+                  {" estudios"}
                   <span className="text-ink-soft">
                     {" "}· {persona.sexo === "F" ? "mujer" : "varón"}
                   </span>
                 </p>
+
+                {/* Los sueltos se muestran aparte de las categorías de la
+                    batería: son lo que alguien agregó a mano, y conviene
+                    verlo antes de confirmar y no descubrirlo en la hoja
+                    de ruta impresa. */}
+                {extras.length > 0 && (
+                  <ul className="mb-3 flex flex-col gap-1 rounded-md border border-primary/25 bg-primary/5 p-2 text-xs">
+                    {extras.map((e) => (
+                      <li key={e.id} className="flex items-center gap-1.5 text-primary">
+                        <Plus size={11} className="shrink-0" />
+                        {e.nombre}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <ul className="mb-3 flex flex-col gap-1.5 text-xs">
                   {previa.categorias.map((c) => (
                     <li key={c.id} className="flex justify-between text-ink-soft">
@@ -443,7 +696,7 @@ export default function NuevaOrdenPage() {
           </button>
           {!listoParaCrear && (
             <p className="-mt-2 text-center text-[11px] text-ink-soft">
-              Falta {!persona ? "la persona" : !empresaId ? "la empresa" : "la batería"}.
+              Falta {!persona ? "la persona" : !empresaId ? "la empresa" : "elegir una batería o al menos un estudio"}.
             </p>
           )}
         </aside>
