@@ -57,6 +57,10 @@ function limpiar() {
     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
     DELETE FROM empresa        WHERE razon_social LIKE '${MARCA}%';
+    DELETE FROM orden_estudio  WHERE estudio_id IN (SELECT id FROM estudio WHERE nombre LIKE '${MARCA}%');
+    DELETE FROM estudio        WHERE nombre LIKE '${MARCA}%';
+    DELETE FROM orden_categoria WHERE categoria_id IN (SELECT id FROM categoria WHERE nombre LIKE '${MARCA}%');
+    DELETE FROM categoria      WHERE nombre LIKE '${MARCA}%';
     DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario LIKE '${MARCA}%');
     DELETE FROM usuario     WHERE usuario LIKE '${MARCA}%';
   `)
@@ -262,6 +266,41 @@ async function main() {
   paso("el listado filtra por empresa y suma importes",
     !f15 && listado.some((o) => o.id === ordenId) && total >= 160000,
     f15 ? f15.message : `${listado.length} de ${empresas[0].razon_social} · ${total}`)
+
+  /* ---------- RF07 · catálogo desde recepción ---------- */
+
+  /* 17 · crear una categoría */
+  const { data: cat, error: g1 } = await c.from("categoria").insert({
+    nombre: `${MARCA} CATEGORIA`, orden: 98, rol_carga: "R5", valor_defecto: "NORMAL",
+  }).select().single()
+  paso("recepción crea una categoría (RF07)", !g1 && !!cat?.id,
+    g1 ? g1.message : `id ${cat.id} · la carga R5 · arranca en NORMAL`)
+
+  /* 18 · con un estudio adentro, con referencias por sexo (RF08) */
+  const { data: est, error: g2 } = await c.from("estudio").insert({
+    codigo: "ZZA", nombre: `${MARCA} ESTUDIO`, categoria_id: cat.id,
+    orden: 98, unidad: "mg/dl", ref_h: "70-110", ref_m: "70-110",
+  }).select().single()
+  paso("y un estudio con referencias por sexo (RF08)", !g2 && est?.ref_h === "70-110",
+    g2 ? g2.message : `${est.nombre} · ${est.unidad} · H ${est.ref_h} · M ${est.ref_m}`)
+
+  /* 19 · el estudio nuevo no está en ningún concepto: no se cobra */
+  const { data: cubre } = await c.from("concepto_estudio").select("concepto_id").eq("estudio_id", est.id)
+  paso("un estudio nuevo no se cobra hasta engancharlo a un concepto",
+    (cubre ?? []).length === 0,
+    "0 conceptos lo cubren — la pantalla lo marca «no se cobra»")
+
+  /* 20 · pero los precios NO los toca recepción */
+  const { error: g4 } = await c.from("concepto").insert({ nombre: `${MARCA} CONCEPTO`, precio: 1 })
+  paso("recepción no puede fijar precios", g4?.code === "42501",
+    g4 ? `${g4.code} — los conceptos son del Administrador` : "pudo, y no debería")
+
+  /* 21 · el estudio nuevo ya se puede pedir en una orden */
+  await c.from("orden_categoria").upsert(
+    { orden_id: ordenId, categoria_id: cat.id }, { onConflict: "orden_id,categoria_id", ignoreDuplicates: true })
+  const { error: g5 } = await c.from("orden_estudio").insert({ orden_id: ordenId, estudio_id: est.id })
+  paso("el estudio recién creado ya se puede pedir, sin desarrollo (RF07)", !g5,
+    g5 ? g5.message : "entra en la orden apenas se crea")
 
   /* limpieza */
   limpiar()

@@ -10,6 +10,7 @@ import DictamenPage from "../features/aptitud/DictamenPage"
 import LegajoPage from "../features/legajo/LegajoPage"
 import NuevaOrdenPage from "../features/ordenes/NuevaOrdenPage"
 import AjustarEstudiosPage from "../features/ordenes/AjustarEstudiosPage"
+import CatalogoPage from "../features/catalogo/CatalogoPage"
 import EmpresasPage from "../features/recepcion/EmpresasPage"
 import PendientesDelDiaPage from "../features/recepcion/PendientesDelDiaPage"
 import ListadoOrdenesPage from "../features/recepcion/ListadoOrdenesPage"
@@ -30,7 +31,7 @@ export default function AppRoutes() {
         <Route path="/admin/empresas" element={<EmpresasPage />} />
         <Route path="/admin/personas" element={<LegajoPage />} />
         <Route path="/admin/ordenes" element={<ListadoOrdenesPage />} />
-        <Route path="/admin/catalogo" element={<Placeholder titulo="Estudios y Categorías" />} />
+        <Route path="/admin/catalogo" element={<CatalogoPage />} />
         <Route path="/admin/baterias" element={<Placeholder titulo="Baterías" />} />
         <Route path="/admin/conceptos" element={<Placeholder titulo="Conceptos Facturables" />} />
         <Route path="/admin/referencias" element={<Placeholder titulo="Valores de Referencia" />} />
@@ -59,6 +60,8 @@ export default function AppRoutes() {
         <Route path="/recepcion/empresas" element={<EmpresasPage />} />
         <Route path="/recepcion/pendientes" element={<PendientesDelDiaPage />} />
         <Route path="/recepcion/listado" element={<ListadoOrdenesPage />} />
+        {/* RF07: el catálogo lo mantienen el Administrador Y Recepción */}
+        <Route path="/recepcion/catalogo" element={<CatalogoPage />} />
       </Routes>
     </BrowserRouter>
   )
