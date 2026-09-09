@@ -160,21 +160,35 @@ jobs:
       - name: Casos bloqueantes
         run: node scripts/probar-casos.js
 
-      - name: Permisos por rol
-        working-directory: app
-        run: node scripts/probar-permisos.mjs
-
-      - name: Aptitud
-        working-directory: app
-        run: node scripts/probar-aptitud.mjs
-
-      - name: Alta de orden
-        working-directory: app
-        run: node scripts/probar-alta-orden.mjs
-
-      - name: Informes de terceros
-        working-directory: app
-        run: node scripts/probar-terceros.mjs
+      # Las cuatro baterías de app/scripts, juntas y con el error a la
+      # vista.
+      #
+      # Van así porque los registros de Actions piden autenticación para
+      # leerse, incluso en un repositorio público: cuando esto se pone en
+      # rojo, desde afuera sólo se ve "exit code 1", que no sirve para
+      # nada. Las anotaciones (::error::) sí son públicas, así que cada
+      # falla publica sus últimas líneas y se puede diagnosticar sin
+      # entrar a la pantalla de GitHub.
+      - name: Baterías por rol, aptitud, alta de orden y terceros
+        run: |
+          set +e
+          fallas=0
+          correr() {
+            echo ""
+            echo "── $1 ──"
+            salida=$( cd "$2" && node "$3" 2>&1 ); rc=$?
+            echo "$salida"
+            if [ $rc -ne 0 ]; then
+              fallas=1
+              # %0A es como se escribe un salto de línea adentro de una anotación
+              echo "::error title=$1::$(printf '%s' "$salida" | tail -30 | sed ':a;N;$!ba;s/\n/%0A/g')"
+            fi
+          }
+          correr "Permisos por rol"    app scripts/probar-permisos.mjs
+          correr "Aptitud"             app scripts/probar-aptitud.mjs
+          correr "Alta de orden"       app scripts/probar-alta-orden.mjs
+          correr "Informes de terceros" app scripts/probar-terceros.mjs
+          exit $fallas
 
       # Cuando algo se pone en rojo, esto es lo primero que se mira.
       - name: Si algo falló, los registros
