@@ -1,6 +1,6 @@
 import { getDatosParaImprimir } from "../../../shared/impresos/datosImpresionService"
 import { imprimirComponente } from "../../../shared/impresos/imprimir"
-import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../../../shared/impresos/PlantillaImpreso"
+import { CabeceraImpreso, DatosOrden, TablaEstudios } from "../../../shared/impresos/PlantillaImpreso"
 
 /* ---------------------------------------------------------------------
    ClickUp 03 · Hoja de ruta impresa.
@@ -20,6 +20,10 @@ import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../..
    hoja que ya dice de qué es, en vez de una fila perdida en una tabla
    de varias páginas.
 
+   Sin firmas: a diferencia del protocolo, en la hoja de ruta no van
+   (indicación de la clínica) — cada profesional carga en el sistema,
+   no firma un papel por categoría.
+
    Un solo motor para imprimir y para "descargar como PDF": el diálogo
    de impresión del navegador (ver MenuImpreso.jsx). No hay una función
    de descarga aparte — se sacó porque generaba el archivo con una
@@ -34,7 +38,6 @@ export function HojaDeRuta({ datos }) {
           <CabeceraImpreso titulo="EXAMEN PRELABORAL" numero={datos.numero} categoria={cat.nombre} />
           <DatosOrden orden={datos} />
           <TablaEstudios categorias={[cat]} modo="blanco" sinTituloCategoria />
-          <FirmasImpreso segunda="Firma del profesional" />
         </div>
       ))}
     </div>

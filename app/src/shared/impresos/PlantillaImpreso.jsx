@@ -7,7 +7,10 @@
      2.12 · Hoja de ruta).
    - Tabla "Estudio · Resultado · Observación · Valor" agrupada por
      categoría (misma sección).
-   - Firmas al pie: postulante + profesional (2.1 · Planilla clínica).
+   - Firmas al pie: postulante + profesional (2.1 · Planilla clínica) —
+     solo en el protocolo. La hoja de ruta no lleva firma (indicación
+     de la clínica): cada profesional carga en el sistema, no firma un
+     papel por categoría.
 
    Nada de tokens de marca acá (--color-primary, etc.): un impreso
    institucional que se lleva el paciente no es una pantalla de la app,
@@ -42,8 +45,8 @@ export function CabeceraImpreso({ titulo, numero, categoria }) {
       <p className="imp-s">
         Medicina del Trabajo · Av. Avellaneda 338 · Tel. 4214114 – 4221541
       </p>
-      {categoria && <p className="imp-cat-header">{categoria}</p>}
-      {numero != null && <p className="imp-num">{numero}</p>}
+      {categoria && <p className="imp-cat-header">Categoría: {categoria}</p>}
+      {numero != null && <p className="imp-num">N° {numero}</p>}
       <div className="imp-pt">{titulo}</div>
     </div>
   )
