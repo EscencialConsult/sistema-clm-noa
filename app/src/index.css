@@ -87,18 +87,18 @@ body {
 .hoja-impresion .imp-ph {
   text-align: center;
   border-bottom: 1.5pt solid #000;
-  padding-bottom: 1.5mm;
-  margin-bottom: 3mm;
+  padding-bottom: 2.5mm;
+  margin-bottom: 4mm;
   position: relative;
 }
 .hoja-impresion .imp-logo {
-  height: 10mm;
+  height: 18mm;
   width: auto;
   display: inline-block;
 }
 .hoja-impresion .imp-ph .imp-s {
-  font-size: 7.5pt;
-  margin-top: 0.5mm;
+  font-size: 8.5pt;
+  margin-top: 1.5mm;
   color: #333;
 }
 .hoja-impresion .imp-num {
