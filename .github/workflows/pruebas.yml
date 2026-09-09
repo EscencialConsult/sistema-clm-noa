@@ -24,7 +24,10 @@ name: Pruebas
 
 on:
   push:
-    branches: [main, estructura]
+    # Sólo main. `estructura` recibe siempre el mismo commit, así que
+    # tenerla acá hacía correr dos veces lo mismo: el doble de minutos y
+    # dos avisos por cada cosa.
+    branches: [main]
   pull_request:
   workflow_dispatch:      # para poder correrlo a mano desde GitHub
 
@@ -79,6 +82,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      # Cuatro de las baterías viven en app/scripts y son módulos ESM que
+      # importan @supabase/supabase-js. Sin esto fallan al instante con
+      # ERR_MODULE_NOT_FOUND, antes de tocar la base — que es exactamente
+      # lo que pasó la primera vez que corrió esto.
+      - name: Instalar dependencias
+        working-directory: app
+        run: npm ci
 
       - name: Generar las claves
         run: node scripts/generar-claves.js
