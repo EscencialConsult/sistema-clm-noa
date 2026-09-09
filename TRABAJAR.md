@@ -195,29 +195,29 @@ eso: el componente llama al servicio, el servicio habla con la base.
 ## Para probar sin romper nada
 
 ```bash
-cd app && node scripts/probar-login.mjs
-```
-
-Entra como el navegador con cada rol y muestra qué ve. Si tocaste permisos,
-corré esto antes de commitear.
-
-```bash
+node scripts/verificar-frontend.js       # el frontend y la base dicen lo mismo
+node scripts/probar-casos.js             # los casos bloqueantes
 cd app && node scripts/probar-aptitud.mjs
 cd app && node scripts/probar-alta-orden.mjs
 cd app && node scripts/probar-terceros.mjs
 ```
 
-Recorre el circuito entero con el mismo cliente que usa el navegador: recepción
-abre la orden, se cargan los estudios, el médico dictamina y después se
-comprueba que ya no se pueda tocar nada. **Que la aplicación compile no dice
-nada sobre si las consultas existen** — una columna mal escrita o un `select`
-anidado que RLS no deja seguir aparece recién acá.
+Cada una se crea sus propios usuarios y sus propios datos, y borra todo al
+terminar. Se pueden correr sobre la clínica sin tocar nada real, y devuelven 1
+si algo falla.
 
-```bash
-node scripts/probar-casos.js
-```
+**Corrélas antes de commitear.** No porque sí: casi todo lo que rompimos este
+proyecto compilaba perfecto. Una columna renombrada, una vista sin la columna
+que la pantalla pide, una función sin permiso de ejecución — `npm run build`
+dice que está todo bien y la pantalla muestra «no hay datos».
 
-Desde la raíz. Los casos bloqueantes; devuelve 1 si alguno falla.
+`verificar-frontend.js` es el que atrapa esa clase: lee el código, saca cada
+tabla, columna y función que nombra, y las compara contra la base.
+
+Las otras cuatro recorren circuitos con el mismo cliente que usa el navegador y
+sesiones reales de cada rol. Probar por psql como dueño de la base no sirve: ahí
+los permisos no se aplican, y un caso como «recepción no puede fijar la aptitud»
+da verde aunque recepción sí pueda. Ya pasó.
 
 Y si dudás de si algo se puede ver sin estar logueado:
 

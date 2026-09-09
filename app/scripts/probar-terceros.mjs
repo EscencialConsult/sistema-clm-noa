@@ -21,15 +21,61 @@ const sql = (t) => execFileSync("docker", [
 const pasos = []
 const paso = (n, ok, d) => { pasos.push(ok); console.log(`  ${ok ? "✔" : "✘"}  ${n}\n        ${d}`) }
 
+/* Se crea su propio usuario en vez de depender de una contraseña real
+   escrita acá: eso ata la prueba a una instalación concreta y se rompe en
+   cuanto alguien la cambia o se reinstala de cero. */
+const MARCA = "ZZTERC"
+const admin = async (ruta, opts = {}) => {
+  const r = await fetch(`${API}${ruta}`, { ...opts, headers: {
+    apikey: env.SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${env.SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json" } })
+  const t = await r.text()
+  try { return t ? JSON.parse(t) : null } catch { return t }
+}
+
+const email = `${MARCA.toLowerCase()}@cmlnoa.local`
+const pass = "Prueba-" + Math.random().toString(36).slice(2, 10)
+const todas = await admin("/auth/v1/admin/users")
+for (const u of todas?.users ?? []) {
+  if (u.email === email) await admin(`/auth/v1/admin/users/${u.id}`, { method: "DELETE" })
+}
+sql(`DELETE FROM orden_estudio  WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+     DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
+     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';`)
+sql(`DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+     DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+     DELETE FROM usuario WHERE usuario ILIKE '${MARCA}%';`)
+const creado = await admin("/auth/v1/admin/users", {
+  method: "POST", body: JSON.stringify({ email, password: pass, email_confirm: true }) })
+if (!creado?.id) { console.error("no pude crear el usuario de prueba"); process.exit(1) }
+sql(`INSERT INTO usuario (usuario, nombre, auth_id, debe_cambiar)
+     VALUES ('${MARCA}', 'Prueba terceros', '${creado.id}', false);
+     INSERT INTO usuario_rol (usuario_id, rol_codigo)
+     SELECT id, 'R2' FROM usuario WHERE auth_id='${creado.id}';`)
+
 const c = createClient(API, env.ANON_KEY, { auth: { persistSession: false } })
-const { error: eL } = await c.auth.signInWithPassword({
-  email: "recepcion@cmlnoa.local", password: "Cml-9rgyd0t6fk" })
+const { error: eL } = await c.auth.signInWithPassword({ email, password: pass })
 if (eL) { console.error("login:", eL.message); process.exit(1) }
 
-/* --- preparar: derivar un estudio de una orden abierta --- */
-const id = sql(`SELECT oe.id FROM orden_estudio oe JOIN orden o ON o.id=oe.orden_id
-                WHERE o.estado <> 'INFORMADA' AND oe.estado='PENDIENTE' LIMIT 1;`)
-if (!id) { console.error("no hay ningún estudio pendiente para derivar"); process.exit(1) }
+/* --- preparar: la prueba crea su propia orden ---
+   Antes buscaba una orden que hubiera dejado otra prueba. Sobre una base
+   recién instalada no hay ninguna y la prueba se cortaba sin comprobar
+   nada. Una prueba que depende de la basura de otra no es una prueba. */
+
+const { data: persona, error: eP } = await c.from("persona").insert({
+  tipo_doc: "DNI", nro_doc: "90900001", apellido: `${MARCA} DERIVADO`,
+  nombre: "CARLOS", sexo: "M",
+}).select().single()
+if (eP) { console.error("persona:", eP.message); process.exit(1) }
+
+const { data: empresa } = await c.from("empresa").select("id").eq("activo", true).limit(1).single()
+const { data: ordenId, error: eO } = await c.rpc("crear_orden", {
+  p_persona: persona.id, p_empresa: empresa.id, p_plantilla: 3 })
+if (eO) { console.error("crear_orden:", eO.message); process.exit(1) }
+
+const id = sql(`SELECT id FROM orden_estudio WHERE orden_id=${ordenId} AND estado='PENDIENTE' LIMIT 1;`)
 sql(`UPDATE orden_estudio SET estado='DERIVADO' WHERE id=${id};`)
 
 /* 1 · aparece entre los que esperan informe */
@@ -84,8 +130,18 @@ const { data: verAnon } = await anon.storage.from("informes").list(`${item.orden
 paso("sin sesión no se lista ningún informe", (verAnon ?? []).length === 0,
   `${(verAnon ?? []).length} archivos`)
 
-/* dejar la orden como estaba */
-sql(`UPDATE orden_estudio SET estado='PENDIENTE', resultado=NULL WHERE id=${item.id};`)
+
+
+/* La orden primero: la creó este usuario y la referencia no lo deja borrar.
+   Es la auditoría y las órdenes haciendo lo que tienen que hacer. */
+sql(`DELETE FROM orden_estudio  WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+     DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
+     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';`)
+sql(`DELETE FROM auditoria WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+     DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+     DELETE FROM usuario WHERE usuario ILIKE '${MARCA}%';`)
+await admin(`/auth/v1/admin/users/${creado.id}`, { method: "DELETE" })
 
 const mal = pasos.filter((x) => !x).length
 console.log("")

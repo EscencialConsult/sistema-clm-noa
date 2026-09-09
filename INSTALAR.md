@@ -227,22 +227,15 @@ confirmar que el backup sirve (procedimiento P-02). Que los datos estén no alca
 ## Comprobar que quedó bien
 
 ```bash
-node scripts/probar-casos.js
+node scripts/verificar-frontend.js       # el frontend y la base dicen lo mismo
+node scripts/probar-casos.js             # los casos bloqueantes
+cd app && node scripts/probar-aptitud.mjs
+cd app && node scripts/probar-alta-orden.mjs
+cd app && node scripts/probar-terceros.mjs
 ```
 
-Corre los casos bloqueantes contra el sistema andando: el padrón sin duplicados,
-el rango que cambia según el sexo, la batería que se abre sola, el presupuesto,
-la carga por categoría, y que la aptitud sea del médico laboral y de nadie más.
-Devuelve 0 si pasan todos y 1 si alguno falla.
-
-Se crea sus propios usuarios de prueba y borra todo al terminar. **Se puede correr
-en la clínica**: no toca las cuentas reales ni los datos de pacientes.
-
-```bash
-cd app && node scripts/probar-login.mjs
-```
-
-Entra igual que el navegador, con la clave pública, y muestra qué ve cada rol.
+Cada una se crea sus propios usuarios y datos, y borra todo al terminar.
+Se pueden correr sobre la clínica sin tocar nada real.
 
 Y esta es la prueba que más importa — **sin sesión no se saca ni una fila**:
 
