@@ -1,7 +1,0 @@
-[
-  { "id": "per-001", "documento": "28456789", "apellido_nombre": "Pérez, Juan Carlos", "sexo": "M" },
-  { "id": "per-002", "documento": "32112456", "apellido_nombre": "Gómez, María Belén", "sexo": "F" },
-  { "id": "per-003", "documento": "24556887", "apellido_nombre": "Rodríguez, Luis", "sexo": "M" },
-  { "id": "per-004", "documento": "27809123", "apellido_nombre": "Díaz, Ana Laura", "sexo": "F" },
-  { "id": "per-005", "documento": "31223556", "apellido_nombre": "Sosa, Matías", "sexo": "M" }
-]

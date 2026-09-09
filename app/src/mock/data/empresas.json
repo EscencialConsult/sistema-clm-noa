@@ -1,6 +1,0 @@
-[
-  { "id": "emp-001", "razon_social": "ACME S.A.", "cuit": "30-12345678-9" },
-  { "id": "emp-002", "razon_social": "Textil Tucumán SRL", "cuit": "30-98765432-1" },
-  { "id": "emp-003", "razon_social": "Construcciones Norte", "cuit": "30-55566677-8" },
-  { "id": "emp-004", "razon_social": "Agro NOA", "cuit": "30-11122233-4" }
-]

@@ -55,7 +55,11 @@ export const ordenesService = {
       .order("fecha", { ascending: false })
 
     if (error) throw new Error(error.message)
-    return data ?? []
+    /* La vista agrupa filas de orden_estudio y no expone un id propio.
+       Se sintetiza uno estable —número de orden más nombre del estudio,
+       que juntos son únicos— para que React tenga key. Lo señaló la rama
+       tarea1; sin esto la lista se re-renderiza mal al recargar. */
+    return (data ?? []).map((row) => ({ ...row, id: `${row.numero}::${row.estudio}` }))
   },
 
   /** Cabecera de una orden puntual — para abrir la pantalla de carga. */

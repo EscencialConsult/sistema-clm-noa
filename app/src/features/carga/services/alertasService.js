@@ -21,9 +21,12 @@ import { authService } from "../../auth/services/authService"
      se suben al bucket, pero no hay un estado «esperando validación»
      que se pueda consultar. Mismo caso.
 
-   Quedan las que sí se pueden contar de verdad: lo pendiente del área de
-   quien mira, lo que se derivó y no volvió (RF19), y los exámenes por
-   vencer (vigencia a 12 meses).
+   Marcela llegó a la misma conclusión por su lado (rama tarea1) y la
+   escribió igual de claro: se omiten en vez de inventar un número.
+
+   Se agregan dos que sí tienen de dónde salir: lo pendiente del área de
+   quien mira —que es lo único accionable de este panel— y lo que se
+   derivó y todavía no volvió (RF19).
    --------------------------------------------------------------------- */
 
 export const alertasService = {
@@ -66,18 +69,20 @@ export const alertasService = {
       })
     }
 
-    /* --- vigencias próximas --- */
-    const { data: porVencer, error: e3 } = await supabase
+    /* --- vigencias próximas (RF24) --- */
+    /* Se cuenta sin traer las filas, y sin filtrar por días: v_vencimientos
+       YA acota a los próximos 30 en su propia definición. Iba con un
+       .lte("dias", 30) de más hasta que Marcela lo señaló. */
+    const { count: porVencer, error: e3 } = await supabase
       .from("v_vencimientos")
-      .select("dias")
-      .lte("dias", 30)
+      .select("*", { count: "exact", head: true })
     if (e3) throw new Error(e3.message)
 
-    if ((porVencer?.length ?? 0) > 0) {
+    if (porVencer > 0) {
       alertas.push({
         id: "al-p-vigencia",
         tipo: "vigencia",
-        texto: `${porVencer.length} ${porVencer.length === 1 ? "examen vence" : "exámenes vencen"} en 30 días`,
+        texto: `${porVencer} ${porVencer === 1 ? "examen vence" : "exámenes vencen"} en 30 días`,
       })
     }
 

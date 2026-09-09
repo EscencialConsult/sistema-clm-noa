@@ -1,7 +1,0 @@
-[
-  { "id": "est-001", "orden_id": "ord-2026-0142", "persona_id": "per-001", "estudio": "Examen Clínico", "categoria": "clinica_medica", "prioridad": "alta" },
-  { "id": "est-002", "orden_id": "ord-2026-0142", "persona_id": "per-001", "estudio": "Electrocardiograma", "categoria": "clinica_medica", "prioridad": "media" },
-  { "id": "est-003", "orden_id": "ord-2026-0142", "persona_id": "per-001", "estudio": "Agudeza Visual", "categoria": "clinica_medica", "prioridad": "baja" },
-  { "id": "est-004", "orden_id": "ord-2026-0143", "persona_id": "per-002", "estudio": "Evaluación Psicológica", "categoria": "psicologia", "prioridad": "alta" },
-  { "id": "est-005", "orden_id": "ord-2026-0144", "persona_id": "per-003", "estudio": "Examen Clínico", "categoria": "clinica_medica", "prioridad": "alta" }
-]
