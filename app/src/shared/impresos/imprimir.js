@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client"
+import { esperarImagenes } from "./esperarImagenes"
 
 /* ---------------------------------------------------------------------
    Mismo patrón que el prototipo viejo (CML-Prelaborales.html: un <div
@@ -25,7 +26,13 @@ export function imprimirComponente(elemento) {
   }
   window.addEventListener("afterprint", limpiar)
 
-  // Dos frames: uno para que React monte, otro para que el navegador pinte
-  // antes de abrir el diálogo de impresión.
-  requestAnimationFrame(() => requestAnimationFrame(() => window.print()))
+  // Dos frames para que React monte y el navegador pinte, más esperar el
+  // logo del encabezado — si no, la primera impresión de la sesión sale
+  // sin él (el <img> todavía no había terminado de bajar).
+  requestAnimationFrame(() => {
+    requestAnimationFrame(async () => {
+      await esperarImagenes(contenedor)
+      window.print()
+    })
+  })
 }

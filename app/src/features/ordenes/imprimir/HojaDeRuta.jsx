@@ -1,5 +1,6 @@
 import { getDatosParaImprimir } from "../../../shared/impresos/datosImpresionService"
 import { imprimirComponente } from "../../../shared/impresos/imprimir"
+import { descargarComoPdf, compartirComoPdf } from "../../../shared/impresos/descargarPdf"
 import { CabeceraImpreso, DatosOrden, TablaEstudios, FirmasImpreso } from "../../../shared/impresos/PlantillaImpreso"
 
 /* ---------------------------------------------------------------------
@@ -24,8 +25,17 @@ export function HojaDeRuta({ datos }) {
   )
 }
 
-/** Entry point: trae los datos reales de la orden y abre el diálogo de impresión. */
 export async function imprimirHojaDeRuta(ordenId) {
   const datos = await getDatosParaImprimir(ordenId)
   imprimirComponente(<HojaDeRuta datos={datos} />)
+}
+
+export async function descargarHojaDeRutaPdf(ordenId) {
+  const datos = await getDatosParaImprimir(ordenId)
+  await descargarComoPdf(<HojaDeRuta datos={datos} />, `hoja-de-ruta-${datos.numero}.pdf`)
+}
+
+export async function compartirHojaDeRuta(ordenId) {
+  const datos = await getDatosParaImprimir(ordenId)
+  await compartirComoPdf(<HojaDeRuta datos={datos} />, `hoja-de-ruta-${datos.numero}.pdf`, `Hoja de ruta — orden ${datos.numero}`)
 }

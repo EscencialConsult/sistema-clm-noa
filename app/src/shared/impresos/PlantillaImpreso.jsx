@@ -12,13 +12,21 @@
    Nada de tokens de marca acá (--color-primary, etc.): un impreso
    institucional que se lleva el paciente no es una pantalla de la app,
    es el mismo papel blanco y negro de siempre — coincide con lo que ya
-   estaba validado en el prototipo (CML-Prelaborales.html).
+   estaba validado en el prototipo (CML-Prelaborales.html). El logo es
+   la excepción: es el isologo REAL del centro (azul de marca propio,
+   no el token de la app), el mismo que ya va impreso en el papel de
+   hoy — no es "color de la interfaz" colándose en el documento.
    --------------------------------------------------------------------- */
+
+// logo/1.webp, no el 2.webp que usa el sidebar: ese es blanco sobre
+// transparente, pensado para el fondo oscuro de la barra — en una hoja
+// blanca queda invisible.
+import logo from "../../assets/logo/1.webp"
 
 export function CabeceraImpreso({ titulo, numero }) {
   return (
     <div className="imp-ph">
-      <h1>Centro Médico Laboral del NOA</h1>
+      <img src={logo} alt="Centro Médico Laboral del NOA" className="imp-logo" />
       <p className="imp-s">Dr. Rubén Mario Kaplan · Médico Cirujano – Laboral</p>
       {numero != null && <p className="imp-num">N° {numero}</p>}
       <div className="imp-pt">{titulo}</div>
