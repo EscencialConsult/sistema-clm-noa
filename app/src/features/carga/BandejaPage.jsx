@@ -7,6 +7,8 @@ import {
   FolderOpen,
   CalendarClock,
   AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
@@ -23,6 +25,46 @@ const TIPO_EXAMEN_LABEL = {
 // Colores semánticos (DESIGN.md: nunca el azul de marca para estado clínico/operativo)
 const TABS = [{ key: "todos", label: "Todos" }, ...ESTADO_ORDEN.map((e) => ({ key: e, label: ETIQUETA_ESTADO[e] }))]
 
+const FILAS_POR_PAGINA = 10
+
+/** Tira de páginas (1 2 3 4 5...) para no dejar las tablas de la bandeja
+ *  scrolleando al infinito — pedido directo: "hay partes donde se va al
+ *  infinito, ponele tipo hojas 1,2,3,4,5". Chica y a un clic, no un
+ *  componente de tabla nuevo: la bandeja ya tiene su propia lista simple. */
+function Paginador({ pagina, totalPaginas, onCambiar }) {
+  if (totalPaginas <= 1) return null
+  const paginas = Array.from({ length: totalPaginas }, (_, i) => i + 1)
+  return (
+    <div className="mt-3 flex items-center justify-center gap-1">
+      <button
+        onClick={() => onCambiar(Math.max(1, pagina - 1))}
+        disabled={pagina === 1}
+        className="rounded-md p-1 text-ink-soft hover:bg-ink-soft/10 disabled:opacity-30"
+      >
+        <ChevronLeft size={14} />
+      </button>
+      {paginas.map((n) => (
+        <button
+          key={n}
+          onClick={() => onCambiar(n)}
+          className={`h-6 min-w-6 rounded-md px-1.5 text-xs font-medium ${
+            n === pagina ? "bg-primary text-white" : "text-ink-soft hover:bg-ink-soft/10"
+          }`}
+        >
+          {n}
+        </button>
+      ))}
+      <button
+        onClick={() => onCambiar(Math.min(totalPaginas, pagina + 1))}
+        disabled={pagina === totalPaginas}
+        className="rounded-md p-1 text-ink-soft hover:bg-ink-soft/10 disabled:opacity-30"
+      >
+        <ChevronRight size={14} />
+      </button>
+    </div>
+  )
+}
+
 export default function BandejaProfesional() {
   const navigate = useNavigate()
   const [ordenes, setOrdenes] = useState([])
@@ -32,6 +74,16 @@ export default function BandejaProfesional() {
   const [busqueda, setBusqueda] = useState("")
   const [cargando, setCargando] = useState(true)
   const [errorCarga, setErrorCarga] = useState(null)
+  const [paginaOrdenes, setPaginaOrdenes] = useState(1)
+  const [paginaPendientes, setPaginaPendientes] = useState(1)
+  // Al cambiar de pestaña o buscar, la página vieja puede ni existir más en
+  // el resultado nuevo — se vuelve a la 1 durante el render, no con un
+  // efecto aparte (evita un ciclo extra de renderizado para algo tan simple).
+  const [filtroAnterior, setFiltroAnterior] = useState({ tab, busqueda })
+  if (filtroAnterior.tab !== tab || filtroAnterior.busqueda !== busqueda) {
+    setFiltroAnterior({ tab, busqueda })
+    setPaginaOrdenes(1)
+  }
 
   useEffect(() => {
     Promise.all([ordenesService.getOrdenesDelDia(), ordenesService.getEstudiosPendientes()])
@@ -59,6 +111,18 @@ export default function BandejaProfesional() {
           o.empresa?.razon_social.toLowerCase().includes(busqueda.toLowerCase())
         : true
     )
+
+  const totalPaginasOrdenes = Math.max(1, Math.ceil(ordenesFiltradas.length / FILAS_POR_PAGINA))
+  const ordenesPagina = ordenesFiltradas.slice(
+    (paginaOrdenes - 1) * FILAS_POR_PAGINA,
+    paginaOrdenes * FILAS_POR_PAGINA
+  )
+
+  const totalPaginasPendientes = Math.max(1, Math.ceil(pendientes.length / FILAS_POR_PAGINA))
+  const pendientesPagina = pendientes.slice(
+    (paginaPendientes - 1) * FILAS_POR_PAGINA,
+    paginaPendientes * FILAS_POR_PAGINA
+  )
 
   return (
     <AppShell titulo="Bandeja del Día" subtitulo="Resumen de pacientes y estudios asignados">
@@ -128,7 +192,7 @@ export default function BandejaProfesional() {
                   </td>
                 </tr>
               )}
-              {ordenesFiltradas.map((o) => (
+              {ordenesPagina.map((o) => (
                 <tr
                   key={o.id}
                   className="cursor-pointer border-t border-ink-soft/10 hover:bg-ink-soft/5"
@@ -161,6 +225,7 @@ export default function BandejaProfesional() {
               ))}
             </tbody>
           </table>
+          <Paginador pagina={paginaOrdenes} totalPaginas={totalPaginasOrdenes} onCambiar={setPaginaOrdenes} />
         </div>
 
         <div className="flex flex-col gap-4">
@@ -206,20 +271,38 @@ export default function BandejaProfesional() {
               <th className="pb-2 font-normal">Categoría</th>
               <th className="pb-2 font-normal">Empresa</th>
               <th className="pb-2 font-normal">Lo carga</th>
+              <th className="pb-2 font-normal">Estado</th>
             </tr>
           </thead>
           <tbody>
-            {pendientes.map((e, i) => (
-              <tr key={`${e.numero}-${e.estudio}-${i}`} className="border-t border-ink-soft/10">
+            {pendientesPagina.map((e, i) => (
+              <tr
+                key={`${e.numero}-${e.estudio}-${i}`}
+                className="cursor-pointer border-t border-ink-soft/10 hover:bg-ink-soft/5"
+                onClick={() => e.orden_id && navigate(`/carga/${e.orden_id}`)}
+              >
                 <td className="py-2.5 text-ink">{e.paciente}</td>
                 <td className="py-2.5 text-ink-soft">{e.estudio}</td>
                 <td className="py-2.5 text-ink-soft">{e.categoria}</td>
                 <td className="py-2.5 text-ink-soft">{e.empresa}</td>
                 <td className="py-2.5 text-ink-soft">{e.rol_responsable}</td>
+                <td className="py-2.5">
+                  {e.estado_estudio === "DEVUELTO" ? (
+                    <span
+                      title={e.motivo_devolucion || "sin motivo registrado"}
+                      className="rounded-full bg-danger/10 px-2 py-0.5 text-[11px] font-medium text-danger"
+                    >
+                      Devuelto
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-ink-soft">Pendiente</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <Paginador pagina={paginaPendientes} totalPaginas={totalPaginasPendientes} onCambiar={setPaginaPendientes} />
       </div>
     </AppShell>
   )

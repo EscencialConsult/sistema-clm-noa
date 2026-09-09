@@ -18,3 +18,11 @@ backups/
 
 # bitácora del arranque automático del servidor
 arranque.log
+
+# capturas sueltas de testing con Playwright, nunca al repo (solo en la raíz:
+# las imágenes reales del sistema viven en app/src/assets/, no acá)
+.playwright-mcp/
+/*.png
+
+# artefactos de otras skills, no son del proyecto
+.pagokit/

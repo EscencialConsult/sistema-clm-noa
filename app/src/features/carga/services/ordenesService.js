@@ -47,11 +47,15 @@ export const ordenesService = {
     return (data ?? []).map(conNombreYDocumento)
   },
 
-  /** RF16/RF19 — v_pendientes: qué falta cargar y de quién es (rol_responsable). */
+  /** RF16/RF19/RF21 — v_pendientes: qué falta cargar, de quién es (rol_responsable),
+   *  y si es un devuelto, por qué (motivo_devolucion) — sin esto la devolución
+   *  no sirve, el profesional ve que volvió pero no qué corregir. */
   async getEstudiosPendientes() {
     const { data, error } = await supabase
       .from("v_pendientes")
-      .select("numero, fecha, paciente, empresa, categoria, estudio, rol_responsable")
+      .select(
+        "numero, fecha, paciente, empresa, categoria, estudio, rol_responsable, estado_estudio, motivo_devolucion, orden_id"
+      )
       .order("fecha", { ascending: false })
 
     if (error) throw new Error(error.message)
@@ -86,6 +90,7 @@ export const ordenesService = {
       .from("orden_estudio")
       .select(
         `id, estado, resultado, detalle, observacion, fuera_de_rango,
+         motivo_devolucion, devuelto_at,
          estudio:estudio_id ( id, nombre, unidad, ref_h, ref_m, orden,
            categoria:categoria_id ( id, nombre, orden, rol_carga, valor_defecto ) )`
       )
@@ -106,11 +111,22 @@ export const ordenesService = {
   },
 
   /** Guarda un resultado. El trigger decide solo si quedó fuera de rango
-   *  y si la orden pasa a COMPLETA — no hay que tocar esos dos campos. */
+   *  y si la orden pasa a COMPLETA — no hay que tocar esos dos campos.
+   *  Si el estudio venía DEVUELTO (RF21), esto es la corrección: se borra
+   *  el motivo viejo, si no quedaría colgado en un estudio que ya se
+   *  volvió a cargar y no dice nada de lo que pasa ahora. */
   async guardarResultado(ordenEstudioId, { resultado, detalle, observacion }) {
     const { error } = await supabase
       .from("orden_estudio")
-      .update({ resultado, detalle, observacion, estado: "CARGADO" })
+      .update({
+        resultado,
+        detalle,
+        observacion,
+        estado: "CARGADO",
+        motivo_devolucion: null,
+        devuelto_por: null,
+        devuelto_at: null,
+      })
       .eq("id", ordenEstudioId)
 
     if (error) throw new Error(error.message)
@@ -140,6 +156,9 @@ export const ordenesService = {
         estado: "PENDIENTE",
         cargado_por: null,
         cargado_at: null,
+        motivo_devolucion: null,
+        devuelto_por: null,
+        devuelto_at: null,
       })
       .eq("id", ordenEstudioId)
 
