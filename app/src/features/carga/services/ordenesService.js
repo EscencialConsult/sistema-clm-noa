@@ -19,6 +19,17 @@ const SELECT_ORDEN = `
   empresa:empresa_id ( id, razon_social )
 `
 
+/** "Hoy" en la fecha LOCAL del navegador, no en UTC.
+ *  toISOString() siempre da la fecha en UTC — pasadas las 21:00 en
+ *  Argentina (UTC-3) ya es "mañana" en UTC, y la Bandeja del Día
+ *  quedaba buscando órdenes de un día que todavía no llegó. */
+function hoyLocal() {
+  const d = new Date()
+  const mes = String(d.getMonth() + 1).padStart(2, "0")
+  const dia = String(d.getDate()).padStart(2, "0")
+  return `${d.getFullYear()}-${mes}-${dia}`
+}
+
 function conNombreYDocumento(orden) {
   const p = orden.persona
   return {
@@ -34,7 +45,7 @@ function conNombreYDocumento(orden) {
 export const ordenesService = {
   /** RF11 — Bandeja del Día: las órdenes con fecha de hoy. */
   async getOrdenesDelDia() {
-    const hoy = new Date().toISOString().slice(0, 10)
+    const hoy = hoyLocal()
     const { data, error } = await supabase
       .from("orden")
       .select(SELECT_ORDEN)
@@ -118,5 +129,25 @@ export const ordenesService = {
     })
     if (error) throw new Error(error.message)
     return data // cantidad de estudios que cargó
+  },
+
+  /** Deshace una carga: vuelve el estudio a PENDIENTE y borra lo escrito.
+   *  Para el "eliminar datos" de una selección múltiple en la pantalla
+   *  de carga — no es una regla de negocio, es corregir un error de
+   *  tipeo antes de seguir. */
+  async limpiarResultado(ordenEstudioId) {
+    const { error } = await supabase
+      .from("orden_estudio")
+      .update({
+        resultado: null,
+        detalle: null,
+        observacion: null,
+        estado: "PENDIENTE",
+        cargado_por: null,
+        cargado_at: null,
+      })
+      .eq("id", ordenEstudioId)
+
+    if (error) throw new Error(error.message)
   },
 }

@@ -1,5 +1,6 @@
 import { getDatosParaImprimir } from "../../../shared/impresos/datosImpresionService"
 import { imprimirComponente } from "../../../shared/impresos/imprimir"
+import { descargarComoPdf } from "../../../shared/impresos/descargarPdf"
 import {
   CabeceraImpreso,
   DatosOrden,
@@ -83,4 +84,12 @@ export function Protocolo({ datos }) {
 export async function imprimirProtocolo(ordenId) {
   const datos = await getDatosParaImprimir(ordenId)
   imprimirComponente(<Protocolo datos={datos} />)
+}
+
+/** RF23 "en formato de archivo": descarga directa de un clic, sin pasar
+ *  por el diálogo de impresión del navegador. Mismo componente, mismos
+ *  datos — nunca dos layouts distintos para el mismo documento. */
+export async function descargarProtocoloPdf(ordenId) {
+  const datos = await getDatosParaImprimir(ordenId)
+  await descargarComoPdf(<Protocolo datos={datos} />, `protocolo-${datos.numero}.pdf`)
 }
