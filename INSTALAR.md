@@ -190,9 +190,25 @@ Y ahora que corra solo, todas las noches a las 02:00 (Windows, en una consola
 como Administrador — cambiá la ruta si el proyecto está en otro lado):
 
 ```bat
-schtasks /Create /TN "CML NOA - Backup" /SC DAILY /ST 02:00 /RL HIGHEST /RU SYSTEM ^
+schtasks /Create /TN "CML NOA - Backup" /SC DAILY /ST 02:00 /RL HIGHEST ^
+  /RU "%USERNAME%" /IT ^
   /TR "cmd /c cd /d C:\cmlnoa\sistema-clm-noa && node scripts\backup.js D:\backups-cmlnoa"
 ```
+
+**Ojo con quién corre esa tarea. No pongas `/RU SYSTEM`.**
+
+`backup.js` saca el volcado con `docker compose exec`, y Docker Desktop en
+Windows sólo existe adentro de la sesión del usuario que inició Windows.
+`SYSTEM` no tiene esa sesión: la tarea correría, no encontraría Docker, y
+fallaría **todas las noches sin decir nada**. Un backup que nadie mira y que
+además nunca corrió es peor que no tener backup, porque da tranquilidad falsa.
+
+Por eso va con el usuario de la máquina y con `/IT`, y por eso el paso 8
+—inicio de sesión automático— no es opcional: sin sesión iniciada no hay
+Docker, y sin Docker no hay backup ni sistema.
+
+**Comprobalo al otro día.** No que la tarea diga "se ejecutó correctamente":
+que el archivo de anoche esté en el disco y pese lo que tiene que pesar.
 
 En Linux, lo mismo con cron: `0 2 * * * cd /opt/cmlnoa && node scripts/backup.js /mnt/backup`
 
@@ -221,6 +237,110 @@ los datos vuelven bien pero **no entra nadie al sistema**.
 
 Cada tres meses hay que restaurar en una PC de prueba y **entrar al sistema** para
 confirmar que el backup sirve (procedimiento P-02). Que los datos estén no alcanza.
+
+---
+
+## 8 · Que el servidor vuelva solo después de un corte
+
+**Esto no es opcional en la clínica.** Es lo que decide si el sistema existe
+o no la mañana después de un corte de luz.
+
+Los seis servicios están puestos con `restart: unless-stopped`, así que
+vuelven solos **siempre que Docker esté corriendo**. Y ahí está el problema:
+Docker Desktop en Windows no arranca hasta que alguien inicia sesión.
+
+Sin esto, el 100 % de las veces pasa lo mismo: se corta la luz, la máquina
+reinicia, Windows queda en la pantalla de inicio, Docker nunca arranca, el
+sistema no existe — y nadie se entera hasta que una recepcionista intenta
+abrir una orden.
+
+**a · Que Windows inicie sesión solo, y quede bloqueado.**
+
+```bat
+netplwiz
+```
+
+Destildá "Los usuarios deben escribir su nombre y contraseña", y poné la
+contraseña del usuario del servidor. Después, para que la pantalla quede
+bloqueada igual (la sesión sigue viva, Docker sigue corriendo, pero nadie
+puede tocar nada sin la contraseña):
+
+```bat
+schtasks /Create /TN "CML NOA - Bloquear al iniciar" /SC ONLOGON /RL HIGHEST ^
+  /TR "cmd /c timeout /t 90 && rundll32.exe user32.dll,LockWorkStation"
+```
+
+Los 90 segundos son para que Docker termine de levantar antes del bloqueo.
+
+> **Por qué la sesión queda abierta.** Es la única forma de que Docker Desktop
+> corra sin nadie presente. La pantalla bloqueada cubre el acceso físico. Si
+> más adelante la clínica prefiere no dejar sesión abierta, la alternativa es
+> mover el servidor a Linux, donde Docker corre como servicio y nada de esto
+> hace falta.
+
+**b · Que Docker Desktop arranque con la sesión.**
+
+Docker Desktop → engranaje → General → tildar **"Start Docker Desktop when you
+sign in"**.
+
+**c · Que el sistema se levante solo.**
+
+```bat
+schtasks /Create /TN "CML NOA - Levantar" /SC ONLOGON /RL HIGHEST ^
+  /RU "%USERNAME%" /IT ^
+  /TR "cmd /c cd /d C:\cmlnoa\sistema-clm-noa && node scripts\levantar.js"
+```
+
+`levantar.js` espera a que Docker responda —después de encender puede tardar
+un minuto largo—, levanta todo, comprueba que los seis servicios quedaron en
+pie y lo deja anotado en `arranque.log`.
+
+**d · Probalo de verdad: reiniciá la máquina.**
+
+No alcanza con crear las tareas. Reiniciá, esperá dos o tres minutos sin tocar
+nada, y desde **otro puesto** abrí el sistema. Si entra, quedó bien.
+
+```bash
+cat arranque.log      # tiene que decir "Sistema levantado"
+```
+
+Hacé esta prueba el día de la instalación, no el día del primer corte de luz.
+
+---
+
+## 9 · Cómo se actualiza más adelante
+
+Cuando haya correcciones o cosas nuevas, en el servidor:
+
+```bash
+node scripts/actualizar.js --ver     # ¿hay algo nuevo? no toca nada
+node scripts/actualizar.js           # actualiza
+```
+
+Hace todo en orden y se detiene en el primer error: backup **antes** de tocar
+nada, baja los cambios, aplica las migraciones que falten, reconstruye la
+aplicación, reinicia y corre las seis baterías de prueba. Si algo falla, te
+dice dónde quedó el backup para volver atrás.
+
+**En los puestos: F5.** No hay nada instalado en ellos — abren el navegador.
+El servidor está configurado para que nunca les quede media versión vieja.
+
+**Elegí el horario.** A las 8 de la mañana, antes del primer paciente. No a
+las 11 con la sala llena.
+
+**En el servidor no se editan archivos.** Si alguien tocó algo, `actualizar.js`
+se planta y no sigue: un cambio hecho a mano en la clínica se pierde en la
+próxima actualización y nadie se acuerda de que existía.
+
+### Qué migraciones tiene aplicadas esta base
+
+```bash
+node scripts/migrar.js --ver
+```
+
+La base lleva el registro de qué se le aplicó. Por eso se puede actualizar sin
+adivinar, y por eso una migración que ya corrió **no se edita nunca**: se
+corrige con una nueva. Si alguien edita una vieja, el sistema se planta y avisa.
 
 ---
 
