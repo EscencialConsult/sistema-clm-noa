@@ -57,6 +57,8 @@ function limpiar() {
     DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
     DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';
     DELETE FROM empresa        WHERE razon_social LIKE '${MARCA}%';
+    DELETE FROM concepto_estudio WHERE concepto_id IN (SELECT id FROM concepto WHERE nombre LIKE '${MARCA}%');
+    DELETE FROM concepto       WHERE nombre LIKE '${MARCA}%';
     DELETE FROM orden_estudio  WHERE estudio_id IN (SELECT id FROM estudio WHERE nombre LIKE '${MARCA}%');
     DELETE FROM estudio        WHERE nombre LIKE '${MARCA}%';
     DELETE FROM orden_categoria WHERE categoria_id IN (SELECT id FROM categoria WHERE nombre LIKE '${MARCA}%');
@@ -301,6 +303,42 @@ async function main() {
   const { error: g5 } = await c.from("orden_estudio").insert({ orden_id: ordenId, estudio_id: est.id })
   paso("el estudio recién creado ya se puede pedir, sin desarrollo (RF07)", !g5,
     g5 ? g5.message : "entra en la orden apenas se crea")
+
+  /* ---------- RF14 · conceptos: lo que cambia el importe ---------- */
+
+  /* 22 · el administrador crea un concepto y le engancha el estudio nuevo */
+  const { data: con, error: h1 } = await cAdmin2.from("concepto")
+    .insert({ nombre: `${MARCA} CONCEPTO`, precio: 12345 }).select().single()
+  paso("el Administrador crea un concepto con precio", !h1 && !!con?.id,
+    h1 ? h1.message : `${con.nombre} · ${con.precio}`)
+
+  /* 23 · antes de engancharlo, el estudio suma cero */
+  const { data: antesImporte } = await c.rpc("calcular_presupuesto", { p_orden: ordenId })
+
+  const { error: h2 } = await cAdmin2.from("concepto_estudio")
+    .insert({ concepto_id: con.id, estudio_id: est.id })
+  const { data: despuesImporte } = await c.rpc("calcular_presupuesto", { p_orden: ordenId })
+  paso("enganchar el estudio a un concepto cambia lo que se factura",
+    !h2 && Number(despuesImporte) === Number(antesImporte) + 12345,
+    h2 ? h2.message : `${antesImporte} → ${despuesImporte}`)
+
+  /* 24 · y sacarlo lo vuelve a dejar sin cobrar */
+  await cAdmin2.from("concepto_estudio").delete()
+    .eq("concepto_id", con.id).eq("estudio_id", est.id)
+  const { data: finalImporte } = await c.rpc("calcular_presupuesto", { p_orden: ordenId })
+  paso("sacarlo del concepto lo deja otra vez en cero",
+    Number(finalImporte) === Number(antesImporte),
+    `${despuesImporte} → ${finalImporte}`)
+
+  /* 25 · un concepto se cobra sólo si están TODOS sus estudios */
+  await cAdmin2.from("concepto_estudio").insert({ concepto_id: con.id, estudio_id: est.id })
+  const { data: otro } = await cAdmin2.from("estudio")
+    .select("id").eq("activo", true).ilike("nombre", "%CAMPIMETRIA%").limit(1).maybeSingle()
+  await cAdmin2.from("concepto_estudio").insert({ concepto_id: con.id, estudio_id: otro.id })
+  const { data: incompleto } = await c.rpc("calcular_presupuesto", { p_orden: ordenId })
+  paso("con un estudio del concepto faltando, no se cobra nada de él",
+    Number(incompleto) === Number(antesImporte),
+    `la orden no tiene los dos, así que vuelve a ${incompleto}`)
 
   /* limpieza */
   limpiar()

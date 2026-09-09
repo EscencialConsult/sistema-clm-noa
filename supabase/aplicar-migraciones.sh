@@ -46,7 +46,7 @@ echo "=== migraciones aplicadas ==="
 # el jueves con la operadora mirando.
 psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER:-supabase_admin}" --dbname "${POSTGRES_DB:-postgres}" <<'SQL'
 DO $$
-DECLARE t int; c int; e int; emp int; pl int; sinrls int;
+DECLARE t int; c int; e int; emp int; pl int; sinrls int; ce int; huerf int; nocobra int;
 BEGIN
   SELECT count(*) INTO t   FROM information_schema.tables
    WHERE table_schema='public' AND table_type='BASE TABLE';
@@ -66,6 +66,34 @@ BEGIN
   IF pl <> 8           THEN RAISE EXCEPTION 'Baterias: esperaba 8, hay %', pl; END IF;
   IF sinrls > 0        THEN RAISE EXCEPTION '% tablas sin RLS activo', sinrls; END IF;
 
+  -- Los enganches concepto-estudio se cargan con INSERT ... SELECT ... WHERE
+  -- nombre = '...'. Si el nombre no coincide, no inserta nada y NO da error:
+  -- el concepto queda con precio y sin ningun estudio, o sea que no se cobra
+  -- nunca. Asi se descubrio que 'Opiaceos' y 'Extasis' apuntaban a estudios
+  -- que no existen en el toxicologico.
+  SELECT count(*) INTO ce FROM concepto_estudio;
+
+  SELECT count(*) INTO huerf FROM concepto c2
+   WHERE c2.activo AND NOT EXISTS (SELECT 1 FROM concepto_estudio ce2 WHERE ce2.concepto_id = c2.id);
+
+  SELECT count(*) INTO nocobra FROM estudio e2
+   WHERE e2.activo AND NOT EXISTS (SELECT 1 FROM concepto_estudio ce2 WHERE ce2.estudio_id = e2.id);
+
+  RAISE NOTICE 'conceptos=% enganches=%',
+    (SELECT count(*) FROM concepto), ce;
+
+  IF huerf > 0 THEN
+    RAISE WARNING 'ATENCION: % conceptos tienen precio y ningun estudio: nunca se van a cobrar.', huerf;
+    RAISE WARNING '  Son: %', (SELECT string_agg(c3.nombre, ', ') FROM concepto c3
+      WHERE c3.activo AND NOT EXISTS (SELECT 1 FROM concepto_estudio ce3 WHERE ce3.concepto_id = c3.id));
+  END IF;
+
+  IF nocobra > 0 THEN
+    RAISE WARNING 'ATENCION: % estudios activos no estan en ningun concepto: suman 0 al importe.', nocobra;
+  END IF;
+
+  -- No corta la instalacion a proposito: son datos del cliente por revisar,
+  -- no un error del sistema. Pero tiene que verse.
   RAISE NOTICE 'Control OK: todo cargado y con RLS activo.';
 END $$;
 SQL
