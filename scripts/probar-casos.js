@@ -567,6 +567,68 @@ caso("CP-18", "El médico laboral devuelve un estudio y la orden retrocede", asy
     ? { ok: false, detalle: fallas.join("; ") }
     : { ok: true, detalle: "COMPLETA → EN_CURSO; el profesional lo ve con el motivo y ya no se puede informar" }
 })
+/* --- SEG-01 · la aptitud NO se puede fijar salteando la función ----- */
+/* CP-21 comprobaba emitir_protocolo(). Pero la tabla también se podía
+   escribir: el médico laboral hacía PATCH /rest/v1/orden y declaraba
+   apta a una persona con 52 estudios sin cargar. Tercera vez que
+   aparece el mismo patrón — la regla en la función, la puerta abierta
+   al lado. Corregido en 019. */
+caso("SEG-01", "Nadie fija la aptitud por fuera de emitir_protocolo", async (ctx) => {
+  const fallas = []
+
+  /* la orden del varón sigue con estudios sin cargar */
+  const faltan = await pedir(
+    `/rest/v1/orden_estudio?orden_id=eq.${ctx.orden_h}&estado=neq.CARGADO&select=id`,
+    { token: sesion.admin })
+  if ((faltan.datos ?? []).length === 0) return { ok: false, detalle: "esperaba una orden incompleta" }
+
+  for (const [quien, token] of [["el Médico laboral", sesion.medico],
+                                ["el Administrador", sesion.admin],
+                                ["Recepción", sesion.recep]]) {
+    const r = await pedir(`/rest/v1/orden?id=eq.${ctx.orden_h}`, {
+      token, metodo: "PATCH", cuerpo: { aptitud: "APTO" }, prefer: "return=representation" })
+    if (r.estado < 400 && (r.datos ?? []).length > 0) {
+      fallas.push(`${quien} fijó el APTO con un PATCH directo`)
+    }
+  }
+
+  /* y la orden sigue como estaba */
+  const o = await pedir(`/rest/v1/orden?id=eq.${ctx.orden_h}&select=aptitud,estado`, { token: sesion.admin })
+  if (o.datos?.[0]?.aptitud !== "PENDIENTE") fallas.push(`la aptitud quedó en ${o.datos?.[0]?.aptitud}`)
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: `con ${faltan.datos.length} estudios sin cargar, los tres roles rebotan por RLS` }
+})
+
+/* --- SEG-02 · lo que se puede hacer con sólo la clave del navegador - */
+/* La clave anon viaja al navegador y cualquiera la lee. Lo único que
+   la separa de los datos es RLS. */
+caso("SEG-02", "Con la clave pública y sin sesión no se lee ni se escribe nada", async () => {
+  const fallas = []
+  const tablas = ["persona", "orden", "orden_estudio", "usuario", "auditoria",
+                  "empresa", "concepto", "v_orden_avance", "v_pendientes", "v_vencimientos"]
+
+  for (const t of tablas) {
+    const r = await pedir(`/rest/v1/${t}?select=*&limit=1`)
+    if (Array.isArray(r.datos) && r.datos.length > 0) fallas.push(`${t} devuelve filas sin sesión`)
+  }
+
+  /* las funciones de negocio no tienen que estar ni expuestas */
+  for (const f of ["crear_orden", "emitir_protocolo", "crear_usuario_completo",
+                   "devolver_estudio", "cargar_categoria_normal", "restablecer_password"]) {
+    const r = await pedir(`/rest/v1/rpc/${f}`, { metodo: "POST", cuerpo: {} })
+    if (r.estado !== 404) fallas.push(`${f}() responde ${r.estado} a anon, debería no existir`)
+  }
+
+  /* ni el esquema completo */
+  const esquema = await pedir("/rest/v1/")
+  if (esquema.estado === 200 && esquema.datos?.definitions) fallas.push("el esquema completo se lee sin sesión")
+
+  return fallas.length
+    ? { ok: false, detalle: fallas.join("; ") }
+    : { ok: true, detalle: "10 tablas vacías, 6 funciones no expuestas, y el esquema cerrado" }
+})
 /* --- CP-22 ★ · el protocolo, y el cierre ---------------------------- */
 caso("CP-22", "Emitido el protocolo, salen las dos matrículas y los resultados no se editan", async (ctx) => {
   // completar lo que falta: el Administrador puede corregir cualquier categoría

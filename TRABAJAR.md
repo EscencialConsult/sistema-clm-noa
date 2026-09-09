@@ -197,6 +197,7 @@ eso: el componente llama al servicio, el servicio habla con la base.
 ```bash
 node scripts/verificar-frontend.js       # el frontend y la base dicen lo mismo
 node scripts/probar-casos.js             # los casos bloqueantes
+cd app && node scripts/probar-permisos.mjs   # qué puede cada rol
 cd app && node scripts/probar-aptitud.mjs
 cd app && node scripts/probar-alta-orden.mjs
 cd app && node scripts/probar-terceros.mjs

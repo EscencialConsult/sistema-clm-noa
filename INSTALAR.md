@@ -229,6 +229,7 @@ confirmar que el backup sirve (procedimiento P-02). Que los datos estén no alca
 ```bash
 node scripts/verificar-frontend.js       # el frontend y la base dicen lo mismo
 node scripts/probar-casos.js             # los casos bloqueantes
+cd app && node scripts/probar-permisos.mjs   # qué puede cada rol
 cd app && node scripts/probar-aptitud.mjs
 cd app && node scripts/probar-alta-orden.mjs
 cd app && node scripts/probar-terceros.mjs
