@@ -91,11 +91,10 @@ body {
   margin-bottom: 6mm;
   position: relative;
 }
-.hoja-impresion .imp-ph h1 {
-  font-size: 15pt;
-  margin: 0;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+.hoja-impresion .imp-logo {
+  height: 17mm;
+  width: auto;
+  display: inline-block;
 }
 .hoja-impresion .imp-ph .imp-s {
   font-size: 9pt;
@@ -183,8 +182,8 @@ body {
 .hoja-impresion .imp-sig {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 34mm;
-  margin: 24mm 6mm 0;
+  gap: 50mm;
+  margin: 30mm 10mm 0;
 }
 .hoja-impresion .imp-sig div {
   border-top: 0.8pt solid #000;

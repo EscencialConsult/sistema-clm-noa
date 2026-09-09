@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client"
 import { jsPDF } from "jspdf"
 import html2canvas from "html2canvas"
+import { esperarImagenes } from "./esperarImagenes"
 
 /* ---------------------------------------------------------------------
    RF23: "El sistema genera el documento final de la orden, en formato
@@ -26,11 +27,16 @@ async function generarPdfBlob(elemento) {
 
   const root = createRoot(contenedor)
   root.render(elemento)
-  // Esperar a que React pinte antes de rasterizar.
+  // Esperar a que React pinte, y a que el logo del encabezado termine de
+  // bajar, antes de rasterizar — si no, el primer PDF de la sesión sale
+  // sin él.
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+  await esperarImagenes(contenedor)
 
   try {
-    const canvas = await html2canvas(contenedor, { scale: 2, backgroundColor: "#ffffff" })
+    // scale 3 (no 2): el documento lleva texto chico (referencias de
+    // laboratorio, unidades) y a 2x salía borroso al hacer zoom en el PDF.
+    const canvas = await html2canvas(contenedor, { scale: 3, backgroundColor: "#ffffff" })
     const pdf = new jsPDF({ unit: "mm", format: "a4" })
 
     const imgAnchoMm = A4_MM.w
