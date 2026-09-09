@@ -3,11 +3,9 @@ import { Navigate, useNavigate } from "react-router-dom"
 import { Eye, EyeOff, MapPin, Phone, User, Lock, Info } from "lucide-react"
 import { authService } from "./services/authService"
 import { navegacionPorRol } from "../../routes/rutasPorRol"
-import { FONDOS_LOGIN } from "../../config/fondosLogin"
-import SelectorFondoDev from "../../components/SelectorFondoDev"
-import AccesosRapidosDev from "../../components/AccesosRapidosDev"
 import logoCompleto from "../../assets/logo/1.webp"
 import logoBlanco from "../../assets/logo/2.webp"
+import fondoLogin from "../../assets/fondos/hospital-1.webp"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -16,15 +14,6 @@ export default function Login() {
   const [verClave, setVerClave] = useState(false)
   const [error, setError] = useState("")
   const [cargando, setCargando] = useState(false)
-  const [indiceFondo, setIndiceFondo] = useState(() => {
-    const guardado = Number(localStorage.getItem("kaplan_dev_fondo_login"))
-    return Number.isInteger(guardado) && guardado < FONDOS_LOGIN.length ? guardado : 0
-  })
-
-  function cambiarFondo(indice) {
-    setIndiceFondo(indice)
-    localStorage.setItem("kaplan_dev_fondo_login", String(indice))
-  }
 
   const sesionActual = authService.getSesionActual()
   if (sesionActual) {
@@ -55,18 +44,15 @@ export default function Login() {
     entrar(usuario, contrasena)
   }
 
-  const fondo = FONDOS_LOGIN[indiceFondo]
-
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* ── Fondo — estático, sin WebGL. Foto (o base sólida si no hay) +
-          tinte de color. Se sacó el shader animado: no valía la vuelta que
-          costaba, se veía mal/inconsistente y ya se probó varias veces. ── */}
-      {fondo.src ? (
-        <img src={fondo.src} alt="" className="absolute inset-0 h-full w-full object-cover blur-xs" />
-      ) : (
-        <div className="absolute inset-0 bg-primary-deep" />
-      )}
+      {/* ── Fondo — fijo (hospital-1.webp), estático, sin WebGL. Se sacó el
+          shader animado: no valía la vuelta que costaba, se veía mal/
+          inconsistente y ya se probó varias veces. También se sacó el
+          selector de fondos de desarrollo: era para elegir entre
+          candidatos mientras no había foto real de la fachada, ya no
+          hace falta seguir probando variantes. ── */}
+      <img src={fondoLogin} alt="" className="absolute inset-0 h-full w-full object-cover blur-xs" />
       <div className="absolute inset-0 bg-primary-deep/45 mix-blend-multiply" />
       <div className="absolute inset-0 bg-linear-to-t from-black/35 via-transparent to-black/15" />
 
@@ -114,12 +100,6 @@ export default function Login() {
         {/* Mitad derecha — acción, transparente, card centrada en el centro
             de esta mitad */}
         <div className="relative flex w-full items-center justify-center p-6 md:w-1/2">
-          {/* Panel de herramientas dev — visibles a propósito, no escondidas */}
-          <div className="absolute right-6 top-6 z-20 flex flex-col items-end gap-2">
-            <SelectorFondoDev fondos={FONDOS_LOGIN} indiceActual={indiceFondo} onCambiar={cambiarFondo} />
-            <AccesosRapidosDev onEntrar={entrar} cargando={cargando} />
-          </div>
-
           <div
             className="w-full max-w-lg rounded-card bg-white/90 p-14 backdrop-blur-md"
             style={{ boxShadow: "0 20px 40px rgba(11,37,69,0.25)" }}
