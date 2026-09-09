@@ -89,8 +89,11 @@ que no servir.
 ```bash
 git clone https://github.com/EscencialConsult/sistema-clm-noa.git
 cd sistema-clm-noa
-git checkout estructura
 ```
+
+Ya clona en `main`, que es la rama que se despliega — no hace falta cambiar de
+rama. (La vieja `estructura` fue el nombre de la rama donde empezó este
+backend; se fusionó a `main` hace tiempo y ya no existe.)
 
 ## 2 · Generar las claves
 
