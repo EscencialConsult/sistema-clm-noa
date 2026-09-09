@@ -8,6 +8,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Circle,
+  Eraser,
+  PencilLine,
+  X,
   Stethoscope,
   Droplet,
   TestTube2,
@@ -27,7 +30,9 @@ import { imprimirProtocolo, descargarProtocoloPdf } from "../aptitud/imprimir/Pr
 /* ---------------------------------------------------------------------
    ClickUp 06 · Pantalla de carga: las dos grillas (CU-07).
    Grilla de arriba: categorías de la orden, con su avance.
-   Grilla de abajo: los estudios de la categoría elegida, para cargar.
+   Grilla de abajo: los estudios de la categoría elegida, para cargar,
+   con selección múltiple para limpiar o aplicar el mismo valor a varias
+   filas a la vez.
 
    La lógica de negocio (fuera de rango, quién puede cargar qué,
    completar la orden) NO se resuelve acá — vive en la base (trigger y
@@ -35,8 +40,6 @@ import { imprimirProtocolo, descargarProtocoloPdf } from "../aptitud/imprimir/Pr
    muestra lo que vuelve, incluido el error si RLS lo rechaza.
    --------------------------------------------------------------------- */
 
-// Mismo tratamiento de tarjeta que ya usa el Dashboard (border-2/15%, no
-// border/10% — con 1px se leía "vacío/genérico", ver DESIGN.md).
 const ICONO_CATEGORIA = {
   "EXAMENES FISICOS": Stethoscope,
   HEMOGRAMA: Droplet,
@@ -62,6 +65,12 @@ const FILTROS = [
   { key: "completas", label: "Completas" },
 ]
 
+const COLUMNAS_APLICABLES = [
+  { key: "resultado", label: "Resultado" },
+  { key: "detalle", label: "Valor" },
+  { key: "observacion", label: "Observación" },
+]
+
 export default function CargaPage() {
   const { ordenId } = useParams()
   const navigate = useNavigate()
@@ -74,6 +83,12 @@ export default function CargaPage() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
   const [avisoCategoria, setAvisoCategoria] = useState(null)
+
+  // Selección múltiple — vive por categoría: cambiar de categoría limpia la selección.
+  const [seleccionados, setSeleccionados] = useState(new Set())
+  const [aplicarAbierto, setAplicarAbierto] = useState(false)
+  const [columnaAplicar, setColumnaAplicar] = useState("resultado")
+  const [textoAplicar, setTextoAplicar] = useState("")
 
   async function recargar() {
     setCargando(true)
@@ -98,6 +113,13 @@ export default function CargaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordenId])
 
+  function elegirCategoria(id) {
+    setCategoriaSel(id)
+    setAvisoCategoria(null)
+    setSeleccionados(new Set())
+    setAplicarAbierto(false)
+  }
+
   const categoriasConAvance = useMemo(
     () =>
       categorias.map((c) => {
@@ -111,11 +133,7 @@ export default function CargaPage() {
 
   const totales = useMemo(() => {
     const items = categorias.flatMap((c) => c.items)
-    return {
-      total: items.length,
-      cargados: items.filter((i) => i.estado === "CARGADO").length,
-      pendientes: items.filter((i) => i.estado !== "CARGADO").length,
-    }
+    return { total: items.length, cargados: items.filter((i) => i.estado === "CARGADO").length }
   }, [categorias])
 
   const categoriasFiltradas = categoriasConAvance.filter((c) => {
@@ -150,6 +168,53 @@ export default function CargaPage() {
     }
   }
 
+  function alternarSeleccion(id) {
+    setSeleccionados((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function alternarSeleccionTodos() {
+    if (!catActual) return
+    setSeleccionados((prev) =>
+      prev.size === catActual.items.length ? new Set() : new Set(catActual.items.map((i) => i.id))
+    )
+  }
+
+  async function eliminarDatosSeleccionados() {
+    try {
+      await Promise.all([...seleccionados].map((id) => ordenesService.limpiarResultado(id)))
+      setSeleccionados(new Set())
+      await recargar()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  async function aplicarTextoASeleccionados() {
+    try {
+      await Promise.all(
+        [...seleccionados].map((id) => {
+          const item = catActual.items.find((i) => i.id === id)
+          return ordenesService.guardarResultado(id, {
+            resultado: columnaAplicar === "resultado" ? textoAplicar : (item.resultado ?? ""),
+            detalle: columnaAplicar === "detalle" ? textoAplicar : (item.detalle ?? ""),
+            observacion: columnaAplicar === "observacion" ? textoAplicar : (item.observacion ?? ""),
+          })
+        })
+      )
+      setAplicarAbierto(false)
+      setTextoAplicar("")
+      setSeleccionados(new Set())
+      await recargar()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
   if (cargando && !orden) {
     return (
       <AppShell titulo="Cargando…">
@@ -176,7 +241,7 @@ export default function CargaPage() {
       titulo={`Orden N° ${orden.numero}`}
       subtitulo={`${p.apellido}, ${p.nombre} · ${orden.empresa?.razon_social ?? ""}`}
     >
-      {/* Cabecera: volver, estado, e impresos — la única fila con acciones globales */}
+      {/* Cabecera: volver, estado, e impresos */}
       <div className="mb-4 flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}
@@ -222,27 +287,24 @@ export default function CargaPage() {
         </div>
       )}
 
-      {/* El contador: cuánto falta de la orden entera, no solo de la categoría
-          abierta — y sirve de filtro para la grilla de categorías de abajo. */}
-      <div className="mb-5 rounded-card border-2 border-ink-soft/15 bg-white p-5">
+      {/* Contador de toda la orden + filtro de la grilla de categorías */}
+      <div className="mb-4 rounded-card border-2 border-ink-soft/15 bg-white px-5 py-3.5">
         <div className="flex items-center gap-4">
           <div className="shrink-0">
-            <p className="text-2xl font-semibold text-ink">
-              {totales.cargados} <span className="text-base font-normal text-ink-soft">/ {totales.total}</span>
+            <p className="text-xl font-semibold text-ink">
+              {totales.cargados} <span className="text-sm font-normal text-ink-soft">/ {totales.total}</span>
             </p>
-            <p className="text-xs text-ink-soft">estudios cargados</p>
+            <p className="text-[11px] text-ink-soft">estudios cargados</p>
           </div>
 
-          <div className="h-2 flex-1 rounded-full bg-ink-soft/10">
+          <div className="h-1.5 flex-1 rounded-full bg-ink-soft/10">
             <div
-              className={`h-2 rounded-full transition-[width] duration-200 ${
-                porcentaje === 100 ? "bg-success" : "bg-primary"
-              }`}
+              className={`h-1.5 rounded-full transition-[width] duration-200 ${porcentaje === 100 ? "bg-success" : "bg-primary"}`}
               style={{ width: `${porcentaje}%` }}
             />
           </div>
 
-          <div className="flex shrink-0 gap-1 rounded-md border-2 border-ink-soft/15 p-1">
+          <div className="flex shrink-0 gap-1 rounded-md border-2 border-ink-soft/15 p-0.5">
             {FILTROS.map((f) => {
               const cantidad =
                 f.key === "pendientes"
@@ -254,7 +316,7 @@ export default function CargaPage() {
                 <button
                   key={f.key}
                   onClick={() => setFiltro(f.key)}
-                  className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                     filtro === f.key ? "bg-primary text-white" : "text-ink-soft hover:bg-ink-soft/5"
                   }`}
                 >
@@ -266,10 +328,10 @@ export default function CargaPage() {
         </div>
       </div>
 
-      {/* Grilla 1 · categorías */}
-      <div className="mb-5 grid grid-cols-4 gap-3">
+      {/* Grilla 1 · categorías — compacta, 3 por fila */}
+      <div className="mb-4 grid grid-cols-3 gap-2.5">
         {categoriasFiltradas.length === 0 && (
-          <p className="col-span-4 py-4 text-center text-sm text-ink-soft">
+          <p className="col-span-3 py-4 text-center text-sm text-ink-soft">
             No hay categorías {filtro === "pendientes" ? "pendientes" : "completas"}.
           </p>
         )}
@@ -280,11 +342,8 @@ export default function CargaPage() {
           return (
             <button
               key={c.id}
-              onClick={() => {
-                setCategoriaSel(c.id)
-                setAvisoCategoria(null)
-              }}
-              className={`rounded-card border-2 p-4 text-left transition-colors ${
+              onClick={() => elegirCategoria(c.id)}
+              className={`flex items-center gap-3 rounded-card border-2 p-3 text-left transition-colors ${
                 seleccionada
                   ? "border-primary bg-primary/5"
                   : c.completa
@@ -292,30 +351,31 @@ export default function CargaPage() {
                     : "border-ink-soft/15 bg-white hover:border-primary/40"
               }`}
             >
-              <div className="mb-2.5 flex items-center justify-between">
-                <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-md ${
-                    seleccionada ? "bg-primary/15 text-primary" : c.completa ? "bg-success/15 text-success" : "bg-ink-soft/10 text-ink-soft"
-                  }`}
-                >
-                  <Icono size={18} strokeWidth={1.75} />
-                </span>
-                {c.completa && <CheckCircle2 size={17} className="text-success" />}
-              </div>
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
+                  seleccionada ? "bg-primary/15 text-primary" : c.completa ? "bg-success/15 text-success" : "bg-ink-soft/10 text-ink-soft"
+                }`}
+              >
+                <Icono size={16} strokeWidth={1.75} />
+              </span>
 
-              <p className="text-sm font-medium text-ink">{c.nombre}</p>
-              {!esDeMiArea && <p className="text-xs text-ink-soft">Categoría ajena</p>}
-
-              <div className="mt-2.5 flex items-center gap-2">
-                <div className="h-1.5 flex-1 rounded-full bg-ink-soft/10">
-                  <div
-                    className={`h-1.5 rounded-full ${c.completa ? "bg-success" : "bg-primary"}`}
-                    style={{ width: `${c.total ? (c.cargados / c.total) * 100 : 0}%` }}
-                  />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-xs font-medium text-ink">{c.nombre}</p>
+                  {c.completa && <CheckCircle2 size={14} className="shrink-0 text-success" />}
                 </div>
-                <span className={`text-xs font-medium ${c.completa ? "text-success" : "text-ink-soft"}`}>
-                  {c.cargados}/{c.total}
-                </span>
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <div className="h-1 flex-1 rounded-full bg-ink-soft/10">
+                    <div
+                      className={`h-1 rounded-full ${c.completa ? "bg-success" : "bg-primary"}`}
+                      style={{ width: `${c.total ? (c.cargados / c.total) * 100 : 0}%` }}
+                    />
+                  </div>
+                  <span className={`shrink-0 text-[11px] font-medium ${c.completa ? "text-success" : "text-ink-soft"}`}>
+                    {c.cargados}/{c.total}
+                  </span>
+                </div>
+                {!esDeMiArea && <p className="mt-0.5 text-[10px] text-ink-soft">Categoría ajena</p>}
               </div>
             </button>
           )
@@ -325,7 +385,7 @@ export default function CargaPage() {
       {/* Grilla 2 · estudios de la categoría elegida */}
       {catActual && (
         <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
                 {(() => {
@@ -335,14 +395,80 @@ export default function CargaPage() {
               </span>
               <h3 className="text-base font-medium text-ink">{catActual.nombre}</h3>
             </div>
-            <button
-              onClick={cargarCategoriaCompleta}
-              disabled={catActual.completa}
-              className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/15 px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-primary/50 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-ink-soft/15 disabled:hover:bg-transparent disabled:hover:text-ink-soft"
-            >
-              <CheckCheck size={14} /> Cargar toda la categoría en {catActual.valor_defecto ?? "NORMAL"}
-            </button>
+
+            <div className="ml-auto flex items-center gap-2">
+              {seleccionados.size > 0 && (
+                <div className="flex items-center gap-1.5 rounded-md border-2 border-primary/40 bg-primary/5 px-2.5 py-1.5">
+                  <span className="mr-1 text-xs font-medium text-primary">{seleccionados.size} seleccionado{seleccionados.size === 1 ? "" : "s"}</span>
+                  <button
+                    onClick={() => setAplicarAbierto((v) => !v)}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+                  >
+                    <PencilLine size={13} /> Mismo valor
+                  </button>
+                  <button
+                    onClick={eliminarDatosSeleccionados}
+                    className="flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-danger hover:bg-danger/10"
+                  >
+                    <Eraser size={13} /> Eliminar datos
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSeleccionados(new Set())
+                      setAplicarAbierto(false)
+                    }}
+                    title="Cancelar selección"
+                    className="rounded p-1 text-ink-soft hover:bg-ink-soft/10 hover:text-ink"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={cargarCategoriaCompleta}
+                disabled={catActual.completa}
+                className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/15 px-3 py-1.5 text-xs font-medium text-ink-soft hover:border-primary/50 hover:bg-primary/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-ink-soft/15 disabled:hover:bg-transparent disabled:hover:text-ink-soft"
+              >
+                <CheckCheck size={14} /> Cargar toda en {catActual.valor_defecto ?? "NORMAL"}
+              </button>
+            </div>
           </div>
+
+          {aplicarAbierto && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border-2 border-primary/30 bg-primary/5 p-3">
+              <span className="text-xs font-medium text-ink">Poner en</span>
+              <select
+                value={columnaAplicar}
+                onChange={(e) => setColumnaAplicar(e.target.value)}
+                className="rounded-md border-2 border-ink-soft/20 bg-white px-2 py-1.5 text-xs text-ink outline-none focus:border-primary"
+              >
+                {COLUMNAS_APLICABLES.map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs font-medium text-ink">el texto</span>
+              <input
+                autoFocus
+                value={textoAplicar}
+                onChange={(e) => setTextoAplicar(e.target.value)}
+                placeholder="ej. NORMAL"
+                className="w-40 rounded-md border-2 border-ink-soft/20 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+              />
+              <span className="text-xs text-ink-soft">
+                en los {seleccionados.size} estudios seleccionados
+              </span>
+              <button
+                onClick={aplicarTextoASeleccionados}
+                disabled={!textoAplicar}
+                className="ml-auto rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Aplicar
+              </button>
+            </div>
+          )}
 
           {avisoCategoria && (
             <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-success">
@@ -352,18 +478,31 @@ export default function CargaPage() {
 
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b-2 border-ink-soft/10 text-xs text-ink-soft">
-                <th className="w-6 pb-2.5 font-normal"></th>
-                <th className="pb-2.5 font-normal">Estudio</th>
-                <th className="pb-2.5 font-normal">Resultado</th>
-                <th className="pb-2.5 font-normal">Valor</th>
-                <th className="pb-2.5 font-normal">Referencia</th>
-                <th className="pb-2.5 font-normal">Observación</th>
+              <tr className="rounded-md bg-ink-soft/5 text-xs font-semibold text-ink">
+                <th className="w-9 rounded-l-md py-2.5 pl-3">
+                  <input
+                    type="checkbox"
+                    checked={seleccionados.size > 0 && seleccionados.size === catActual.items.length}
+                    onChange={alternarSeleccionTodos}
+                    className="h-3.5 w-3.5 cursor-pointer rounded border-2 border-ink-soft/30 accent-primary"
+                  />
+                </th>
+                <th className="py-2.5 pl-1">Estudio</th>
+                <th className="py-2.5">Resultado</th>
+                <th className="py-2.5">Valor</th>
+                <th className="py-2.5">Referencia</th>
+                <th className="rounded-r-md py-2.5">Observación</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-soft/10">
               {catActual.items.map((it) => (
-                <FilaEstudio key={it.id} item={it} onGuardar={(campos) => guardarFila(it, campos)} />
+                <FilaEstudio
+                  key={it.id}
+                  item={it}
+                  seleccionado={seleccionados.has(it.id)}
+                  onToggleSeleccion={() => alternarSeleccion(it.id)}
+                  onGuardar={(campos) => guardarFila(it, campos)}
+                />
               ))}
             </tbody>
           </table>
@@ -373,15 +512,16 @@ export default function CargaPage() {
   )
 }
 
-function FilaEstudio({ item, onGuardar }) {
+function FilaEstudio({ item, seleccionado, onToggleSeleccion, onGuardar }) {
   const [resultado, setResultado] = useState(item.resultado ?? "")
   const [detalle, setDetalle] = useState(item.detalle ?? "")
   const [observacion, setObservacion] = useState(item.observacion ?? "")
 
-  // El botón "cargar categoría completa" actualiza el ITEM (vía recargar()
-  // en el padre), no esta fila directamente — sin este efecto, la fila
-  // seguía mostrando el campo vacío aunque el valor ya estuviera guardado
-  // en la base. Es el mismo estudio (misma key), React reusa la instancia.
+  // El botón "cargar categoría completa" (y ahora también "eliminar
+  // datos"/"mismo valor" en selección múltiple) actualizan el ITEM vía
+  // recargar() en el padre, no esta fila directamente — sin este efecto
+  // la fila seguía mostrando el valor viejo aunque la base ya tuviera el
+  // nuevo. Misma key entre recargas, React reusa la instancia.
   useEffect(() => {
     setResultado(item.resultado ?? "")
     setDetalle(item.detalle ?? "")
@@ -403,17 +543,25 @@ function FilaEstudio({ item, onGuardar }) {
     }`
 
   return (
-    <tr className="group">
-      <td className="py-2.5">
-        {cargado ? (
-          <CheckCircle2 size={15} className="text-success" />
-        ) : (
-          <Circle size={15} className="text-ink-soft/30" />
-        )}
+    <tr className={seleccionado ? "bg-primary/5" : undefined}>
+      <td className="py-2.5 pl-3">
+        <input
+          type="checkbox"
+          checked={seleccionado}
+          onChange={onToggleSeleccion}
+          className="h-3.5 w-3.5 cursor-pointer rounded border-2 border-ink-soft/30 accent-primary"
+        />
       </td>
-      <td className="py-2.5 text-ink">
-        {est.nombre}
-        {est.unidad ? <span className="text-ink-soft"> ({est.unidad})</span> : null}
+      <td className="py-2.5 pl-1 text-ink">
+        <span className="inline-flex items-center gap-1.5">
+          {cargado ? (
+            <CheckCircle2 size={13} className="shrink-0 text-success" />
+          ) : (
+            <Circle size={13} className="shrink-0 text-ink-soft/30" />
+          )}
+          {est.nombre}
+          {est.unidad ? <span className="text-ink-soft"> ({est.unidad})</span> : null}
+        </span>
       </td>
       <td className="py-2.5">
         <input

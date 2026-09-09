@@ -130,4 +130,24 @@ export const ordenesService = {
     if (error) throw new Error(error.message)
     return data // cantidad de estudios que cargó
   },
+
+  /** Deshace una carga: vuelve el estudio a PENDIENTE y borra lo escrito.
+   *  Para el "eliminar datos" de una selección múltiple en la pantalla
+   *  de carga — no es una regla de negocio, es corregir un error de
+   *  tipeo antes de seguir. */
+  async limpiarResultado(ordenEstudioId) {
+    const { error } = await supabase
+      .from("orden_estudio")
+      .update({
+        resultado: null,
+        detalle: null,
+        observacion: null,
+        estado: "PENDIENTE",
+        cargado_por: null,
+        cargado_at: null,
+      })
+      .eq("id", ordenEstudioId)
+
+    if (error) throw new Error(error.message)
+  },
 }
