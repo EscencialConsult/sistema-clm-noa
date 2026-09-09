@@ -10,8 +10,14 @@ Todo corre adentro: **no hace falta internet** una vez que las imágenes están 
 | Necesitás | Para qué |
 |---|---|
 | **Docker Desktop** (o Docker Engine + Compose) | Levanta la base, la autenticación, la API y el almacenamiento |
-| **Node.js 20 o superior** | Solo para los scripts de claves y de usuarios |
+| **Node.js 22 o superior** | Para los scripts de claves, usuarios, backup y actualización |
 | ~4 GB de RAM libres | Son seis contenedores |
+
+> **La versión de Node importa.** Con Node 20 la instalación anda, pero las
+> baterías de prueba del final se caen todas con *"native WebSocket not
+> found"*: la librería de Supabase necesita 22 o más. Se descubrió cuando el
+> servidor de integración quedó en 20 y las cuatro pruebas fallaron a los
+> cero segundos. Comprobalo con `node --version` antes de empezar.
 
 ---
 
