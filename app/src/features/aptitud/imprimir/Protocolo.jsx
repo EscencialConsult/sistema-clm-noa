@@ -1,6 +1,6 @@
 import { getDatosParaImprimir } from "../../../shared/impresos/datosImpresionService"
 import { imprimirComponente } from "../../../shared/impresos/imprimir"
-import { descargarComoPdf } from "../../../shared/impresos/descargarPdf"
+import { descargarComoPdf, compartirComoPdf } from "../../../shared/impresos/descargarPdf"
 import {
   CabeceraImpreso,
   DatosOrden,
@@ -92,4 +92,11 @@ export async function imprimirProtocolo(ordenId) {
 export async function descargarProtocoloPdf(ordenId) {
   const datos = await getDatosParaImprimir(ordenId)
   await descargarComoPdf(<Protocolo datos={datos} />, `protocolo-${datos.numero}.pdf`)
+}
+
+/** CU-12, alt. 3a: mandar el archivo a una empresa de otra provincia,
+ *  sin escanear hoja por hoja. */
+export async function compartirProtocolo(ordenId) {
+  const datos = await getDatosParaImprimir(ordenId)
+  await compartirComoPdf(<Protocolo datos={datos} />, `protocolo-${datos.numero}.pdf`, `Protocolo — orden ${datos.numero}`)
 }

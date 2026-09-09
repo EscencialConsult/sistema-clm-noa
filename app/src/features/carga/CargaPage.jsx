@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
-  Printer,
-  Download,
   ArrowLeft,
   CheckCheck,
   AlertTriangle,
@@ -24,8 +22,10 @@ import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
 import { authService } from "../auth/services/authService"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
-import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
-import { imprimirProtocolo, descargarProtocoloPdf } from "../aptitud/imprimir/Protocolo"
+import MenuImpreso from "../../shared/impresos/MenuImpreso"
+import { puedeCompartirArchivos } from "../../shared/impresos/descargarPdf"
+import { imprimirHojaDeRuta, descargarHojaDeRutaPdf, compartirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
+import { imprimirProtocolo, descargarProtocoloPdf, compartirProtocolo } from "../aptitud/imprimir/Protocolo"
 
 /* ---------------------------------------------------------------------
    ClickUp 06 · Pantalla de carga: las dos grillas (CU-07).
@@ -254,28 +254,22 @@ export default function CargaPage() {
         </span>
 
         <div className="ml-auto flex gap-2">
-          <button
-            onClick={() => imprimirHojaDeRuta(orden.id)}
-            className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/15 px-3 py-2 text-xs font-medium text-ink-soft hover:border-primary/50 hover:text-primary"
-          >
-            <Printer size={15} /> Hoja de ruta
-          </button>
+          <MenuImpreso
+            etiqueta="Hoja de ruta"
+            disponibleCompartir={puedeCompartirArchivos()}
+            onImprimir={() => imprimirHojaDeRuta(orden.id)}
+            onDescargar={() => descargarHojaDeRutaPdf(orden.id)}
+            onCompartir={() => compartirHojaDeRuta(orden.id)}
+          />
           {orden.estado === "INFORMADA" && (
-            <>
-              <button
-                onClick={() => imprimirProtocolo(orden.id)}
-                className="flex items-center gap-1.5 rounded-md border-2 border-primary/50 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/5"
-              >
-                <Printer size={15} /> Protocolo ({ETIQUETA_APTITUD[orden.aptitud]})
-              </button>
-              <button
-                onClick={() => descargarProtocoloPdf(orden.id)}
-                title="Descargar el protocolo como PDF (RF23) — para mandar por mail a una empresa de otra provincia sin escanear"
-                className="flex items-center gap-1.5 rounded-md border-2 border-primary/50 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/5"
-              >
-                <Download size={15} /> Descargar PDF
-              </button>
-            </>
+            <MenuImpreso
+              etiqueta={`Protocolo (${ETIQUETA_APTITUD[orden.aptitud]})`}
+              destacado
+              disponibleCompartir={puedeCompartirArchivos()}
+              onImprimir={() => imprimirProtocolo(orden.id)}
+              onDescargar={() => descargarProtocoloPdf(orden.id)}
+              onCompartir={() => compartirProtocolo(orden.id)}
+            />
           )}
         </div>
       </div>

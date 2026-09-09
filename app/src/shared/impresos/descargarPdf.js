@@ -6,8 +6,9 @@ import html2canvas from "html2canvas"
    RF23: "El sistema genera el documento final de la orden, en formato
    de archivo". El botón de imprimir ya cubre esto en la práctica —
    cualquier navegador deja "Guardar como PDF" en el diálogo de
-   impresión — pero acá va la versión de un clic que lo descarga
-   directo, sin pasar por ese diálogo.
+   impresión — pero acá va la versión de un clic: descargar el archivo
+   directo, o compartirlo (RF23 + CU-12 alt. 3a, mandarlo a una empresa
+   de otra provincia sin escanear), sin pasar por ese diálogo.
 
    Renderiza el mismo componente que se usa para imprimir (nunca dos
    layouts distintos para lo mismo) en un contenedor oculto, lo
@@ -17,7 +18,7 @@ import html2canvas from "html2canvas"
 
 const A4_MM = { w: 210, h: 297 }
 
-export async function descargarComoPdf(elemento, nombreArchivo) {
+async function generarPdfBlob(elemento) {
   const contenedor = document.createElement("div")
   // Ancho fijo tipo A4 a 96dpi aprox., fuera de la vista pero renderizado.
   contenedor.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;background:#fff;"
@@ -59,9 +60,37 @@ export async function descargarComoPdf(elemento, nombreArchivo) {
       }
     }
 
-    pdf.save(nombreArchivo)
+    return pdf.output("blob")
   } finally {
     root.unmount()
     contenedor.remove()
   }
+}
+
+export async function descargarComoPdf(elemento, nombreArchivo) {
+  const blob = await generarPdfBlob(elemento)
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = nombreArchivo
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/** true si este navegador puede compartir un archivo de verdad (no solo
+ *  texto/links) — Web Share API con `files`, disponible en contexto
+ *  seguro (https o localhost). Se usa para decidir si mostrar la
+ *  opción "Compartir" en el menú, en vez de ofrecerla y que falle. */
+export function puedeCompartirArchivos() {
+  return (
+    typeof navigator !== "undefined" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [new File([""], "prueba.pdf", { type: "application/pdf" })] })
+  )
+}
+
+export async function compartirComoPdf(elemento, nombreArchivo, titulo) {
+  const blob = await generarPdfBlob(elemento)
+  const archivo = new File([blob], nombreArchivo, { type: "application/pdf" })
+  await navigator.share({ files: [archivo], title: titulo })
 }
