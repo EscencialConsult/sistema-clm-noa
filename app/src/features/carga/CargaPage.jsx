@@ -352,11 +352,15 @@ export default function CargaPage() {
               }`}
             >
               <span
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
-                  seleccionada ? "bg-primary/15 text-primary" : c.completa ? "bg-success/15 text-success" : "bg-ink-soft/10 text-ink-soft"
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md border-2 ${
+                  seleccionada
+                    ? "border-primary bg-primary text-white"
+                    : c.completa
+                      ? "border-success/40 bg-success/10 text-success"
+                      : "border-primary/25 bg-primary/10 text-primary"
                 }`}
               >
-                <Icono size={16} strokeWidth={1.75} />
+                <Icono size={22} strokeWidth={1.75} />
               </span>
 
               <div className="min-w-0 flex-1">
@@ -435,7 +439,10 @@ export default function CargaPage() {
             </div>
           </div>
 
-          {aplicarAbierto && (
+          {/* Nunca visible sin selección activa: si se vacía la selección
+              por otra vía (p.ej. "Eliminar datos" con el panel abierto),
+              el panel se cierra solo en vez de quedar huérfano. */}
+          {aplicarAbierto && seleccionados.size > 0 && (
             <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border-2 border-primary/30 bg-primary/5 p-3">
               <span className="text-xs font-medium text-ink">Poner en</span>
               <select
