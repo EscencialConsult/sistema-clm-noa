@@ -11,14 +11,17 @@ import { supabase } from "../../../lib/supabase"
 
    Cómo se vincula un archivo con su estudio
    -----------------------------------------
-   orden_estudio no tiene columna de archivo, y no se le agrega: el
-   vínculo va en la RUTA dentro del bucket.
+   El archivo va al bucket, en <orden_id>/<orden_estudio_id>/<archivo>, y
+   se registra una fila en `adjunto`.
 
-       <orden_id>/<orden_estudio_id>/<archivo>
+   La primera versión usaba sólo la ruta y no la tabla, que estaba desde
+   001_esquema hecha para esto. Se ganó al conectarla: QUIÉN subió el
+   informe y CUÁNDO —Storage no lo dice por archivo, y en un legajo
+   clínico esa es la mitad del dato— y una sola consulta en lugar de una
+   llamada al bucket por cada fila de la pantalla.
 
-   Así, listar esa carpeta devuelve los informes de ese estudio y nada
-   más. Sin tabla intermedia que pueda quedar desincronizada con lo que
-   hay realmente guardado — si el archivo está, aparece; si no está, no.
+   El archivo manda: la fila apunta a él. Si por lo que fuera no está en
+   el bucket, el registro no vale, y por eso se sube primero.
 
    Qué NO se puede hacer, a propósito
    ----------------------------------
@@ -68,13 +71,22 @@ export const tercerosService = {
     return data ?? []
   },
 
-  async listarArchivos(ordenId, itemId) {
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .list(CARPETA(ordenId, itemId))
+  /** Los informes de varios estudios, en UNA consulta. */
+  async getAdjuntos(itemIds) {
+    if (!itemIds?.length) return {}
+    const { data, error } = await supabase
+      .from("adjunto")
+      .select("id, orden_id, orden_estudio_id, nombre_archivo, ruta, descripcion, subido_at, subido:subido_por ( nombre )")
+      .in("orden_estudio_id", itemIds)
+      .order("subido_at", { ascending: false })
     if (error) throw new Error(error.message)
-    /* .emptyFolderPlaceholder es un archivo interno de Storage */
-    return (data ?? []).filter((a) => a.name !== ".emptyFolderPlaceholder")
+
+    const por = {}
+    for (const a of data ?? []) {
+      if (!por[a.orden_estudio_id]) por[a.orden_estudio_id] = []
+      por[a.orden_estudio_id].push(a)
+    }
+    return por
   },
 
   /** Sube el informe y deja el estudio como cargado, en una sola acción:
@@ -84,10 +96,26 @@ export const tercerosService = {
     const limpio = archivo.name.replace(/[^\w.\-]/g, "_")
     const ruta = `${CARPETA(ordenId, itemId)}/${Date.now()}-${limpio}`
 
+    /* Primero el archivo: si esto falla, no queda un registro apuntando
+       a nada. */
     const { error: eSubir } = await supabase.storage
       .from(BUCKET)
       .upload(ruta, archivo, { contentType: archivo.type || "application/octet-stream" })
     if (eSubir) throw new Error(mensajeSubida(eSubir))
+
+    const { error: eReg } = await supabase.from("adjunto").insert({
+      orden_id: ordenId,
+      orden_estudio_id: itemId,
+      nombre_archivo: archivo.name,
+      ruta,
+      descripcion: (resultado ?? "").trim() || null,
+    })
+    if (eReg) {
+      throw new Error(
+        `El archivo se guardó pero no quedó registrado: ${eReg.message}. ` +
+        "Volvé a subirlo."
+      )
+    }
 
     const { error: eEstado } = await supabase
       .from("orden_estudio")
@@ -106,11 +134,10 @@ export const tercerosService = {
     return ruta
   },
 
-  /** URL temporal para mirar el archivo. El bucket es privado. */
-  async verArchivo(ordenId, itemId, nombre) {
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(`${CARPETA(ordenId, itemId)}/${nombre}`, 300)
+  /** URL temporal para mirar el archivo. El bucket es privado: no hay
+   *  enlaces permanentes a informes clínicos. */
+  async verArchivo(ruta) {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(ruta, 300)
     if (error) throw new Error(error.message)
     return data.signedUrl
   },

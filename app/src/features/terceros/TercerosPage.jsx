@@ -44,13 +44,9 @@ export default function TercerosPage() {
       setDerivados(d)
       setRecientes(r)
 
-      /* qué archivos tiene ya cada uno */
-      const mapa = {}
-      for (const it of [...d, ...r]) {
-        try { mapa[it.id] = await tercerosService.listarArchivos(it.orden_id, it.id) }
-        catch { mapa[it.id] = [] }
-      }
-      setArchivos(mapa)
+      /* Los informes ya incorporados, en UNA consulta. Antes era una
+         llamada al bucket por cada fila de la pantalla. */
+      setArchivos(await tercerosService.getAdjuntos([...d, ...r].map((it) => it.id)))
       setError(null)
     } catch (e) {
       setError(e.message)
@@ -79,11 +75,10 @@ export default function TercerosPage() {
     }
   }
 
-  async function abrir(item, nombre) {
+  async function abrir(adjunto) {
     setError(null)
     try {
-      const url = await tercerosService.verArchivo(item.orden_id, item.id, nombre)
-      window.open(url, "_blank", "noopener")
+      window.open(await tercerosService.verArchivo(adjunto.ruta), "_blank", "noopener")
     } catch (e) { setError(e.message) }
   }
 
@@ -158,8 +153,9 @@ export default function TercerosPage() {
                   </span>
                   {(archivos[it.id] ?? []).map((a) => (
                     <button
-                      key={a.name}
-                      onClick={() => abrir(it, a.name)}
+                      key={a.id}
+                      onClick={() => abrir(a)}
+                      title={`${a.nombre_archivo} · subió ${a.subido?.nombre ?? "—"}`}
                       className="flex items-center gap-1 rounded-md border-2 border-ink-soft/15 px-2 py-0.5 text-[11px] text-ink-soft hover:border-primary/50 hover:text-primary"
                     >
                       <FileText size={11} /> ver

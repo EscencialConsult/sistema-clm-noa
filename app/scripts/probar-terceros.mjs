@@ -40,7 +40,8 @@ const todas = await admin("/auth/v1/admin/users")
 for (const u of todas?.users ?? []) {
   if (u.email === email) await admin(`/auth/v1/admin/users/${u.id}`, { method: "DELETE" })
 }
-sql(`DELETE FROM orden_estudio  WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+sql(`DELETE FROM adjunto WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+     DELETE FROM orden_estudio  WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
      DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
      DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
      DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';`)
@@ -107,6 +108,26 @@ const estado = sql(`SELECT estado||' · '||coalesce(resultado,'—') FROM orden_
 paso("el estudio pasa a cargado con el informe", !e4 && estado.startsWith("CARGADO"),
   e4 ? e4.message : estado)
 
+/* 4b · y queda registrado en adjunto, con quién y cuándo */
+const { error: e4b } = await c.from("adjunto").insert({
+  orden_id: item.orden_id, orden_estudio_id: item.id,
+  nombre_archivo: "ecg.pdf", ruta, descripcion: "NORMAL - VER INFORME",
+})
+const { data: reg } = await c.from("adjunto")
+  .select("nombre_archivo, ruta, subido_at, subido:subido_por ( usuario )")
+  .eq("orden_estudio_id", item.id)
+paso("el informe queda registrado con quién lo subió",
+  !e4b && (reg ?? []).length === 1 && !!reg[0].subido?.usuario,
+  e4b ? e4b.message : `${reg?.[0]?.nombre_archivo} · subió ${reg?.[0]?.subido?.usuario}`)
+
+/* 4c · y no se puede registrar a nombre de otro */
+const otroId = sql(`SELECT id FROM usuario WHERE usuario NOT ILIKE '${MARCA}%' LIMIT 1;`)
+const { error: e4c } = await c.from("adjunto").insert({
+  orden_id: item.orden_id, orden_estudio_id: item.id,
+  nombre_archivo: "falso.pdf", ruta: ruta + ".falso", subido_por: Number(otroId),
+})
+paso("no se puede incorporar un informe a nombre de otro", !!e4c,
+  e4c ? `${e4c.code} — la base lo rechaza` : "LO DEJÓ")
 /* 5 · el archivo se puede volver a mirar, con URL temporal */
 const { data: firmada, error: e5 } = await c.storage.from("informes").createSignedUrl(ruta, 60)
 let bytes = 0
@@ -134,7 +155,8 @@ paso("sin sesión no se lista ningún informe", (verAnon ?? []).length === 0,
 
 /* La orden primero: la creó este usuario y la referencia no lo deja borrar.
    Es la auditoría y las órdenes haciendo lo que tienen que hacer. */
-sql(`DELETE FROM orden_estudio  WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+sql(`DELETE FROM adjunto WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
+     DELETE FROM orden_estudio  WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
      DELETE FROM orden_categoria WHERE orden_id IN (SELECT o.id FROM orden o JOIN persona p ON p.id=o.persona_id WHERE p.apellido LIKE '${MARCA}%');
      DELETE FROM orden          WHERE persona_id IN (SELECT id FROM persona WHERE apellido LIKE '${MARCA}%');
      DELETE FROM persona        WHERE apellido LIKE '${MARCA}%';`)
