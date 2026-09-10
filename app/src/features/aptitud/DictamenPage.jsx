@@ -3,7 +3,8 @@ import { useParams, useNavigate } from "react-router-dom"
 import { ArrowLeft, Printer, AlertTriangle, ShieldCheck, ShieldX, Undo2, X } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { aptitudService } from "./services/aptitudService"
-import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO } from "../../types/dominio"
+import { authService } from "../auth/services/authService"
+import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO, ROL } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
 import { imprimirProtocolo } from "./imprimir/Protocolo"
 
@@ -43,7 +44,21 @@ export default function DictamenPage() {
   const [error, setError] = useState(null)
   const [guardando, setGuardando] = useState(false)
 
+  /* Quién puede dictaminar. No reemplaza al control de la base —esa
+     sigue rechazando a cualquier otro— sino que evita mostrar botones
+     que no se van a poder usar. */
+  const sesion = authService.getSesionActual()
+  const esMedicoLaboral = !!sesion?.roles?.includes(ROL.MEDICO_LABORAL)
+  /* Recepción transcribe la aptitud que el médico dictaminó en papel:
+     es lo que se hace hoy en la clínica. Lo que no puede es firmar con
+     su propia matrícula, así que tiene que elegir de quién es la firma. */
+  const transcribe = !esMedicoLaboral &&
+    (sesion?.roles?.includes(ROL.RECEPCION) || sesion?.roles?.includes(ROL.ADMINISTRADOR))
+  const puedeDictaminar = esMedicoLaboral || transcribe
+
   const [aptitud, setAptitud] = useState(null)
+  const [medicoId, setMedicoId] = useState("")
+  const [medicos, setMedicos] = useState([])
   const [preexistencias, setPreexistencias] = useState("")
   const [incapacidad, setIncapacidad] = useState("")
   const [observaciones, setObservaciones] = useState("")
@@ -72,6 +87,11 @@ export default function DictamenPage() {
   }
 
   useEffect(() => {
+    if (!transcribe) return
+    aptitudService.getMedicosFirmantes().then(setMedicos).catch(() => setMedicos([]))
+  }, [transcribe])
+
+  useEffect(() => {
     recargar()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordenId])
@@ -90,7 +110,7 @@ export default function DictamenPage() {
     setGuardando(true)
     setError(null)
     try {
-      await aptitudService.emitir(ordenId, { aptitud, preexistencias, incapacidad, observaciones })
+      await aptitudService.emitir(ordenId, { aptitud, preexistencias, incapacidad, observaciones, medicoId })
       await recargar()
     } catch (e) {
       setError(e.message)
@@ -278,7 +298,59 @@ export default function DictamenPage() {
               </p>
             )}
 
-            <div className="mb-4 flex gap-2">
+            {/* Recepción llegaba acá desde el legajo y veía los botones
+                Apto / No apto con un cartel diciéndole que no podía usarlos.
+                Lo reportó Marcela probando el 9/9.
+
+                La base ya la rechazaba —eso no cambia, es el control real—
+                pero mostrar algo que no se puede usar es peor que no
+                mostrarlo: hace dudar de si el problema es el permiso o el
+                sistema. Es el criterio de RNF-17, "0 opciones ajenas
+                visibles", el mismo con el que se ocultó el protocolo. */}
+            {!puedeDictaminar && (
+              <p className="mb-4 rounded-md border-2 border-ink-soft/15 px-3 py-2 text-xs text-ink-soft">
+                La aptitud la firma el médico laboral con su matrícula. Desde
+                acá se ve todo el legajo, pero no se dictamina.
+                {orden.aptitud !== "PENDIENTE" && (
+                  <> Está dictaminada como <strong className="text-ink">{ETIQUETA_APTITUD[orden.aptitud]}</strong>.</>
+                )}
+              </p>
+            )}
+
+            {/* Quién firma. Sólo aparece cuando NO lo carga el médico: él
+                firma con su matrícula, que sale de su sesión.
+
+                Va antes de los botones a propósito. Es lo primero que hay
+                que resolver: sin firmante, el protocolo sale sin matrícula
+                y no sirve como documento. */}
+            {transcribe && (
+              <div className="mb-4">
+                <label className="mb-1 block text-xs text-ink-soft">
+                  Médico que firma <span className="text-danger">*</span>
+                </label>
+                <select
+                  disabled={informada}
+                  value={medicoId}
+                  onChange={(e) => setMedicoId(e.target.value)}
+                  className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary disabled:bg-ink-soft/5"
+                >
+                  <option value="">Elegir…</option>
+                  {medicos.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.apellido_nombre}
+                      {m.matricula_prov ? ` · M.P. ${m.matricula_prov}` : " · sin matrícula"}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-ink-soft">
+                  La aptitud la dictamina el médico; acá se transcribe lo que firmó
+                  en la planilla. En el protocolo va su matrícula, y en la auditoría
+                  queda quién lo cargó.
+                </p>
+              </div>
+            )}
+
+            <div className={`mb-4 flex gap-2 ${puedeDictaminar ? "" : "hidden"}`}>
               {APTITUDES.map(({ valor, label, icono: Icono, activo }) => (
                 <button
                   key={valor}
@@ -293,6 +365,7 @@ export default function DictamenPage() {
               ))}
             </div>
 
+            <div className={puedeDictaminar ? "" : "hidden"}>
             <label className="mb-1 block text-xs text-ink-soft">Preexistencias</label>
             <textarea
               disabled={informada}
@@ -333,12 +406,13 @@ export default function DictamenPage() {
             {!informada && (
               <button
                 onClick={dictaminar}
-                disabled={!aptitud || guardando}
+                disabled={!aptitud || guardando || (transcribe && !medicoId)}
                 className="w-full rounded-md bg-primary px-3 py-2.5 text-sm text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {guardando ? "Emitiendo…" : "Emitir protocolo"}
               </button>
             )}
+            </div>
           </div>
 
           <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5 text-xs text-ink-soft">

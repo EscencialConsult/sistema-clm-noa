@@ -6,12 +6,12 @@ import {
   UserPlus,
   FolderOpen,
   CalendarClock,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
+  AlertTriangle,
 } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
+import Paginador, { FILAS_POR_PAGINA } from "../../shared/Paginador"
 import { ordenesService } from "./services/ordenesService"
+import { recepcionService } from "../recepcion/services/recepcionService"
 import { alertasService } from "./services/alertasService"
 import { ESTADO_ORDEN, ETIQUETA_ESTADO, ESTILO_ESTADO } from "../../types/dominio"
 import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
@@ -25,49 +25,10 @@ const TIPO_EXAMEN_LABEL = {
 // Colores semánticos (DESIGN.md: nunca el azul de marca para estado clínico/operativo)
 const TABS = [{ key: "todos", label: "Todos" }, ...ESTADO_ORDEN.map((e) => ({ key: e, label: ETIQUETA_ESTADO[e] }))]
 
-const FILAS_POR_PAGINA = 10
-
-/** Tira de páginas (1 2 3 4 5...) para no dejar las tablas de la bandeja
- *  scrolleando al infinito — pedido directo: "hay partes donde se va al
- *  infinito, ponele tipo hojas 1,2,3,4,5". Chica y a un clic, no un
- *  componente de tabla nuevo: la bandeja ya tiene su propia lista simple. */
-function Paginador({ pagina, totalPaginas, onCambiar }) {
-  if (totalPaginas <= 1) return null
-  const paginas = Array.from({ length: totalPaginas }, (_, i) => i + 1)
-  return (
-    <div className="mt-3 flex items-center justify-center gap-1">
-      <button
-        onClick={() => onCambiar(Math.max(1, pagina - 1))}
-        disabled={pagina === 1}
-        className="rounded-md p-1 text-ink-soft hover:bg-ink-soft/10 disabled:opacity-30"
-      >
-        <ChevronLeft size={14} />
-      </button>
-      {paginas.map((n) => (
-        <button
-          key={n}
-          onClick={() => onCambiar(n)}
-          className={`h-6 min-w-6 rounded-md px-1.5 text-xs font-medium ${
-            n === pagina ? "bg-primary text-white" : "text-ink-soft hover:bg-ink-soft/10"
-          }`}
-        >
-          {n}
-        </button>
-      ))}
-      <button
-        onClick={() => onCambiar(Math.min(totalPaginas, pagina + 1))}
-        disabled={pagina === totalPaginas}
-        className="rounded-md p-1 text-ink-soft hover:bg-ink-soft/10 disabled:opacity-30"
-      >
-        <ChevronRight size={14} />
-      </button>
-    </div>
-  )
-}
-
 export default function BandejaProfesional() {
   const navigate = useNavigate()
   const [ordenes, setOrdenes] = useState([])
+  const [arrastre, setArrastre] = useState(0)
   const [pendientes, setPendientes] = useState([])
   const [alertas, setAlertas] = useState([])
   const [tab, setTab] = useState("todos")
@@ -94,6 +55,10 @@ export default function BandejaProfesional() {
       .catch((e) => setErrorCarga(e.message))
       .finally(() => setCargando(false))
     alertasService.getAlertasPersonales().then(setAlertas)
+    /* Cuántas quedaron sin terminar de días anteriores. La bandeja
+       filtra por hoy, así que sin este aviso esas órdenes no se ven
+       en ninguna de las dos pantallas de trabajo diario. */
+    recepcionService.getArrastre().then((a) => setArrastre(a.length)).catch(() => setArrastre(0))
   }, [])
 
   const conteos = useMemo(() => {
@@ -155,6 +120,25 @@ export default function BandejaProfesional() {
           </div>
         ))}
       </div>
+
+      {/* Órdenes de días anteriores sin informar. Esta bandeja y
+          Pendientes del Día filtran las dos por la fecha de hoy: sin este
+          aviso, una orden que quedó a medias ayer no aparece en ninguna
+          de las dos y nadie la persigue. */}
+      {arrastre > 0 && (
+        <button
+          onClick={() => navigate("/recepcion/pendientes")}
+          className="mb-6 flex w-full items-center gap-2 rounded-md border-2 border-warning/40 bg-warning/5 px-4 py-3 text-left text-sm text-warning hover:bg-warning/10"
+        >
+          <AlertTriangle size={16} className="shrink-0" />
+          <span>
+            <strong>{arrastre}</strong> orden{arrastre === 1 ? "" : "es"} de días
+            anteriores sin informar. No aparecen acá porque esta pantalla muestra
+            sólo las de hoy.
+          </span>
+          <span className="ml-auto shrink-0 text-xs underline">Verlas</span>
+        </button>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <div className="col-span-2 rounded-card border border-ink-soft/10 bg-white p-5">
@@ -225,7 +209,7 @@ export default function BandejaProfesional() {
               ))}
             </tbody>
           </table>
-          <Paginador pagina={paginaOrdenes} totalPaginas={totalPaginasOrdenes} onCambiar={setPaginaOrdenes} />
+          <Paginador pagina={paginaOrdenes} totalPaginas={totalPaginasOrdenes} onCambiar={setPaginaOrdenes} cuantos={ordenesFiltradas.length} />
         </div>
 
         <div className="flex flex-col gap-4">
@@ -243,19 +227,26 @@ export default function BandejaProfesional() {
 
           <div className="rounded-card border border-ink-soft/10 bg-white p-5">
             <p className="mb-3 text-sm font-medium text-ink">Acciones Rápidas</p>
+            {/* Los cuatro botones estaban sin acción: venían de la maqueta y
+                nadie los había conectado. Lo reportó Marcela probando el 9/9
+                —"accesos rápidos no funcionan"—. Un botón que no hace nada es
+                peor que no tenerlo: se aprieta tres veces antes de darse
+                cuenta de que el problema no es de uno. */}
             <div className="flex flex-col gap-2 text-xs">
-              <button className="flex items-center gap-2 rounded-md border border-ink-soft/10 p-2 text-left hover:border-primary/40">
-                <UserPlus size={15} className="text-primary" /> Nuevo Paciente
-              </button>
-              <button className="flex items-center gap-2 rounded-md border border-ink-soft/10 p-2 text-left hover:border-primary/40">
-                <Search size={15} className="text-primary" /> Buscar Paciente
-              </button>
-              <button className="flex items-center gap-2 rounded-md border border-ink-soft/10 p-2 text-left hover:border-primary/40">
-                <FolderOpen size={15} className="text-primary" /> Ver Legajos
-              </button>
-              <button className="flex items-center gap-2 rounded-md border border-ink-soft/10 p-2 text-left hover:border-primary/40">
-                <CalendarClock size={15} className="text-primary" /> Vigencias Próximas
-              </button>
+              {[
+                { Icono: UserPlus, texto: "Nuevo Paciente", a: "/recepcion/nueva-orden" },
+                { Icono: Search, texto: "Buscar Paciente", a: "/recepcion/personas" },
+                { Icono: FolderOpen, texto: "Ver Legajos", a: "/bandeja/legajos" },
+                { Icono: CalendarClock, texto: "Vigencias Próximas", a: "/bandeja/vigencias" },
+              ].map(({ Icono, texto, a }) => (
+                <button
+                  key={a}
+                  onClick={() => navigate(a)}
+                  className="flex items-center gap-2 rounded-md border border-ink-soft/10 p-2 text-left hover:border-primary/40"
+                >
+                  <Icono size={15} className="text-primary" /> {texto}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -302,7 +293,7 @@ export default function BandejaProfesional() {
             ))}
           </tbody>
         </table>
-        <Paginador pagina={paginaPendientes} totalPaginas={totalPaginasPendientes} onCambiar={setPaginaPendientes} />
+        <Paginador pagina={paginaPendientes} totalPaginas={totalPaginasPendientes} onCambiar={setPaginaPendientes} cuantos={pendientes.length} />
       </div>
     </AppShell>
   )

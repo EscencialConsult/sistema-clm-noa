@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Search, Plus, X, AlertTriangle, Lock } from "lucide-react"
+import { ArrowLeft, Search, Plus, X, AlertTriangle, Lock, Layers } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { nuevaOrdenService } from "./services/nuevaOrdenService"
 import { ETIQUETA_ESTADO, ESTILO_ESTADO } from "../../types/dominio"
@@ -36,6 +36,7 @@ export default function AjustarEstudiosPage() {
   const [categorias, setCategorias] = useState([])
   const [busqueda, setBusqueda] = useState("")
   const [resultados, setResultados] = useState([])
+  const [catsEncontradas, setCatsEncontradas] = useState([])
   const [error, setError] = useState(null)
   const [aviso, setAviso] = useState(null)
   const [cargando, setCargando] = useState(true)
@@ -65,8 +66,11 @@ export default function AjustarEstudiosPage() {
     let vigente = true
     const t = setTimeout(async () => {
       try {
-        const r = await nuevaOrdenService.buscarEstudios(busqueda)
-        if (vigente) setResultados(r)
+        const [est, cats] = await Promise.all([
+          nuevaOrdenService.buscarEstudios(busqueda),
+          nuevaOrdenService.buscarCategorias(busqueda),
+        ])
+        if (vigente) { setResultados(est); setCatsEncontradas(cats) }
       } catch (e) {
         if (vigente) setError(e.message)
       }
@@ -96,6 +100,58 @@ export default function AjustarEstudiosPage() {
       await nuevaOrdenService.quitarEstudio(item.id)
       const nuevo = await nuevaOrdenService.recalcularImporte(ordenId)
       setAviso(`Se quitó ${item.estudio.nombre}. La orden queda en $ ${Number(nuevo).toLocaleString("es-AR")}.`)
+      await recargar()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  /* Categorías enteras, de a una operación.
+
+     Lo reportó Marcela probando el 9/9: "si quiero quitar un estudio
+     completo no se puede, sólo quitar uno a uno" y "agregar una batería
+     completa no puedo". Con dieciséis estudios en Orina completa, hacerlo
+     de a uno son dieciséis clics y dieciséis recálculos de importe. */
+
+  async function quitarCategoria(cat) {
+    setError(null)
+    setAviso(null)
+    /* Sólo los que todavía se pueden quitar. Un estudio ya CARGADO no se
+       borra: se corrige. Borrarlo se llevaría el resultado sin rastro. */
+    const quitables = cat.items.filter((i) => i.estado === "PENDIENTE")
+    if (!quitables.length) {
+      setError(`En ${cat.nombre} no queda ningún estudio sin cargar, así que no hay nada para quitar.`)
+      return
+    }
+    try {
+      for (const i of quitables) await nuevaOrdenService.quitarEstudio(i.id)
+      const nuevo = await nuevaOrdenService.recalcularImporte(ordenId)
+      const cuantos = quitables.length
+      const restantes = cat.items.length - cuantos
+      setAviso(
+        `Se quitaron ${cuantos} estudio${cuantos === 1 ? "" : "s"} de ${cat.nombre}` +
+        (restantes ? `; quedaron ${restantes} que ya tienen resultado` : "") +
+        `. La orden queda en $ ${Number(nuevo).toLocaleString("es-AR")}.`
+      )
+      await recargar()
+    } catch (e) {
+      setError(e.message)
+    }
+  }
+
+  async function agregarCategoria(cat) {
+    setError(null)
+    setAviso(null)
+    const faltan = cat.estudios.filter((e) => !yaEstan.has(e.id))
+    if (!faltan.length) return
+    try {
+      for (const e of faltan) await nuevaOrdenService.agregarEstudio(ordenId, e)
+      const nuevo = await nuevaOrdenService.recalcularImporte(ordenId)
+      setAviso(
+        `Se agregaron ${faltan.length} estudio${faltan.length === 1 ? "" : "s"} de ${cat.nombre}. ` +
+        `La orden queda en $ ${Number(nuevo).toLocaleString("es-AR")}.`
+      )
+      setBusqueda("")
       await recargar()
     } catch (e) {
       setError(e.message)
@@ -157,9 +213,22 @@ export default function AjustarEstudiosPage() {
           <p className="mb-4 text-sm font-medium text-ink">En la orden</p>
           {categorias.map((c) => (
             <div key={c.id} className="mb-4 last:mb-0">
-              <p className="mb-1.5 text-[11px] font-medium tracking-wide text-ink-soft">
-                {c.nombre}
-              </p>
+              <div className="mb-1.5 flex items-center gap-2">
+                <p className="text-[11px] font-medium tracking-wide text-ink-soft">
+                  {c.nombre}
+                </p>
+                {/* Quitar la categoría entera. Con dieciséis estudios en
+                    Orina completa, de a uno son dieciséis clics. */}
+                {c.items.some((i) => i.estado === "PENDIENTE") && (
+                  <button
+                    onClick={() => quitarCategoria(c)}
+                    title={`Quitar los ${c.items.filter((i) => i.estado === "PENDIENTE").length} estudios sin cargar de ${c.nombre}`}
+                    className="text-[11px] text-ink-soft/70 underline decoration-dotted hover:text-danger"
+                  >
+                    quitar la categoría
+                  </button>
+                )}
+              </div>
               <ul className="flex flex-wrap gap-1.5">
                 {c.items.map((i) => {
                   const bloqueado = i.estado !== "PENDIENTE"
@@ -216,10 +285,30 @@ export default function AjustarEstudiosPage() {
             <p className="text-xs text-ink-soft">
               Escribí al menos dos letras, o el código del estudio.
             </p>
-          ) : resultados.length === 0 ? (
+          ) : resultados.length === 0 && catsEncontradas.length === 0 ? (
             <p className="text-xs text-ink-soft">Ningún estudio coincide.</p>
           ) : (
             <ul className="flex flex-col gap-1">
+              {/* Categorías enteras, arriba: quien escribe "orina" casi
+                  seguro quiere los dieciséis estudios, no ir de a uno. */}
+              {catsEncontradas.map((c) => {
+                const faltan = c.estudios.filter((e) => !yaEstan.has(e.id))
+                if (!faltan.length) return null
+                return (
+                  <li key={`cat-${c.id}`}>
+                    <button
+                      onClick={() => agregarCategoria(c)}
+                      className="mb-1 flex w-full items-center gap-2 rounded-md border border-primary/25 bg-primary/5 px-2 py-1.5 text-left text-xs hover:bg-primary/10"
+                    >
+                      <Layers size={13} className="shrink-0 text-primary" />
+                      <span className="flex-1 font-medium text-primary">{c.nombre}</span>
+                      <span className="text-[11px] text-primary/70">
+                        {faltan.length} estudio{faltan.length === 1 ? "" : "s"}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
               {resultados.map((e) => {
                 const puesto = yaEstan.has(e.id)
                 return (

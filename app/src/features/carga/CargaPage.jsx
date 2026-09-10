@@ -18,6 +18,7 @@ import {
   Scan,
   HeartPulse,
   Brain,
+  ListPlus,
 } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { ordenesService } from "./services/ordenesService"
@@ -247,6 +248,24 @@ export default function CargaPage() {
         </span>
 
         <div className="ml-auto flex gap-2">
+          {/* Hasta ahora, a la pantalla de ajustar estudios sólo se llegaba
+              desde el alta, en el instante de crear la orden. Si la
+              recepcionista se equivocaba y salía de ahí, no había vuelta:
+              lo reportó Marcela el 9/9 —"si cargué mal, no lo puedo
+              modificar antes de que pase al consultorio"—.
+
+              Se muestra sólo a quien puede hacerlo y sólo mientras la
+              orden no esté informada, que es lo que permite la política de
+              la base. Un botón que la base va a rechazar no se muestra. */}
+          {orden.estado !== "INFORMADA" &&
+            (sesion?.roles?.includes(ROL.RECEPCION) || sesion?.roles?.includes(ROL.ADMINISTRADOR)) && (
+              <button
+                onClick={() => navigate(`/orden/${orden.id}/estudios`)}
+                className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/15 px-3 py-2 text-xs font-medium text-ink-soft hover:border-primary/50 hover:text-primary"
+              >
+                <ListPlus size={15} /> Agregar o quitar estudios
+              </button>
+            )}
           <MenuImpreso etiqueta="Hoja de ruta" onImprimir={() => imprimirHojaDeRuta(orden.id)} />
           {/* RNF-17 "0 opciones ajenas visibles": el protocolo es el
               informe integral que arma el médico laboral con todo el
