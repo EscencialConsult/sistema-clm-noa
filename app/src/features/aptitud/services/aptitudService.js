@@ -108,7 +108,22 @@ export const aptitudService = {
    *  las recibe. Van ANTES: si después el dictamen falla —por ejemplo
    *  porque alguien reabrió un estudio mientras tanto— lo escrito no se
    *  pierde y la orden queda como estaba, sin aptitud. */
-  async emitir(ordenId, { aptitud, preexistencias, incapacidad, observaciones }) {
+  /** Los médicos laborales que pueden figurar como firmantes.
+   *
+   *  Hace falta cuando recepción transcribe la aptitud que el médico
+   *  dictaminó en papel: la matrícula del protocolo es la de él, no
+   *  la de quien tipea. */
+  async getMedicosFirmantes() {
+    const { data, error } = await supabase
+      .from("profesional")
+      .select("id, apellido_nombre, matricula_prov, matricula_nac")
+      .eq("activo", true)
+      .order("apellido_nombre")
+    if (error) throw new Error(error.message)
+    return data ?? []
+  },
+
+  async emitir(ordenId, { aptitud, preexistencias, incapacidad, observaciones, medicoId }) {
     const limpio = (t) => {
       const v = (t ?? "").trim()
       return v === "" ? null : v
@@ -125,6 +140,9 @@ export const aptitudService = {
     const { error } = await supabase.rpc("emitir_protocolo", {
       p_orden: ordenId,
       p_aptitud: aptitud,
+      /* Sólo viaja cuando lo transcribe recepción. El médico firma
+         con su matrícula y la función la saca de la sesión. */
+      p_medico: medicoId ? Number(medicoId) : null,
       p_preexistencias: limpio(preexistencias),
       p_incapacidad: incapacidad === "" || incapacidad === undefined || incapacidad === null
         ? null

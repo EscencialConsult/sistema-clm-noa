@@ -361,33 +361,55 @@ caso("CP-19", "Con un estudio pendiente no deja fijar la aptitud", async (ctx) =
   return { ok: true, detalle: porQue(r) }
 })
 
-/* --- CP-21 · la aptitud es sólo del médico laboral ------------------ */
-/* No está marcado ★, pero se corre igual: es el que dio verde en falso
-   la primera vez, porque se había probado el UPDATE directo y no la RPC. */
-caso("CP-21", "Ni el Administrador ni Recepción ni anon pueden fijar la aptitud", async (ctx) => {
+/* --- CP-21 · quién fija la aptitud, y con qué matrícula ------------- */
+/* Este caso CAMBIÓ de significado el 10/9/2026, y conviene saber por qué.
+
+   Antes decía: "ni el Administrador ni Recepción ni anon pueden fijar la
+   aptitud". Era correcto según RF22 leído al pie de la letra —"el Médico
+   laboral dictamina"— pero confundía quién DECIDE con quién TIPEA. En la
+   clínica el médico dictamina en la planilla y la secretaria lo carga; lo
+   dice la operadora en el relevamiento. Con la regla vieja el circuito se
+   cortaba en el último paso.
+
+   Desde la migración 023 Recepción puede transcribirla, pero tiene que
+   decir de quién es la firma. Lo que NO cambió, y es lo que este caso
+   cuida: la matrícula del protocolo es la del médico, nadie firma por
+   otro, y la aptitud sigue sin poder escribirse con un UPDATE directo.
+   Es el que dio verde en falso la primera vez, por probar el UPDATE y no
+   la RPC. */
+caso("CP-21", "La aptitud se transcribe, pero la firma es del médico", async (ctx) => {
   const fallas = []
 
+  /* a · a mano, nadie. Ni el Administrador. */
   const adminUpd = await pedir(`/rest/v1/orden?id=eq.${ctx.orden_m}`, {
     token: sesion.admin, metodo: "PATCH", cuerpo: { aptitud: "APTO" },
     prefer: "return=representation" })
   if (adminUpd.estado < 400 && (adminUpd.datos || []).length > 0)
     fallas.push("el Administrador cambió la aptitud con un UPDATE directo")
 
+  /* b · sin sesión, ni siquiera existe la función. */
+  const anon = await rpc("emitir_protocolo",
+    { p_orden: ctx.orden_m, p_aptitud: "APTO" }, null)
+  if (anon.estado < 400) fallas.push("anon informó por RPC")
+
+  /* c · Recepción y Administrador pueden, pero SIN decir quién firma no. */
   for (const [quien, token] of [["el Administrador", sesion.admin],
-                                ["Recepción", sesion.recep],
-                                ["anon, sin sesión", null]]) {
+                                ["Recepción", sesion.recep]]) {
     const r = await rpc("emitir_protocolo",
       { p_orden: ctx.orden_m, p_aptitud: "APTO" }, token)
-    if (r.estado < 400) { fallas.push(`${quien} informó por RPC`); continue }
-    const msg = porQue(r)
-    const frenoPorRol = /únicamente el Médico laboral/.test(msg) ||
-                        /permission denied|no existe la función|does not exist/i.test(msg)
-    if (!frenoPorRol) fallas.push(`${quien}: frenó por «${msg}», no por el rol`)
+    if (r.estado < 400) { fallas.push(`${quien} informó sin indicar el médico firmante`); continue }
+    if (!/qué médico laboral firma/i.test(porQue(r)))
+      fallas.push(`${quien}: frenó por «${porQue(r)}», no por faltar el firmante`)
   }
+
+  /* d · con un profesional inexistente, tampoco. */
+  const inventado = await rpc("emitir_protocolo",
+    { p_orden: ctx.orden_m, p_aptitud: "APTO", p_medico: 999999 }, sesion.recep)
+  if (inventado.estado < 400) fallas.push("aceptó un profesional que no existe")
 
   return fallas.length
     ? { ok: false, detalle: fallas.join("; ") }
-    : { ok: true, detalle: "los tres rebotan por rol, antes de mirar la regla de negocio" }
+    : { ok: true, detalle: "a mano nadie; sin sesión tampoco; y transcribir exige decir quién firma" }
 })
 
 /* --- RF01 · el alta de usuarios, sin abrir una terminal -------------- */
