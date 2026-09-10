@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { Search, UserPlus, Printer, AlertTriangle, Check, ArrowRight, Plus, X, Layers } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { nuevaOrdenService } from "./services/nuevaOrdenService"
+import { catalogoService } from "../catalogo/services/catalogoService"
 import { TIPO_DOC, TIPO_EXAMEN, ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
 import { imprimirHojaDeRuta } from "./imprimir/HojaDeRuta"
@@ -45,6 +46,10 @@ export default function NuevaOrdenPage() {
   const [empresaId, setEmpresaId] = useState("")
   const [busquedaEmpresa, setBusquedaEmpresa] = useState("")
   const [empresaAbierta, setEmpresaAbierta] = useState(false)
+  /* Cuál está resaltada con las flechas. En el mostrador se escribe y se
+     baja con el teclado sin soltar las manos; obligar a ir al mouse por
+     cada empresa es lento. */
+  const [empresaMarcada, setEmpresaMarcada] = useState(0)
   const [plantillaId, setPlantillaId] = useState("")
   const [tarea, setTarea] = useState("")
   const [tipoExamen, setTipoExamen] = useState("PRELABORAL")
@@ -55,14 +60,29 @@ export default function NuevaOrdenPage() {
   const [resultadosExtra, setResultadosExtra] = useState([])
   const [categoriasExtra, setCategoriasExtra] = useState([])
   const [extras, setExtras] = useState([])
+  const [extraMarcado, setExtraMarcado] = useState(0)
+  /* Alta rápida de un estudio que no está en el catálogo. */
+  const [nuevoEstudio, setNuevoEstudio] = useState(null)
+  const [categoriasCatalogo, setCategoriasCatalogo] = useState([])
 
   /* paso 3 */
   const [creando, setCreando] = useState(false)
   const [creada, setCreada] = useState(null)
 
   useEffect(() => {
-    Promise.all([nuevaOrdenService.getEmpresas(), nuevaOrdenService.getBaterias()])
-      .then(([e, b]) => { setEmpresas(e); setBaterias(b) })
+    Promise.all([
+      nuevaOrdenService.getEmpresas(),
+      nuevaOrdenService.getBaterias(),
+      /* Para el alta rápida de un estudio que no está en el catálogo:
+         hay que poder elegirle la categoría, que es lo que decide qué
+         profesional lo va a cargar. */
+      catalogoService.getCategorias(),
+    ])
+      .then(([e, b, c]) => {
+        setEmpresas(e)
+        setBaterias(b)
+        setCategoriasCatalogo((c ?? []).filter((x) => x.activo))
+      })
       .catch((e) => setError(e.message))
   }, [])
 
@@ -156,9 +176,69 @@ export default function NuevaOrdenPage() {
     setBusquedaExtra("")
     setResultadosExtra([])
     setCategoriasExtra([])
+    setExtraMarcado(0)
+  }
+
+  /* La lista de sugerencias son las categorías primero y después los
+     estudios sueltos. Para el teclado son una sola fila continua, así
+     que se recorre esa lista unificada. */
+  const sugerenciasExtra = [
+    ...categoriasExtra.map((c) => ({ tipo: "categoria", dato: c })),
+    ...resultadosExtra.map((e) => ({ tipo: "estudio", dato: e })),
+  ]
+
+  /* Si la lista se achicó mientras había algo marcado abajo, el índice
+     se acota: el resaltado y lo que toma Enter tienen que ser lo mismo. */
+  const extraMarcadoReal = Math.min(extraMarcado, Math.max(0, sugerenciasExtra.length - 1))
+
+  function teclasExtra(ev) {
+    const n = sugerenciasExtra.length
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      if (!n) return
+      ev.preventDefault()
+      const paso = ev.key === "ArrowDown" ? 1 : -1
+      setExtraMarcado((i) => (i + paso + n) % n)
+      return
+    }
+    if (ev.key === "Enter") {
+      if (!n) return
+      ev.preventDefault()
+      const s = sugerenciasExtra[extraMarcadoReal]
+      if (s.tipo === "categoria") sumarCategoria(s.dato)
+      else sumarExtra(s.dato)
+      return
+    }
+    if (ev.key === "Escape") limpiarBusqueda()
   }
 
   const quitarExtra = (id) => setExtras((prev) => prev.filter((e) => e.id !== id))
+
+  /* Crear un estudio que no está en el catálogo, sin salir del alta.
+
+     Pasa de verdad: la empresa pide algo que la clínica todavía no tiene
+     cargado y el paciente está en el mostrador. Antes había que irse a
+     Estudios y Categorías —perdiendo la orden a medio hacer—, cargarlo,
+     y volver a empezar.
+
+     Lo crea con lo mínimo: nombre y categoría. La unidad y los valores
+     de referencia se completan después en el catálogo, con la
+     bioquímica, que es quien sabe. Un estudio sin referencia se carga
+     igual; simplemente no se compara nada. */
+  async function crearEstudioSuelto(e) {
+    e.preventDefault()
+    setError(null)
+    try {
+      const creado = await catalogoService.guardarEstudio(
+        { nombre: nuevoEstudio.nombre, orden: 99 },
+        Number(nuevoEstudio.categoriaId)
+      )
+      const cat = categoriasCatalogo.find((c) => String(c.id) === String(nuevoEstudio.categoriaId))
+      sumarExtra({ ...creado, categoria: { id: cat.id, nombre: cat.nombre } })
+      setNuevoEstudio(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
 
   async function crear() {
     setCreando(true)
@@ -292,6 +372,32 @@ export default function NuevaOrdenPage() {
   const listoParaCrear = persona && empresaId && (plantillaId || extras.length > 0)
 
   const empresaElegida = empresas.find((e) => String(e.id) === String(empresaId)) ?? null
+
+  /* Teclado en el buscador de empresa: flechas para moverse, Enter para
+     tomar la marcada, Escape para cerrar. En el mostrador se escribe y
+     se elige sin soltar el teclado. */
+  function teclasEmpresa(ev) {
+    if (empresaElegida) return
+    const n = empresasFiltradas.length
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      ev.preventDefault()
+      if (!empresaAbierta) { setEmpresaAbierta(true); return }
+      if (!n) return
+      const paso = ev.key === "ArrowDown" ? 1 : -1
+      setEmpresaMarcada((i) => (i + paso + n) % n)
+      return
+    }
+    if (ev.key === "Enter") {
+      if (!empresaAbierta || !n) return
+      ev.preventDefault()
+      const e = empresasFiltradas[Math.min(empresaMarcada, n - 1)]
+      setEmpresaId(String(e.id))
+      setBusquedaEmpresa("")
+      setEmpresaAbierta(false)
+      return
+    }
+    if (ev.key === "Escape") { setEmpresaAbierta(false) }
+  }
 
   /* Se compara sin acentos y sin distinguir mayúsculas: quien escribe
      "belgrano" tiene que encontrar "BELGRANO CARGAS", y quien escribe
@@ -468,9 +574,15 @@ export default function NuevaOrdenPage() {
                     <input
                       disabled={!persona}
                       value={empresaElegida ? empresaElegida.razon_social : busquedaEmpresa}
-                      onChange={(e) => { setBusquedaEmpresa(e.target.value); setEmpresaId("") }}
+                      onChange={(e) => {
+                        setBusquedaEmpresa(e.target.value)
+                        setEmpresaId("")
+                        setEmpresaMarcada(0)
+                        setEmpresaAbierta(true)
+                      }}
                       onFocus={() => setEmpresaAbierta(true)}
                       onBlur={() => setTimeout(() => setEmpresaAbierta(false), 150)}
+                      onKeyDown={teclasEmpresa}
                       placeholder="Escribí el nombre…"
                       className="w-full bg-transparent text-sm outline-none disabled:cursor-not-allowed"
                     />
@@ -492,11 +604,19 @@ export default function NuevaOrdenPage() {
                           Ninguna empresa con «{busquedaEmpresa}». Se dan de alta en Empresas.
                         </p>
                       ) : (
-                        empresasFiltradas.map((e) => (
+                        empresasFiltradas.map((e, i) => (
                           <button
                             key={e.id}
+                            /* El ratón también marca, así no quedan dos
+                               resaltados peleándose: el del teclado y el
+                               de dónde está el puntero. */
+                            onMouseEnter={() => setEmpresaMarcada(i)}
                             onMouseDown={() => { setEmpresaId(String(e.id)); setBusquedaEmpresa(""); setEmpresaAbierta(false) }}
-                            className="block w-full px-3 py-2 text-left text-sm text-ink hover:bg-ink-soft/5"
+                            className={`block w-full px-3 py-2 text-left text-sm ${
+                              i === Math.min(empresaMarcada, empresasFiltradas.length - 1)
+                                ? "bg-primary/10 text-primary"
+                                : "text-ink"
+                            }`}
                           >
                             {e.razon_social}
                           </button>
@@ -555,22 +675,52 @@ export default function NuevaOrdenPage() {
                   <input
                     disabled={!persona}
                     value={busquedaExtra}
-                    onChange={(e) => setBusquedaExtra(e.target.value)}
+                    onChange={(e) => { setBusquedaExtra(e.target.value); setExtraMarcado(0) }}
+                    onKeyDown={teclasExtra}
                     placeholder="Buscar un estudio por nombre o código…"
                     className="w-full bg-transparent text-sm outline-none disabled:cursor-not-allowed"
                   />
                 </div>
+
+                {/* No está en el catálogo: se crea acá, sin perder la orden.
+                    La empresa pide algo que la clínica todavía no cargó y
+                    el paciente está esperando; salir a Estudios y
+                    Categorías significaba empezar el alta de nuevo. */}
+                {busquedaExtra.trim().length >= 2 &&
+                  categoriasExtra.length === 0 &&
+                  resultadosExtra.length === 0 &&
+                  !nuevoEstudio && (
+                    <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-md border border-ink-soft/15 bg-white p-3 shadow-lg">
+                      <p className="mb-2 text-xs text-ink-soft">
+                        No hay ningún estudio con «{busquedaExtra.trim()}».
+                      </p>
+                      <button
+                        onClick={() =>
+                          setNuevoEstudio({
+                            nombre: busquedaExtra.trim().toUpperCase(),
+                            categoriaId: "",
+                          })
+                        }
+                        className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                      >
+                        <Plus size={13} /> Crear «{busquedaExtra.trim().toUpperCase()}» en el catálogo
+                      </button>
+                    </div>
+                  )}
 
                 {(categoriasExtra.length > 0 || resultadosExtra.length > 0) && (
                   <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-md border border-ink-soft/15 bg-white shadow-lg">
                     {/* Las categorías van arriba: si alguien busca "radio"
                         casi seguro quiere las quince radiografías, no ir
                         eligiéndolas de a una. */}
-                    {categoriasExtra.map((c) => (
+                    {categoriasExtra.map((c, i) => (
                       <button
                         key={`cat-${c.id}`}
+                        onMouseEnter={() => setExtraMarcado(i)}
                         onClick={() => sumarCategoria(c)}
-                        className="flex w-full items-center gap-2 border-b border-ink-soft/10 bg-primary/5 px-3 py-2 text-left text-sm hover:bg-primary/10"
+                        className={`flex w-full items-center gap-2 border-b border-ink-soft/10 px-3 py-2 text-left text-sm ${
+                          i === extraMarcadoReal ? "bg-primary/15" : "bg-primary/5"
+                        }`}
                       >
                         <Layers size={14} className="shrink-0 text-primary" />
                         <span className="flex-1 font-medium text-primary">{c.nombre}</span>
@@ -579,20 +729,80 @@ export default function NuevaOrdenPage() {
                         </span>
                       </button>
                     ))}
-                    {resultadosExtra.map((e) => (
-                      <button
-                        key={e.id}
-                        onClick={() => sumarExtra(e)}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-ink-soft/5"
-                      >
-                        <Plus size={14} className="shrink-0 text-primary" />
-                        <span className="flex-1 text-ink">{e.nombre}</span>
-                        <span className="text-xs text-ink-soft">{e.categoria?.nombre}</span>
-                      </button>
-                    ))}
+                    {resultadosExtra.map((e, j) => {
+                      /* Las categorías van primero, así que el índice del
+                         estudio arranca después de ellas. */
+                      const i = categoriasExtra.length + j
+                      return (
+                        <button
+                          key={e.id}
+                          onMouseEnter={() => setExtraMarcado(i)}
+                          onClick={() => sumarExtra(e)}
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm ${
+                            i === extraMarcadoReal ? "bg-primary/10" : ""
+                          }`}
+                        >
+                          <Plus size={14} className="shrink-0 text-primary" />
+                          <span className="flex-1 text-ink">{e.nombre}</span>
+                          <span className="text-xs text-ink-soft">{e.categoria?.nombre}</span>
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
               </div>
+
+              {nuevoEstudio && (
+                <form
+                  onSubmit={crearEstudioSuelto}
+                  className="mt-2 rounded-md border-2 border-primary/30 bg-primary/5 p-3"
+                >
+                  <p className="mb-2 text-xs font-medium text-ink">Estudio nuevo</p>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="min-w-48 flex-1">
+                      <label className="mb-1 block text-[11px] text-ink-soft">Nombre</label>
+                      <input
+                        autoFocus
+                        value={nuevoEstudio.nombre}
+                        onChange={(ev) => setNuevoEstudio({ ...nuevoEstudio, nombre: ev.target.value.toUpperCase() })}
+                        className="w-full rounded-md border-2 border-ink-soft/20 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="min-w-44">
+                      <label className="mb-1 block text-[11px] text-ink-soft">Categoría</label>
+                      <select
+                        value={nuevoEstudio.categoriaId}
+                        onChange={(ev) => setNuevoEstudio({ ...nuevoEstudio, categoriaId: ev.target.value })}
+                        className="w-full rounded-md border-2 border-ink-soft/20 bg-white px-2 py-1.5 text-xs outline-none focus:border-primary"
+                      >
+                        <option value="">Elegir…</option>
+                        {categoriasCatalogo.map((c) => (
+                          <option key={c.id} value={c.id}>{c.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!nuevoEstudio.nombre.trim() || !nuevoEstudio.categoriaId}
+                      className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-40"
+                    >
+                      Crear y agregar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNuevoEstudio(null)}
+                      className="rounded-md border-2 border-ink-soft/20 px-3 py-1.5 text-xs text-ink-soft hover:text-ink"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[11px] text-ink-soft">
+                    La categoría decide qué profesional lo va a cargar. La unidad
+                    y los valores de referencia se completan después en Estudios
+                    y Categorías, con la bioquímica.
+                  </p>
+                </form>
+              )}
 
               {extras.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
