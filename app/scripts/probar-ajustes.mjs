@@ -108,15 +108,66 @@ paso("6 · los buscadores se manejan con el teclado")
    Parte 2 · Las de la base, contra el sistema andando
    ------------------------------------------------------------------ */
 
-const c = createClient("http://localhost:8000", env.ANON_KEY, { auth: { persistSession: false } })
-const { error: eLogin } = await c.auth.signInWithPassword({
-  email: "admin@cmlnoa.local", password: "admin2026",
-})
+/* ------------------------------------------------------------------
+   Usuario propio.
+
+   No se usa la cuenta de la máquina de desarrollo: en una instalación
+   limpia no existe ninguna, y el CI corre siempre sobre una base recién
+   creada. La primera versión de esto, al no poder entrar, se salteaba
+   las comprobaciones de base y salía en verde: un test que se saltea sin
+   avisar es peor que no tenerlo. Lo destapó el CI.
+   ------------------------------------------------------------------ */
+const psql = (sql) => execFileSync(
+  "docker",
+  ["compose", "exec", "-T", "-e", `PGPASSWORD=${env.POSTGRES_PASSWORD}`,
+    "db", "psql", "-U", "supabase_admin", "-d", "postgres", "-tA", "-v", "ON_ERROR_STOP=1"],
+  { cwd: RAIZ, encoding: "utf8", input: sql }
+).trim()
+
+const API = "http://localhost:8000"
+
+const admin = async (ruta, opts) => {
+  const r = await fetch(`${API}${ruta}`, {
+    ...opts,
+    headers: {
+      apikey: env.SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${env.SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+    },
+  })
+  return r.json()
+}
+
+async function crearUsuario(nombre, rol) {
+  const email = `${MARCA.toLowerCase()}_${nombre}@cmlnoa.local`
+  const pass = "Prueba-" + Math.random().toString(36).slice(2, 10)
+  /* El filtro va acá y no en la URL: GoTrue ignora ?email= y devuelve la
+     lista entera. Confiar en él borraría todas las cuentas. */
+  const todas = await admin("/auth/v1/admin/users")
+  for (const u of todas?.users ?? []) {
+    if (u.email === email) await admin(`/auth/v1/admin/users/${u.id}`, { method: "DELETE" })
+  }
+  const creado = await admin("/auth/v1/admin/users", {
+    method: "POST", body: JSON.stringify({ email, password: pass, email_confirm: true }),
+  })
+  if (!creado.id) {
+    console.log(`  No se pudo crear ${email}: ${JSON.stringify(creado).slice(0, 200)}`)
+    process.exit(1)
+  }
+  psql(`INSERT INTO usuario (usuario, nombre, auth_id, debe_cambiar)
+        VALUES ('${MARCA}_${nombre}', 'Prueba', '${creado.id}', false);
+        INSERT INTO usuario_rol (usuario_id, rol_codigo)
+        SELECT id, '${rol}' FROM usuario WHERE auth_id='${creado.id}';`)
+  return { email, pass, authId: creado.id }
+}
+
+const uAdmin = await crearUsuario("admin", "R1")
+const c = createClient(API, env.ANON_KEY, { auth: { persistSession: false } })
+const { error: eLogin } = await c.auth.signInWithPassword({ email: uAdmin.email, password: uAdmin.pass })
 if (eLogin) {
   console.log("")
-  console.log(`  No se pudo entrar (${eLogin.message}).`)
-  console.log("  Las comprobaciones de pantalla igual corrieron.")
-  process.exit(fallas ? 1 : 0)
+  console.log(`  No se pudo entrar: ${eLogin.message}`)
+  process.exit(1)
 }
 
 /* La limpieza va por psql, como dueño de la base, igual que en las
@@ -240,6 +291,12 @@ paso("5 · nadie fija la aptitud escribiendo en la tabla")
 
 paso("limpiar")
 limpiar()
+/* También el usuario propio: si no, la corrida siguiente arranca con
+   una cuenta de la anterior dando vueltas. */
+psql(`DELETE FROM auditoria   WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+      DELETE FROM usuario_rol WHERE usuario_id IN (SELECT id FROM usuario WHERE usuario ILIKE '${MARCA}%');
+      DELETE FROM usuario     WHERE usuario ILIKE '${MARCA}%';`)
+await admin(`/auth/v1/admin/users/${uAdmin.authId}`, { method: "DELETE" })
 console.log("  listo")
 
 console.log("")
