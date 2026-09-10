@@ -188,6 +188,8 @@ jobs:
           correr "Aptitud"             app scripts/probar-aptitud.mjs
           correr "Alta de orden"       app scripts/probar-alta-orden.mjs
           correr "Informes de terceros" app scripts/probar-terceros.mjs
+          correr "Ajustes de la orden"   app scripts/probar-ajustes.mjs
+          correr "Firma del protocolo"  app scripts/probar-firma.mjs
           exit $fallas
 
       # Cuando algo se pone en rojo, esto es lo primero que se mira.

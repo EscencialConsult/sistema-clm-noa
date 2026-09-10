@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { AlertTriangle, Download } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
+import Paginador, { paginar } from "../../shared/Paginador"
 import { recepcionService } from "./services/recepcionService"
 import { hoyLocal, primerDiaDelMes } from "../../lib/fechas"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD } from "../../types/dominio"
@@ -28,6 +29,11 @@ export default function ListadoOrdenesPage() {
   const [ordenes, setOrdenes] = useState([])
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState(null)
+  const [pagina, setPagina] = useState(1)
+
+  /* La página se corta acá, no en la consulta: el total y la descarga
+     a CSV tienen que seguir viendo todas las órdenes del período. */
+  const hoja = paginar(ordenes, pagina)
 
   useEffect(() => {
     recepcionService.getEmpresas().then(setEmpresas).catch((e) => setError(e.message))
@@ -144,7 +150,7 @@ export default function ListadoOrdenesPage() {
                 </td>
               </tr>
             )}
-            {ordenes.map((o) => (
+            {hoja.filas.map((o) => (
               <tr key={o.id} onClick={() => navigate(`/carga/${o.id}`)}
                 className="cursor-pointer border-t border-ink-soft/10 hover:bg-ink-soft/5">
                 <td className="py-2.5 text-ink-soft">{o.numero}</td>
@@ -173,6 +179,17 @@ export default function ListadoOrdenesPage() {
             ))}
           </tbody>
         </table>
+
+        {/* Este listado es el anexo que se le adjunta a la factura de
+            cada empresa: crece con el mes y sin paginar se vuelve
+            interminable. La descarga a CSV sigue llevándose TODO, no
+            sólo la página que se ve. */}
+        <Paginador
+          pagina={hoja.pagina}
+          totalPaginas={hoja.totalPaginas}
+          onCambiar={setPagina}
+          cuantos={ordenes.length}
+        />
 
         <p className="mt-4 text-xs text-ink-soft">
           El importe es el que tenía la orden cuando se creó. Si mañana cambia un

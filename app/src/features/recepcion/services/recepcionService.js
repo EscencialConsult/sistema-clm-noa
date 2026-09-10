@@ -79,6 +79,34 @@ export const recepcionService = {
     return data ?? []
   },
 
+  /** Las que quedaron sin terminar de días anteriores.
+   *
+   *  RF26 pide "los estudios sin cargar del día", y eso es lo que hace la
+   *  consulta de arriba. El problema es lo que queda afuera: una orden a
+   *  medias de ayer desaparece de la Bandeja Y de Pendientes, porque las
+   *  dos filtran por la fecha de hoy.
+   *
+   *  El caso real: el paciente viene el lunes, hace 50 de 55 estudios y
+   *  vuelve el miércoles por el toxicológico. El martes esa orden es
+   *  invisible: nadie la persigue, y sólo reaparece si a alguien se le
+   *  ocurre buscar a la persona por apellido. Así es como una orden queda
+   *  varada, y del otro lado hay alguien esperando saber si está apto.
+   *
+   *  Se muestran aparte, no mezcladas: "del día" tiene que seguir
+   *  significando lo que dice.
+   */
+  async getArrastre() {
+    const { data, error } = await supabase
+      .from("v_orden_avance")
+      .select("*")
+      .lt("fecha", hoyLocal())
+      .neq("estado", "INFORMADA")
+      .order("fecha", { ascending: true })
+
+    if (error) throw new Error(error.message)
+    return data ?? []
+  },
+
   /* ---------------- listado de órdenes · CP-25 ---------------- */
 
   /** El listado mensual que hoy se arma a mano en Excel: las órdenes de

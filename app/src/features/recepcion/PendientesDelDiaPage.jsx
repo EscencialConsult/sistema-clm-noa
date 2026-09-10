@@ -19,13 +19,19 @@ import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
 export default function PendientesDelDiaPage() {
   const navigate = useNavigate()
   const [ordenes, setOrdenes] = useState([])
+  const [arrastre, setArrastre] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
 
   async function recargar() {
     setCargando(true)
     try {
-      setOrdenes(await recepcionService.getPendientesDelDia())
+      const [hoy, antes] = await Promise.all([
+        recepcionService.getPendientesDelDia(),
+        recepcionService.getArrastre(),
+      ])
+      setOrdenes(hoy)
+      setArrastre(antes)
       setError(null)
     } catch (e) {
       setError(e.message)
@@ -58,6 +64,11 @@ export default function PendientesDelDiaPage() {
         {!cargando && (
           <span className="text-xs text-ink-soft">
             {enCurso.length} en curso · {completas.length} esperando al médico
+            {arrastre.length > 0 && (
+              <span className="text-warning">
+                {" · "}{arrastre.length} de días anteriores
+              </span>
+            )}
           </span>
         )}
       </div>
@@ -71,6 +82,26 @@ export default function PendientesDelDiaPage() {
           cargando={cargando}
           onAbrir={(o) => navigate(`/carga/${o.id}`)}
         />
+        {/* Lo que quedó sin terminar de días anteriores.
+
+            RF26 pide "los estudios sin cargar del día", y las dos secciones
+            de arriba son eso. Pero la Bandeja y esta pantalla filtran las
+            dos por la fecha de hoy, así que una orden a medias de ayer
+            desaparecía de ambas: nadie la perseguía, y sólo reaparecía
+            buscando a la persona por apellido.
+
+            Va aparte y no mezclada, para que "del día" siga significando
+            lo que dice. */}
+        {arrastre.length > 0 && (
+          <Bloque
+            titulo="De días anteriores, sin terminar"
+            vacio=""
+            descripcion="Se abrieron otro día y siguen sin informarse. Conviene cerrarlas o avisarle al paciente."
+            ordenes={arrastre}
+            cargando={cargando}
+            onAbrir={(o) => navigate(o.estado === "COMPLETA" ? `/aptitud/${o.id}` : `/carga/${o.id}`)}
+          />
+        )}
         <Bloque
           titulo="Completas, esperando al médico laboral"
           vacio="Ninguna esperando dictamen."

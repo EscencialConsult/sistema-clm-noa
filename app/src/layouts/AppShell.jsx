@@ -54,8 +54,15 @@ export default function AppShell({ children, titulo, subtitulo }) {
       {/* Sidebar — Regla del Sidebar por Rol: mismo componente, items según nav.
           Colapsable: ancho cambia, las etiquetas se ocultan, los íconos quedan
           en el mismo lugar (no se reacomodan). */}
+      {/* La barra queda fija: `sticky top-0` con alto de pantalla y su
+          propio scroll.
+
+          Antes crecía junto con el contenido, así que en una lista larga
+          —Pendientes del Día trae 271 estudios— el menú quedaba arriba de
+          todo y había que subir hasta el principio para cambiar de
+          pantalla. Con esto se queda a la vista siempre. */}
       <aside
-        className={`flex shrink-0 flex-col justify-between bg-primary-deep py-6 text-white transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${
+        className={`sticky top-0 flex h-screen shrink-0 flex-col justify-between overflow-y-auto bg-primary-deep py-6 text-white transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] ${
           colapsado ? "w-20 px-3" : "w-64 px-5"
         }`}
       >
