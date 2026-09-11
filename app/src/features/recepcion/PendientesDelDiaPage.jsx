@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Printer, AlertTriangle, RefreshCw } from "lucide-react"
+import { Printer, AlertTriangle, RefreshCw, Search, X } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { recepcionService } from "./services/recepcionService"
 import { ETIQUETA_ESTADO } from "../../types/dominio"
 import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
+import { coincide } from "../../lib/buscarOrden"
 
 /* ---------------------------------------------------------------------
    Pendientes del día — CU-13 · CP-26.
@@ -22,6 +23,9 @@ export default function PendientesDelDiaPage() {
   const [arrastre, setArrastre] = useState([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
+  /* Acá no había forma de buscar: con veinte órdenes se leía la lista
+     entera cada vez que alguien preguntaba por la suya. */
+  const [texto, setTexto] = useState("")
 
   async function recargar() {
     setCargando(true)
@@ -42,8 +46,13 @@ export default function PendientesDelDiaPage() {
 
   useEffect(() => { recargar() }, [])
 
-  const enCurso = ordenes.filter((o) => o.estado !== "COMPLETA")
-  const completas = ordenes.filter((o) => o.estado === "COMPLETA")
+  /* El buscador filtra los tres bloques a la vez. Es lo que se espera:
+     se escribe el DNI y se quiere ver dónde está esa persona, sin saber
+     de antemano en qué bloque cayó. */
+  const visibles = ordenes.filter((o) => coincide(o, texto))
+  const arrastreVisible = arrastre.filter((o) => coincide(o, texto))
+  const enCurso = visibles.filter((o) => o.estado !== "COMPLETA")
+  const completas = visibles.filter((o) => o.estado === "COMPLETA")
 
   return (
     <AppShell titulo="Pendientes del día" subtitulo="Lo que todavía no se informó">
@@ -54,19 +63,43 @@ export default function PendientesDelDiaPage() {
         </div>
       )}
 
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <button
           onClick={recargar}
           className="flex items-center gap-1.5 rounded-md border-2 border-ink-soft/20 px-3 py-2 text-xs font-medium text-ink-soft hover:text-ink"
         >
           <RefreshCw size={14} /> Actualizar
         </button>
+
+        <div className="relative min-w-56 flex-1 sm:max-w-xs">
+          <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-soft" />
+          <input
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="DNI, apellido o N° de orden"
+            className="w-full rounded-md border-2 border-ink-soft/20 py-2 pl-8 pr-8 text-sm outline-none focus:border-primary"
+          />
+          {texto && (
+            <button
+              onClick={() => setTexto("")}
+              title="Borrar"
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-ink-soft hover:text-ink"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
         {!cargando && (
           <span className="text-xs text-ink-soft">
             {enCurso.length} en curso · {completas.length} esperando al médico
-            {arrastre.length > 0 && (
+            {arrastreVisible.length > 0 && (
               <span className="text-warning">
-                {" · "}{arrastre.length} de días anteriores
+                {" · "}{arrastreVisible.length} de días anteriores
+              </span>
+            )}
+            {texto.trim() && (
+              <span className="text-ink-soft/70">
+                {" · "}filtrado por «{texto.trim()}»
               </span>
             )}
           </span>
@@ -92,12 +125,12 @@ export default function PendientesDelDiaPage() {
 
             Va aparte y no mezclada, para que "del día" siga significando
             lo que dice. */}
-        {arrastre.length > 0 && (
+        {arrastreVisible.length > 0 && (
           <Bloque
             titulo="De días anteriores, sin terminar"
             vacio=""
             descripcion="Se abrieron otro día y siguen sin informarse. Conviene cerrarlas o avisarle al paciente."
-            ordenes={arrastre}
+            ordenes={arrastreVisible}
             cargando={cargando}
             onAbrir={(o) => navigate(o.estado === "COMPLETA" ? `/aptitud/${o.id}` : `/carga/${o.id}`)}
           />
