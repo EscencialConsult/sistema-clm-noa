@@ -26,3 +26,16 @@ arranque.log
 
 # artefactos de otras skills, no son del proyecto
 .pagokit/
+
+# Capturas de pantalla del manual — NO van al repositorio.
+#
+# Están sacadas de la base real, así que muestran nombre completo, DNI,
+# empresa e importe de pacientes de verdad. Esto es un repositorio
+# PÚBLICO: Google lo indexa, y lo que entra al historial de git no se
+# borra sacando el archivo después.
+#
+# Son datos de salud de personas identificadas: dato sensible bajo la
+# Ley 25.326. El manual con capturas se le entrega a la clínica por otro
+# lado, no por acá.
+Docs/capturas/
+Docs/Manual-Recepcion-Modulos-CML-NOA.pdf
