@@ -170,13 +170,55 @@ export const aptitudService = {
      traiga la ficha y no cree una segunda.
      ------------------------------------------------------------------ */
 
+  /** Las últimas personas que pasaron por la clínica.
+   *
+   *  Es lo que se muestra en Legajos antes de buscar nada. Sin esto la
+   *  pantalla abría vacía y diciendo «Personas (0)», que se lee como
+   *  «no hay ninguna» cuando hay doce.
+   *
+   *  Y sirve de verdad: la consulta más frecuente es por alguien que
+   *  acaba de pasar, así que muchas veces ya está en esta lista y no
+   *  hace falta escribir nada. */
+  async getUltimasPersonas(cuantas = 8) {
+    const { data, error } = await supabase
+      .from("orden")
+      .select("fecha, persona:persona_id ( id, tipo_doc, nro_doc, apellido, nombre, sexo, fecha_nac, estado_civil, telefono, domicilio, ocupacion )")
+      .order("fecha", { ascending: false })
+      .order("numero", { ascending: false })
+      .limit(60)
+
+    if (error) throw new Error(error.message)
+
+    /* Una persona puede tener varias órdenes: se queda la primera vez
+       que aparece, que es la más reciente. */
+    const vistas = new Set()
+    const lista = []
+    for (const o of data ?? []) {
+      const p = o.persona
+      if (!p || vistas.has(p.id)) continue
+      vistas.add(p.id)
+      lista.push({
+        ...p,
+        apellido_nombre: `${p.apellido}, ${p.nombre}`,
+        documento: `${p.tipo_doc} ${p.nro_doc}`,
+        ultima: o.fecha,
+      })
+      if (lista.length >= cuantas) break
+    }
+    return lista
+  },
+
   async buscarPersonas(texto) {
     const t = (texto ?? "").trim()
     if (t.length < 2) return []
 
-    const esNumero = /^\d+$/.test(t)
+    /* Si escribieron números, es un documento: se comparan sólo los
+       dígitos. En el mostrador el DNI se tipea con puntos tanto como
+       sin ellos, y en la base está guardado de una sola forma. */
+    const soloDigitos = t.replace(/\D/g, "")
+    const esNumero = soloDigitos.length > 0 && /^[\d.\s-]+$/.test(t)
     const filtro = esNumero
-      ? `nro_doc.ilike.%${t}%`
+      ? `nro_doc.ilike.%${soloDigitos}%`
       : `apellido.ilike.%${t}%,nombre.ilike.%${t}%`
 
     const { data, error } = await supabase

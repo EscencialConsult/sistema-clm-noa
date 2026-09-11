@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useSearchParams } from "react-router-dom"
 import {
   ArrowLeft,
   CheckCheck,
@@ -26,6 +26,7 @@ import { authService } from "../auth/services/authService"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, ESTILO_ESTADO, ROL } from "../../types/dominio"
 import MenuImpreso from "../../shared/impresos/MenuImpreso"
 import { imprimirHojaDeRuta } from "../ordenes/imprimir/HojaDeRuta"
+import ElegirPaginas from "../ordenes/imprimir/ElegirPaginas"
 import { imprimirProtocolo } from "../aptitud/imprimir/Protocolo"
 
 /* ---------------------------------------------------------------------
@@ -67,12 +68,17 @@ const COLUMNAS_APLICABLES = [
 
 export default function CargaPage() {
   const { ordenId } = useParams()
+  /* Se puede llegar acá apuntando a una categoría: desde el dictamen,
+     cuando falta cargar algo, para no tener que buscarla entre nueve. */
+  const [params] = useSearchParams()
+  const categoriaPedida = Number(params.get("categoria")) || null
   const navigate = useNavigate()
   const sesion = authService.getSesionActual()
 
   const [orden, setOrden] = useState(null)
   const [categorias, setCategorias] = useState([])
   const [categoriaSel, setCategoriaSel] = useState(null)
+  const [eligiendoPaginas, setEligiendoPaginas] = useState(false)
   const [filtro, setFiltro] = useState("todas")
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState(null)
@@ -107,6 +113,16 @@ export default function CargaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ordenId])
 
+  /* Se aplica cuando llegan las categorías, no al montar: al montar
+     todavía no hay ninguna y la selección se perdería. Y sólo si la
+     categoría pedida existe en esta orden — un enlace viejo o retocado
+     a mano no tiene que dejar la pantalla sin nada elegido. */
+  useEffect(() => {
+    if (!categoriaPedida || categoriaSel !== null) return
+    if (categorias.some((c) => c.id === categoriaPedida)) elegirCategoria(categoriaPedida)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categorias, categoriaPedida])
+
   function elegirCategoria(id) {
     setCategoriaSel(id)
     setAvisoCategoria(null)
@@ -124,6 +140,25 @@ export default function CargaPage() {
   )
 
   const catActual = categoriasConAvance.find((c) => c.id === categoriaSel)
+
+  /* Si ningún estudio de la categoría tiene unidad ni valores de
+     referencia, Valor y Referencia no tienen nada que mostrar: en ORINA
+     COMPLETA eran dieciséis casillas vacías y dieciséis guiones.
+
+     Se mira el dato, no el nombre de la categoría. Cuando la bioquímica
+     cargue las referencias, las columnas aparecen solas. */
+  const mide = !!catActual?.items?.some((it) => {
+    const e = it.estudio ?? {}
+    return [e.unidad, e.ref_h, e.ref_m].some((v) => (v ?? "").trim() !== "")
+  })
+
+  /* Si quedó elegido «Valor» y se pasa a una categoría que no mide, esa
+     opción desaparece del desplegable pero el estado sigue en "detalle":
+     el desplegable mostraría «Resultado» —la primera opción— y el texto
+     se escribiría en Valor. Silencioso y en varias filas a la vez. */
+  useEffect(() => {
+    if (!mide && columnaAplicar === "detalle") setColumnaAplicar("resultado")
+  }, [mide, columnaAplicar])
 
   const totales = useMemo(() => {
     const items = categorias.flatMap((c) => c.items)
@@ -266,7 +301,11 @@ export default function CargaPage() {
                 <ListPlus size={15} /> Agregar o quitar estudios
               </button>
             )}
-          <MenuImpreso etiqueta="Hoja de ruta" onImprimir={() => imprimirHojaDeRuta(orden.id)} />
+          <MenuImpreso
+            etiqueta="Hoja de ruta"
+            onImprimir={() => imprimirHojaDeRuta(orden.id)}
+            onElegirPaginas={() => setEligiendoPaginas(true)}
+          />
           {/* RNF-17 "0 opciones ajenas visibles": el protocolo es el
               informe integral que arma el médico laboral con todo el
               flujo consolidado — un profesional de una sola categoría
@@ -338,7 +377,18 @@ export default function CargaPage() {
           </p>
         )}
         {categoriasFiltradas.map((c) => {
-          const esDeMiArea = sesion?.roles?.includes(c.rol_carga)
+          /* «Ajena» tiene que significar lo mismo que la regla de la base:
+             cargar_categoria_normal deja pasar al Administrador, a
+             Recepción y al rol dueño de la categoría.
+
+             Mirando sólo el rol dueño, a Recepción le decía «Categoría
+             ajena» en las nueve — cuando en esta fase es ella la que carga
+             todo (CU-07). El botón funcionaba igual, pero el cartel le
+             decía que no era asunto suyo. */
+          const esDeMiArea =
+            sesion?.roles?.includes(c.rol_carga) ||
+            sesion?.roles?.includes(ROL.RECEPCION) ||
+            sesion?.roles?.includes(ROL.ADMINISTRADOR)
           const Icono = ICONO_CATEGORIA[c.nombre] ?? Circle
           const seleccionada = categoriaSel === c.id
           return (
@@ -452,7 +502,10 @@ export default function CargaPage() {
                 onChange={(e) => setColumnaAplicar(e.target.value)}
                 className="rounded-md border-2 border-ink-soft/20 bg-white px-2 py-1.5 text-xs text-ink outline-none focus:border-primary"
               >
-                {COLUMNAS_APLICABLES.map((c) => (
+                {/* Sin nada que medir, «Valor» no se ofrece: aplicarlo en
+                    masa a dieciséis casillas que nadie va a mirar es una
+                    forma silenciosa de ensuciar el protocolo. */}
+                {COLUMNAS_APLICABLES.filter((c) => mide || c.key !== "detalle").map((c) => (
                   <option key={c.key} value={c.key}>
                     {c.label}
                   </option>
@@ -502,6 +555,16 @@ export default function CargaPage() {
             </div>
           )}
 
+          {/* Que la ausencia de las columnas se lea como una decisión y no
+              como una pantalla a medias. */}
+          {!mide && (
+            <p className="mb-3 text-xs text-ink-soft">
+              Esta categoría se carga como {catActual.valor_defecto ?? "NORMAL"} /
+              ANORMAL: sus estudios no tienen unidad ni valores de referencia,
+              así que no hay número que comparar.
+            </p>
+          )}
+
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="rounded-md bg-ink-soft/5 text-xs font-semibold text-ink">
@@ -515,8 +578,12 @@ export default function CargaPage() {
                 </th>
                 <th className="py-2.5 pl-1">Estudio</th>
                 <th className="py-2.5">Resultado</th>
-                <th className="py-2.5">Valor</th>
-                <th className="py-2.5">Referencia</th>
+                {mide && (
+                  <>
+                    <th className="py-2.5">Valor</th>
+                    <th className="py-2.5">Referencia</th>
+                  </>
+                )}
                 <th className="rounded-r-md py-2.5">Observación</th>
               </tr>
             </thead>
@@ -525,6 +592,7 @@ export default function CargaPage() {
                 <FilaEstudio
                   key={it.id}
                   item={it}
+                  mide={mide}
                   seleccionado={seleccionados.has(it.id)}
                   onToggleSeleccion={() => alternarSeleccion(it.id)}
                   onGuardar={(campos) => guardarFila(it, campos)}
@@ -534,11 +602,15 @@ export default function CargaPage() {
           </table>
         </div>
       )}
+      {eligiendoPaginas && (
+        <ElegirPaginas ordenId={orden.id} onCerrar={() => setEligiendoPaginas(false)} />
+      )}
+
     </AppShell>
   )
 }
 
-function FilaEstudio({ item, seleccionado, onToggleSeleccion, onGuardar }) {
+function FilaEstudio({ item, mide, seleccionado, onToggleSeleccion, onGuardar }) {
   const [resultado, setResultado] = useState(item.resultado ?? "")
   const [detalle, setDetalle] = useState(item.detalle ?? "")
   const [observacion, setObservacion] = useState(item.observacion ?? "")
@@ -604,22 +676,26 @@ function FilaEstudio({ item, seleccionado, onToggleSeleccion, onGuardar }) {
           onBlur={(e) => guardarSiCambio("resultado", e.target.value)}
         />
       </td>
-      <td className="py-2.5">
-        <div className="flex items-center gap-1.5">
-          <input
-            className={inputClase("w-24")}
-            value={detalle}
-            onChange={(e) => setDetalle(e.target.value)}
-            onBlur={(e) => guardarSiCambio("detalle", e.target.value)}
-          />
-          {item.fuera_de_rango && (
-            <span className="whitespace-nowrap rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning">
-              Fuera de rango
-            </span>
-          )}
-        </div>
-      </td>
-      <td className="py-2.5 whitespace-nowrap text-xs text-ink-soft">{referencia}</td>
+      {mide && (
+        <>
+          <td className="py-2.5">
+            <div className="flex items-center gap-1.5">
+              <input
+                className={inputClase("w-24")}
+                value={detalle}
+                onChange={(e) => setDetalle(e.target.value)}
+                onBlur={(e) => guardarSiCambio("detalle", e.target.value)}
+              />
+              {item.fuera_de_rango && (
+                <span className="whitespace-nowrap rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning">
+                  Fuera de rango
+                </span>
+              )}
+            </div>
+          </td>
+          <td className="py-2.5 whitespace-nowrap text-xs text-ink-soft">{referencia}</td>
+        </>
+      )}
       <td className="py-2.5">
         <input
           className={inputClase("w-full")}
@@ -632,7 +708,7 @@ function FilaEstudio({ item, seleccionado, onToggleSeleccion, onGuardar }) {
       {devuelto && (
         <tr className="bg-danger/5">
           <td></td>
-          <td colSpan={5} className="pb-2.5 pl-1">
+          <td colSpan={mide ? 5 : 3} className="pb-2.5 pl-1">
             <p className="flex items-start gap-1.5 text-xs text-danger">
               <AlertTriangle size={13} className="mt-0.5 shrink-0" />
               <span>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowLeft, Printer, AlertTriangle, ShieldCheck, ShieldX, Undo2, X } from "lucide-react"
+import { ArrowLeft, Printer, AlertTriangle, ShieldCheck, ShieldX, Undo2, X, Check, ChevronRight, PencilLine } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { aptitudService } from "./services/aptitudService"
 import { authService } from "../auth/services/authService"
@@ -62,6 +62,9 @@ export default function DictamenPage() {
   const [preexistencias, setPreexistencias] = useState("")
   const [incapacidad, setIncapacidad] = useState("")
   const [observaciones, setObservaciones] = useState("")
+  /* Categorías desplegadas a mano. Las que tienen algo raro se abren
+     solas; ésta guarda las que el médico abrió además de esas. */
+  const [abiertas, setAbiertas] = useState([])
   const [devolviendo, setDevolviendo] = useState(null)
   const [motivo, setMotivo] = useState("")
 
@@ -100,6 +103,24 @@ export default function DictamenPage() {
     () => categorias.flatMap((c) => c.items.filter((i) => i.fuera_de_rango)),
     [categorias]
   )
+
+  /* La primera categoría que tiene algo sin cargar: es a donde manda el
+     atajo del aviso. Se saca de las categorías y no cavando en el primer
+     item, para no depender de que el servicio siga anidando la categoría
+     adentro del estudio. */
+  const primeraSinCargar = categorias.find((c) =>
+    c.items.some((i) => i.estado !== "CARGADO" && i.estado !== "DEVUELTO")
+  )
+
+  /* Qué le pasa a cada categoría. Lo que decide si se abre sola y con
+     qué color se marca: fuera de rango, devuelto o sin cargar. */
+  const resumenCategoria = (c) => {
+    const fuera = c.items.filter((i) => i.fuera_de_rango).length
+    const devueltos = c.items.filter((i) => i.estado === "DEVUELTO").length
+    const faltan = c.items.filter((i) => i.estado !== "CARGADO" && i.estado !== "DEVUELTO").length
+    return { fuera, devueltos, faltan, hayAlgo: fuera + devueltos + faltan > 0 }
+  }
+
   const sinCargar = useMemo(
     () => categorias.flatMap((c) => c.items.filter((i) => i.estado !== "CARGADO")),
     [categorias]
@@ -205,18 +226,25 @@ export default function DictamenPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid max-w-[1500px] grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_430px]">
         {/* Lo que hay que mirar */}
-        <div className="col-span-2 flex flex-col gap-4">
-          <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
-            <p className="mb-3 text-sm font-medium text-ink">
-              Valores fuera de rango ({fueraDeRango.length})
-            </p>
-            {fueraDeRango.length === 0 ? (
-              <p className="text-xs text-ink-soft">
+        <div className="flex min-w-0 flex-col gap-4">
+          {/* Sin nada fuera de rango esto era una tarjeta entera para decir
+              que no hay nada. Con algo, es lo más importante de la pantalla
+              y ahí sí ocupa lo que tiene que ocupar. */}
+          {fueraDeRango.length === 0 ? (
+            <div className="flex items-center gap-2 rounded-card border border-success/30 bg-success/[0.06] px-4 py-3">
+              <Check size={16} className="shrink-0 text-success" />
+              <p className="text-sm text-ink">
                 Ningún valor quedó fuera de su rango de referencia.
               </p>
-            ) : (
+            </div>
+          ) : (
+            <div className="rounded-card border-2 border-warning/40 bg-warning/[0.05] p-5">
+              <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-warning">
+                <AlertTriangle size={16} />
+                {fueraDeRango.length} valor{fueraDeRango.length === 1 ? "" : "es"} fuera de rango
+              </p>
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="text-[11px] text-ink-soft">
@@ -242,60 +270,169 @@ export default function DictamenPage() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
-            <p className="mb-3 text-sm font-medium text-ink">Todos los estudios</p>
-            {categorias.map((c) => (
-              <div key={c.id} className="mb-4 last:mb-0">
-                <p className="mb-1.5 text-xs font-medium tracking-wide text-ink-soft">
-                  {c.nombre}
-                </p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  {c.items.map((i) => (
-                    <span
-                      key={i.id}
-                      className={`flex items-center gap-1 ${
-                        i.estado === "DEVUELTO"
-                          ? "text-danger"
-                          : i.estado !== "CARGADO"
-                            ? "text-danger"
-                            : i.fuera_de_rango
-                              ? "text-warning"
-                              : "text-ink-soft"
-                      }`}
-                      title={i.motivo_devolucion ? `Devuelto: ${i.motivo_devolucion}` : undefined}
-                    >
-                      {i.estudio.nombre}: {i.detalle || i.resultado || "sin cargar"}
-                      {i.estado === "DEVUELTO" && <span className="text-[10px]">· devuelto</span>}
-                      {!informada && i.estado === "CARGADO" && (
-                        <button
-                          onClick={() => { setDevolviendo(i); setMotivo("") }}
-                          title="Devolver al profesional que lo cargó"
-                          className="text-ink-soft hover:text-danger"
-                        >
-                          <Undo2 size={12} />
-                        </button>
-                      )}
+            <p className="mb-4 text-base font-semibold text-ink">Todos los estudios</p>
+            {categorias.map((c) => {
+              const r = resumenCategoria(c)
+              const abierta = r.hayAlgo || abiertas.includes(c.id)
+              return (
+                <div key={c.id} className="mb-2 overflow-hidden rounded-lg border border-ink-soft/15 last:mb-0">
+                  {/* La cabecera dice sola si hay que mirar adentro. Las
+                      categorías con algo raro se abren y no se pueden cerrar:
+                      son justo las que el médico vino a ver. */}
+                  <button
+                    onClick={() => !r.hayAlgo && setAbiertas((p) =>
+                      p.includes(c.id) ? p.filter((x) => x !== c.id) : [...p, c.id]
+                    )}
+                    className={`flex w-full items-center gap-2 px-3 py-2.5 text-left ${
+                      r.hayAlgo
+                        ? "cursor-default bg-warning/[0.06]"
+                        : "hover:bg-ink-soft/[0.03]"
+                    }`}
+                  >
+                    <ChevronRight
+                      size={14}
+                      className={`shrink-0 transition-transform ${
+                        abierta ? "rotate-90" : ""
+                      } ${r.hayAlgo ? "text-warning" : "text-ink-soft/50"}`}
+                    />
+                    <span className="min-w-0 flex-1 text-sm font-medium text-ink">{c.nombre}</span>
+
+                    {r.fuera > 0 && (
+                      <span className="shrink-0 rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
+                        {r.fuera} fuera de rango
+                      </span>
+                    )}
+                    {r.devueltos > 0 && (
+                      <span className="shrink-0 rounded-full bg-danger/15 px-2 py-0.5 text-[11px] font-medium text-danger">
+                        {r.devueltos} devuelto{r.devueltos === 1 ? "" : "s"}
+                      </span>
+                    )}
+                    {r.faltan > 0 && (
+                      <span className="shrink-0 rounded-full bg-danger/15 px-2 py-0.5 text-[11px] font-medium text-danger">
+                        {r.faltan} sin cargar
+                      </span>
+                    )}
+                    {/* El atajo va donde se lee el problema. Sin esto había
+                        que volver, entrar a la orden y buscar la categoría
+                        entre nueve, con el paciente esperando. */}
+                    {r.faltan > 0 && !informada && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(ev) => {
+                          ev.stopPropagation()
+                          navigate(`/carga/${ordenId}?categoria=${c.id}`)
+                        }}
+                        onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") navigate(`/carga/${ordenId}?categoria=${c.id}`) }}
+                        title="Abrir la carga en esta categoría"
+                        className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md border border-primary/40 px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+                      >
+                        <PencilLine size={12} /> Ir a cargarlo
+                      </span>
+                    )}
+                    {!r.hayAlgo && (
+                      <span className="flex shrink-0 items-center gap-1 text-[11px] text-success">
+                        <Check size={12} /> todo en orden
+                      </span>
+                    )}
+                    <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-ink-soft">
+                      {c.items.length} est.
                     </span>
-                  ))}
+                  </button>
+
+                  {/* Nombre y valor en columnas, no un párrafo corrido: lo
+                      que se busca es un valor, y los valores se comparan
+                      cuando están alineados. */}
+                  {abierta && (
+                    <div className="grid gap-x-6 gap-y-px border-t border-ink-soft/10 bg-ink-soft/[0.02] p-2 sm:grid-cols-2 xl:grid-cols-3">
+                      {c.items.map((i) => {
+                        const devuelto = i.estado === "DEVUELTO"
+                        const falta = i.estado !== "CARGADO" && !devuelto
+                        return (
+                          <div
+                            key={i.id}
+                            className={`group flex items-baseline gap-2 rounded px-2 py-1 text-xs ${
+                              devuelto || falta
+                                ? "bg-danger/[0.06]"
+                                : i.fuera_de_rango
+                                  ? "bg-warning/[0.08]"
+                                  : ""
+                            }`}
+                            title={i.motivo_devolucion ? `Devuelto: ${i.motivo_devolucion}` : undefined}
+                          >
+                            <span className="min-w-0 flex-1 truncate text-ink-soft">{i.estudio.nombre}</span>
+                            <span
+                              className={`shrink-0 font-medium ${
+                                devuelto || falta
+                                  ? "text-danger"
+                                  : i.fuera_de_rango
+                                    ? "text-warning"
+                                    : "text-ink"
+                              }`}
+                            >
+                              {devuelto ? "devuelto" : (i.detalle || i.resultado || "sin cargar")}
+                              {i.detalle && i.estudio.unidad ? ` ${i.estudio.unidad}` : ""}
+                            </span>
+                            {/* La flecha de devolver aparece al pasar por
+                                encima: 52 flechitas fijas eran más ruido que
+                                los resultados. */}
+                            {!informada && i.estado === "CARGADO" && (
+                              <button
+                                onClick={() => { setDevolviendo(i); setMotivo("") }}
+                                title="Devolver al profesional que lo cargó"
+                                className="shrink-0 text-ink-soft/40 opacity-0 hover:text-danger group-hover:opacity-100"
+                              >
+                                <Undo2 size={12} />
+                              </button>
+                            )}
+                            {!informada && falta && (
+                              <button
+                                onClick={() => navigate(`/carga/${ordenId}?categoria=${c.id}`)}
+                                title="Abrir la carga en esta categoría"
+                                className="shrink-0 text-primary hover:opacity-70"
+                              >
+                                <PencilLine size={12} />
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
         {/* El dictamen */}
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
-            <p className="mb-3 text-sm font-medium text-ink">Dictamen</p>
+            <p className="mb-4 text-base font-semibold text-ink">Dictamen</p>
 
             {sinCargar.length > 0 && (
-              <p className="mb-3 rounded-md border-2 border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
-                Quedan {sinCargar.length} estudio{sinCargar.length === 1 ? "" : "s"} sin cargar.
-                No se puede informar hasta que estén todos.
-              </p>
+              <div className="mb-3 rounded-md border-2 border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
+                <p>
+                  Quedan {sinCargar.length} estudio{sinCargar.length === 1 ? "" : "s"} sin cargar.
+                  No se puede informar hasta que estén todos.
+                </p>
+                {/* Es el primer cartel que se lee, así que también lleva:
+                    va a la categoría del primero que falta. */}
+                {!informada && (
+                  <button
+                    onClick={() =>
+                      navigate(`/carga/${ordenId}${primeraSinCargar ? `?categoria=${primeraSinCargar.id}` : ""}`)
+                    }
+                    className="mt-2 flex items-center gap-1.5 rounded-md border border-warning/50 bg-white px-2.5 py-1.5 text-[11px] font-medium text-warning hover:bg-warning/10"
+                  >
+                    <PencilLine size={12} /> Ir a cargarlos
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Recepción llegaba acá desde el legajo y veía los botones
