@@ -103,7 +103,12 @@ export default function EmpresasPage() {
           <div className="mb-4 grid grid-cols-3 gap-3">
             <Campo label="Razón social" requerido valor={editando.razon_social}
               onCambio={(v) => setEditando({ ...editando, razon_social: v })} />
+            {/* Vacío, lo asigna la base con el contador (migración 024).
+                Antes había que mirar cuál fue el último y escribirlo: dos
+                altas a la vez chocaban contra la restricción de unicidad. */}
             <Campo label="Código" valor={editando.codigo}
+              marcador={editando.id ? undefined : "Se asigna solo"}
+              ayuda={editando.id ? undefined : "Dejalo vacío y lo pone el sistema."}
               onCambio={(v) => setEditando({ ...editando, codigo: v })} />
             <Campo label="CUIT" valor={editando.cuit}
               onCambio={(v) => setEditando({ ...editando, cuit: v })} />
@@ -192,7 +197,7 @@ export default function EmpresasPage() {
   )
 }
 
-function Campo({ label, valor, onCambio, requerido }) {
+function Campo({ label, valor, onCambio, requerido, marcador, ayuda }) {
   return (
     <div>
       <label className="mb-1 block text-xs text-ink-soft">
@@ -200,9 +205,11 @@ function Campo({ label, valor, onCambio, requerido }) {
       </label>
       <input
         value={valor ?? ""}
+        placeholder={marcador}
         onChange={(e) => onCambio(e.target.value)}
         className="w-full rounded-md border-2 border-ink-soft/20 px-2.5 py-2 text-sm outline-none focus:border-primary"
       />
+      {ayuda && <p className="mt-1 text-[11px] text-ink-soft">{ayuda}</p>}
     </div>
   )
 }

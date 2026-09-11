@@ -117,13 +117,38 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-/* Una página por categoría — se corta en tiras hoy a mano (CU-06, alt.
-   5a); el sistema ya la entrega separada. HojaDeRuta.jsx solo la aplica
-   entre categorías, nunca después de la última (si no, sale una hoja
-   en blanco de más al final). */
+/* Salto forzado — modo «una categoría por hoja». HojaDeRuta.jsx sólo lo
+   aplica entre categorías, nunca después de la última (si no, sale una
+   hoja en blanco de más al final). */
 .hoja-impresion .imp-salto-pagina {
   page-break-after: always;
   break-after: page;
+}
+
+/* Modo normal: las categorías se acomodan una debajo de otra y se
+   aprovecha la hoja. Lo único intocable es que una categoría NO se
+   parta entre dos páginas: la clínica corta el papel en tiras (CU-06,
+   alt. 5a) y una tira cortada por el borde de la hoja no sirve. */
+.hoja-impresion .imp-bloque {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Dónde cortar. Va arriba del bloque y no abajo, para que viaje con él
+   cuando el bloque se pasa a la página siguiente. */
+.hoja-impresion .imp-corte {
+  border-top: 1pt dashed #999;
+  margin: 7mm 0 5mm;
+  text-align: center;
+  font-size: 7.5pt;
+  color: #999;
+  letter-spacing: 0.08em;
+}
+.hoja-impresion .imp-corte span {
+  position: relative;
+  top: -1.6mm;
+  background: #fff;
+  padding: 0 2mm;
 }
 .hoja-impresion .imp-pt {
   text-align: center;

@@ -51,7 +51,10 @@ export const nuevaOrdenService = {
   async getHistorial(personaId) {
     const { data, error } = await supabase
       .from("orden")
-      .select("id, numero, fecha, fecha_vencimiento, estado, aptitud, empresa:empresa_id ( razon_social )")
+      /* tipo_examen es lo que identifica cada examen anterior de un
+         vistazo —prelaboral, periódico, egreso—: sin él las tarjetas de
+         «últimos estudios» dicen fecha y aptitud pero no de qué eran. */
+      .select("id, numero, fecha, fecha_vencimiento, tipo_examen, estado, aptitud, empresa:empresa_id ( razon_social )")
       .eq("persona_id", personaId)
       .order("fecha", { ascending: false })
       .limit(10)
@@ -98,7 +101,10 @@ export const nuevaOrdenService = {
   async getEmpresas() {
     const { data, error } = await supabase
       .from("empresa")
-      .select("id, codigo, razon_social")
+      /* CUIT, domicilio y teléfono no se muestran al elegir la empresa,
+         pero sí hacen falta para poder corregirlos desde el alta sin
+         irse a la pantalla de Empresas y perder la orden a medio hacer. */
+      .select("id, codigo, razon_social, cuit, domicilio, telefono")
       .eq("activo", true)
       .order("razon_social")
 
@@ -136,7 +142,9 @@ export const nuevaOrdenService = {
     for (const it of data ?? []) {
       const c = it.estudio.categoria
       if (!porCategoria.has(c.id)) porCategoria.set(c.id, { ...c, estudios: [] })
-      porCategoria.get(c.id).estudios.push(it.estudio.nombre)
+      /* Con id, no sólo el nombre: hace falta para poder sacar un
+         estudio suelto de la orden antes de crearla. */
+      porCategoria.get(c.id).estudios.push({ id: it.estudio.id, nombre: it.estudio.nombre })
     }
 
     return {
@@ -210,6 +218,69 @@ export const nuevaOrdenService = {
 
     if (error) throw new Error(error.message)
     return data ?? []
+  },
+
+  /** Saca de una orden todos los estudios de ciertas categorías.
+   *
+   *  Se usa en el alta: la empresa pide el básico de ley pero sin el
+   *  toxicológico. crear_orden() arma siempre la batería completa —eso no
+   *  se toca, es lo que hace que dos altas simultáneas no se pisen— así
+   *  que lo que sobra se saca inmediatamente después.
+   *
+   *  Sólo saca los que están en PENDIENTE, que en un alta recién hecha
+   *  son todos. La política de la base no dejaría borrar uno cargado, y
+   *  está bien: eso se corrige, no se borra.
+   */
+  async quitarCategorias(ordenId, categoriaIds) {
+    if (!categoriaIds?.length) return
+
+    const { data: items, error } = await supabase
+      .from("orden_estudio")
+      .select("id, estudio:estudio_id(categoria_id)")
+      .eq("orden_id", ordenId)
+      .eq("estado", "PENDIENTE")
+    if (error) throw new Error(error.message)
+
+    const aQuitar = (items ?? []).filter((i) => categoriaIds.includes(i.estudio?.categoria_id))
+    for (const i of aQuitar) {
+      const { error: e } = await supabase.from("orden_estudio").delete().eq("id", i.id)
+      if (e) throw new Error(e.message)
+    }
+
+    /* La fila de orden_categoria queda.
+
+       No es olvido: esa tabla no tiene política de borrado, así que un
+       DELETE desde la aplicación afecta cero filas y no da error —
+       silenciosamente no hace nada, que es peor que fallar. Se probó.
+
+       Y no hace falta: ninguna vista ni pantalla la lee. Lo que ve el
+       profesional en su bandeja sale de orden_estudio, así que una
+       categoría sin estudios no aparece por ningún lado. Queda como
+       rastro de que esa categoría estuvo en la orden, que para una
+       orden clínica es más correcto que borrarlo. */
+  },
+
+  /** Saca estudios sueltos de una orden recién creada.
+   *
+   *  Igual que quitarCategorias pero de a uno: la empresa pide el
+   *  básico pero sin el VDRL. Sólo los PENDIENTE, que en un alta
+   *  recién hecha son todos.
+   */
+  async quitarEstudiosDeOrden(ordenId, estudioIds) {
+    if (!estudioIds?.length) return
+    const { data, error } = await supabase
+      .from("orden_estudio")
+      .delete()
+      .eq("orden_id", ordenId)
+      .eq("estado", "PENDIENTE")
+      .in("estudio_id", estudioIds)
+      .select()
+    if (error) throw new Error(error.message)
+    /* Si no borró nada habiendo pedido borrar, algo cambió en las
+       políticas y hay que enterarse, no seguir de largo. */
+    if ((data ?? []).length === 0) {
+      throw new Error("No se pudo sacar ninguno de los estudios elegidos.")
+    }
   },
 
   /** Categorías cuyo nombre coincide, con todos sus estudios activos.

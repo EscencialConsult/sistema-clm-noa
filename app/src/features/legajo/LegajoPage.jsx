@@ -1,6 +1,6 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Search, Printer, AlertTriangle, FolderOpen, Pencil, X } from "lucide-react"
+import { Search, Printer, AlertTriangle, FolderOpen, Pencil, X, Clock } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { aptitudService } from "../aptitud/services/aptitudService"
 import { ETIQUETA_ESTADO, ETIQUETA_APTITUD, TIPO_DOC } from "../../types/dominio"
@@ -33,6 +33,12 @@ export default function LegajoPage() {
   const [error, setError] = useState(null)
   const [buscoAlgunaVez, setBuscoAlgunaVez] = useState(false)
   const [editando, setEditando] = useState(null)
+  /* Las últimas atendidas, para que la pantalla sirva al abrirla. */
+  const [ultimas, setUltimas] = useState([])
+
+  useEffect(() => {
+    aptitudService.getUltimasPersonas().then(setUltimas).catch(() => setUltimas([]))
+  }, [])
 
   async function buscar(e) {
     e?.preventDefault()
@@ -109,16 +115,32 @@ export default function LegajoPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      {/* Antes eran tres columnas fijas: en una notebook a media pantalla
+          la lista de personas quedaba en un tercio y no entraba el nombre. */}
+      <div className="grid max-w-[1500px] grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className="rounded-card border-2 border-ink-soft/15 bg-white p-5">
-          <p className="mb-3 text-sm font-medium text-ink">Personas ({personas.length})</p>
+          {/* Sin haber buscado, el rótulo decía «Personas (0)». Eso se lee
+              como «no hay ninguna», y hay doce. */}
+          <p className="mb-3 flex items-center gap-1.5 text-sm font-medium text-ink">
+            {buscoAlgunaVez
+              ? `Personas (${personas.length})`
+              : <><Clock size={14} className="text-ink-soft" /> Últimas atendidas</>}
+          </p>
+
           {buscoAlgunaVez && personas.length === 0 && (
             <p className="text-xs text-ink-soft">
               No hay nadie con ese documento ni con ese apellido.
             </p>
           )}
-          <ul className="flex flex-col gap-1">
-            {personas.map((p) => (
+
+          {!buscoAlgunaVez && ultimas.length === 0 && (
+            <p className="text-xs text-ink-soft">
+              Todavía no hay órdenes cargadas. Buscá por documento o apellido.
+            </p>
+          )}
+
+          <ul className="flex max-h-[30rem] flex-col gap-1 overflow-y-auto pr-0.5">
+            {(buscoAlgunaVez ? personas : ultimas).map((p) => (
               <li key={p.id}>
                 <button
                   onClick={() => abrirLegajo(p)}
@@ -126,20 +148,26 @@ export default function LegajoPage() {
                     elegida?.id === p.id ? "bg-primary/5 text-primary" : "text-ink hover:bg-ink-soft/5"
                   }`}
                 >
-                  <p>{p.apellido_nombre}</p>
-                  <p className="text-xs text-ink-soft">{p.documento}</p>
+                  <p className="truncate">{p.apellido_nombre}</p>
+                  <p className="truncate text-xs text-ink-soft">
+                    {p.documento}
+                    {!buscoAlgunaVez && p.ultima && ` · ${p.ultima}`}
+                  </p>
                 </button>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="col-span-2 rounded-card border-2 border-ink-soft/15 bg-white p-5">
+        <div className="min-w-0 rounded-card border-2 border-ink-soft/15 bg-white p-5">
           {!elegida ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FolderOpen size={28} className="mb-2 text-ink-soft/40" strokeWidth={1.5} />
-              <p className="text-xs text-ink-soft">
+              <p className="text-sm text-ink-soft">
                 Elegí una persona para ver todos sus exámenes.
+              </p>
+              <p className="mt-1 text-xs text-ink-soft/70">
+                Se puede buscar por documento —con puntos o sin ellos— o por apellido.
               </p>
             </div>
           ) : (
