@@ -97,7 +97,12 @@ const totalUsuarios = Number(sql("SELECT count(*) FROM usuario;"))
 const intentos = {
   "alta de persona": (c, q) => c.from("persona").insert({
     tipo_doc: "DNI", nro_doc: `9086000${q.i}`, apellido: `${MARCA} ${q.rol}`, nombre: "X", sexo: "M" }).select(),
-  "alta de empresa": (c, q) => c.from("empresa").insert({ razon_social: `${MARCA} SA ${q.rol}` }).select(),
+  /* Con código propio y no numérico a propósito: desde la migración 024 una
+     empresa sin código consume un número del contador, y esta prueba se corre
+     en cada CI. Lo que se está probando es la política, no el trigger — para
+     el trigger está probar-codigo-empresa. */
+  "alta de empresa": (c, q) => c.from("empresa").insert({
+    razon_social: `${MARCA} SA ${q.rol}`, codigo: `${MARCA}-${q.rol}` }).select(),
   "alta de categoría": (c, q) => c.from("categoria").insert({
     nombre: `${MARCA} CAT ${q.rol}`, orden: 90 + q.i, rol_carga: "R5", valor_defecto: "NORMAL" }).select(),
   "cambiar un precio": (c) => c.from("concepto").update({ precio: 55000 }).eq("id", 1).select(),

@@ -186,11 +186,32 @@ if (fueraDeOrden.length) {
   )
 }
 
+/* La versión que muestra el pie de la pantalla sale de acá.
+
+   La escribía sólo el chequeo diario (revisar-actualizacion.js), así que
+   entre que se aplicaba una migración y corría ese chequeo el sistema
+   decía tener una versión vieja. Y «¿qué versión tenés?» es la primera
+   pregunta cuando algo falla: una respuesta equivocada manda a buscar el
+   problema donde no está.
+
+   Se anota SIEMPRE, también cuando no había nada pendiente: así corriendo
+   el comando se repara una versión que quedó vieja por cualquier motivo. */
+function anotarVersion() {
+  const ahora = psql("SELECT max(nombre) FROM migracion")
+  if (!ahora) return null
+  psql(`INSERT INTO estado_sistema (clave, valor, actualizado_at)
+        VALUES ('version', '${ahora}', now())
+        ON CONFLICT (clave) DO UPDATE
+          SET valor = EXCLUDED.valor, actualizado_at = now();`)
+  return ahora
+}
+
 for (const f of archivos.filter((x) => aplicadas.has(x))) {
   console.log(`  ${f.padEnd(42)} ya aplicada`)
 }
 
 if (!pendientes.length) {
+  anotarVersion()
   console.log("")
   console.log(`  Nada que hacer: la base está en la ${String(ultimaAplicada).padStart(3, "0")}.`)
   console.log("")
@@ -239,7 +260,8 @@ function aplicar(archivo, quien) {
 
 for (const f of pendientes) aplicar(f, "actualizacion")
 
-const ahora = psql("SELECT max(nombre) FROM migracion")
+const ahora = anotarVersion()
+
 console.log("")
 console.log(`  Listo. La base queda en ${ahora}.`)
 console.log("")

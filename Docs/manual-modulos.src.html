@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Manual de Recepción — Módulos — CML NOA</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 16mm; }
+
+  :root {
+    --azul: #0066cc;
+    --tinta: #0b2545;
+    --gris: #566780;
+    --linea: #dce3ec;
+    --suave: #eef2f7;
+    --verde: #15803d;
+    --ambar: #b45309;
+    --rojo: #c0392f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 10.5pt; line-height: 1.5; color: var(--tinta);
+  }
+
+  /* portada */
+  .portada {
+    height: 245mm; display: flex; flex-direction: column; justify-content: center;
+    page-break-after: always; border-top: 4pt solid var(--tinta); border-bottom: 1pt solid var(--linea);
+  }
+  .portada .eyebrow {
+    font-size: 9pt; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--azul); font-weight: 600; margin-bottom: 6mm;
+  }
+  .portada h1 { font-size: 28pt; line-height: 1.06; margin: 0 0 4mm; font-weight: 700; letter-spacing: -.01em; }
+  .portada .sub { font-size: 12.5pt; color: var(--gris); margin: 0 0 14mm; max-width: 140mm; }
+  .portada .meta { border-top: 1pt solid var(--linea); padding-top: 5mm; font-size: 9.5pt; color: var(--gris); line-height: 1.9; }
+  .portada .meta b { color: var(--tinta); font-weight: 600; }
+
+  /* índice */
+  .indice { page-break-after: always; }
+  .indice h2 { border-top: 2.5pt solid var(--tinta); }
+  .indice ol { margin: 0; padding-left: 0; list-style: none; counter-reset: s; }
+  .indice li {
+    counter-increment: s; padding: 2.4mm 0; border-bottom: 1pt solid var(--suave); font-size: 10.5pt;
+  }
+  .indice li::before {
+    content: counter(s); display: inline-block; width: 8mm; color: var(--azul); font-weight: 700;
+  }
+  .indice li span { color: var(--gris); font-size: 9.5pt; }
+  .indice .grupo {
+    margin-top: 6mm; margin-bottom: 1mm; font-size: 8.5pt; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--gris); font-weight: 600; border: 0; padding: 0;
+  }
+  .indice .grupo::before { content: none; }
+  .indice .grupo { counter-increment: none; }
+
+  h2 {
+    font-size: 14.5pt; margin: 0 0 1mm; padding-top: 3mm;
+    border-top: 2.5pt solid var(--tinta); page-break-after: avoid;
+  }
+  h2 .n { color: var(--azul); margin-right: 3mm; }
+  h2 + .lead { color: var(--gris); margin: 0 0 4mm; font-size: 10pt; }
+  h3 { font-size: 11pt; margin: 5mm 0 2mm; page-break-after: avoid; }
+  section { margin-bottom: 8mm; }
+  section.nueva { page-break-before: always; }
+  p { margin: 0 0 3mm; }
+  ul { margin: 0 0 3mm; padding-left: 5mm; }
+  li { margin-bottom: 1.2mm; }
+
+  table { width: 100%; border-collapse: collapse; margin: 0 0 4mm; font-size: 9.5pt; page-break-inside: avoid; }
+  th {
+    text-align: left; background: #f4f7fa; border-bottom: 1pt solid var(--linea);
+    padding: 2mm 2.5mm; font-size: 8.5pt; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--gris); font-weight: 600;
+  }
+  td { padding: 2mm 2.5mm; border-bottom: 1pt solid var(--suave); vertical-align: top; }
+  td.num { text-align: right; white-space: nowrap; }
+  code {
+    font-family: Consolas, "Courier New", monospace; font-size: 9pt;
+    background: #f4f7fa; padding: 0 1mm; border-radius: 1mm;
+  }
+
+  .aviso {
+    border-left: 3pt solid var(--azul); background: #f5f9ff;
+    padding: 3mm 4mm; margin: 0 0 4mm; font-size: 9.5pt; page-break-inside: avoid;
+  }
+  .aviso.ojo { border-left-color: var(--ambar); background: #fdf6ec; }
+  .aviso.stop { border-left-color: var(--rojo); background: #fcf0ef; }
+  .aviso > b:first-child { display: block; margin-bottom: 1mm; }
+
+  .ficha {
+    display: grid; grid-template-columns: 28mm 1fr; gap: 1px;
+    background: var(--linea); border: 1pt solid var(--linea); margin: 0 0 4mm; font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  .ficha > div { background: #fff; padding: 1.8mm 2.5mm; }
+  .ficha .k { color: var(--gris); font-size: 8.5pt; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* Las capturas: al ancho del texto, con un borde fino para que se
+     despeguen del papel, y sin partirse entre dos páginas. */
+  figure { margin: 0 0 4mm; page-break-inside: avoid; }
+  figure img { width: 100%; display: block; border: 1pt solid var(--linea); border-radius: 1.5mm; }
+  figure figcaption {
+    margin-top: 1.5mm; font-size: 8.5pt; color: var(--gris); font-style: italic;
+  }
+
+  footer {
+    margin-top: 8mm; padding-top: 3mm; border-top: 1pt solid var(--linea);
+    font-size: 8.5pt; color: var(--gris);
+  }
+</style>
+</head>
+<body>
+
+<div class="portada">
+  <p class="eyebrow">Centro Médico Laboral del NOA S.R.L.</p>
+  <h1>Manual de Recepción<br>Los módulos del sistema</h1>
+  <p class="sub">Qué es cada pantalla, para qué sirve y cuándo se usa. Módulo prelaboral.</p>
+  <div class="meta">
+    <div><b>Para:</b> el puesto de Recepción</div>
+    <div><b>Sistema:</b> CML NOA · Prelaboral</div>
+    <div><b>Versión del documento:</b> 11 de septiembre de 2026</div>
+  </div>
+</div>
+
+<div class="indice">
+  <h2>Contenido</h2>
+  <ol>
+    <li class="grupo">El día a día</li>
+    <li>Bandeja del Día <span>— qué pasa hoy</span></li>
+    <li>Nueva Orden <span>— abrir un examen</span></li>
+    <li>Pendientes del Día <span>— lo que falta terminar</span></li>
+    <li>Cargar resultados <span>— se entra desde las dos anteriores</span></li>
+    <li>La aptitud <span>— apto o no apto</span></li>
+
+    <li class="grupo">Consultar</li>
+    <li>Buscar Persona <span>— el historial de alguien</span></li>
+    <li>Listado de Órdenes <span>— el cierre del mes</span></li>
+
+    <li class="grupo">Mantener</li>
+    <li>Empresas <span>— quién manda a la gente</span></li>
+    <li>Estudios y Categorías <span>— qué ofrece el centro</span></li>
+    <li>Baterías <span>— qué pide cada empresa</span></li>
+
+    <li class="grupo">Además</li>
+    <li>Agregar o quitar estudios <span>— corregir una orden abierta</span></li>
+    <li>Lo que el sistema no deja hacer</li>
+  </ol>
+</div>
+
+<!-- ============ 1 ============ -->
+<section>
+  <h2><span class="n">1</span>Bandeja del Día</h2>
+  <p class="lead">La primera pantalla al entrar. Qué está pasando hoy.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Ver de un vistazo en qué estado está cada orden de hoy.</div>
+    <div class="k">Cuándo</div><div>Al abrir el sistema, y cada vez que alguien pregunta «¿cómo venimos?».</div>
+    <div class="k">Qué trae</div><div>Sólo las órdenes con fecha de hoy.</div>
+  </div>
+
+  <figure>
+    <img src="capturas/01-bandeja.png" alt="">
+    <figcaption>Las pestañas de arriba filtran por estado. El número entre paréntesis dice cuántas hay en cada uno.</figcaption>
+  </figure>
+
+  <p>Arriba hay <b>pestañas por estado</b>, con el número de cada una:</p>
+  <table>
+    <thead><tr><th style="width:32%">Estado</th><th>Qué significa</th></tr></thead>
+    <tbody>
+      <tr><td><b>Abierta</b></td><td>Se creó la orden. Nadie cargó nada todavía.</td></tr>
+      <tr><td><b>En curso</b></td><td>Hay resultados cargados, pero faltan.</td></tr>
+      <tr><td><b>Completa</b></td><td>Están todos los estudios. Falta la aptitud.</td></tr>
+      <tr><td><b>Informada</b></td><td>Terminada y con protocolo emitido.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Haciendo clic en una orden se entra a <b>cargar sus resultados</b>.</p>
+  <p>A un costado hay cuatro accesos rápidos: <b>Nuevo Paciente</b>, <b>Buscar Paciente</b>,
+  <b>Ver Legajos</b> y <b>Vigencias Próximas</b>. Y abajo, la lista de <b>estudios pendientes</b>.</p>
+
+  <div class="aviso ojo">
+    <b>Ojo: esta pantalla es sólo de hoy.</b>
+    Una orden que quedó a medias ayer no aparece acá. Para ésas está
+    <b>Pendientes del Día</b>, que tiene un bloque aparte.
+  </div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section>
+  <h2><span class="n">2</span>Nueva Orden</h2>
+  <p class="lead">Por donde entra todo. Es la pantalla que más vas a usar.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Abrir el examen de una persona para una empresa.</div>
+    <div class="k">Cuándo</div><div>Con el paciente en el mostrador.</div>
+    <div class="k">Deja</div><div>Una orden con número, importe y vencimiento, y la hoja de ruta para imprimir.</div>
+  </div>
+
+  <figure>
+    <img src="capturas/02-nueva-orden.png" alt="">
+    <figcaption>La orden ya armada: persona encontrada, empresa y batería elegidas, y a la derecha los 50 estudios que se van a abrir. El cartel naranja avisa que esta persona tiene un examen todavía vigente.</figcaption>
+  </figure>
+
+  <h3>Los tres pasos</h3>
+  <p><b>1 · Persona.</b> Tipo de documento, número y <b>Enter</b>. Si está en el padrón sale su ficha
+  con los últimos exámenes; si no, se da de alta ahí mismo. Apellido, nombre y <b>sexo</b> son obligatorios.</p>
+
+  <p><b>2 · Empresa y batería.</b> La empresa se escribe y filtra sola —no hace falta el nombre exacto
+  ni los acentos—. Después la batería, el tipo de examen y la tarea. Si la empresa pidió algo extra,
+  se busca abajo; y si ese estudio no existe todavía, <b>Crear nuevo</b> lo da de alta sin salir.</p>
+
+  <p><b>3 · Resumen.</b> Cuántos estudios se abren, para quién y de qué empresa. Desde acá se pueden
+  <b>sacar categorías o estudios de esta orden</b> antes de crearla.</p>
+
+  <div class="aviso">
+    <b>Sacar algo no cambia la batería.</b>
+    Lo que saques es sólo de esta orden. La próxima sale completa otra vez.
+  </div>
+
+  <div class="aviso ojo">
+    <b>El sexo decide qué estudios se abren</b> y contra qué valores se comparan los resultados.
+    Un error ahí se arrastra a toda la orden.
+  </div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section>
+  <h2><span class="n">3</span>Pendientes del Día</h2>
+  <p class="lead">Lo que falta terminar. La pantalla de control.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Saber qué queda sin cerrar, y entrar a resolverlo.</div>
+    <div class="k">Cuándo</div><div>Cuando vuelven las planillas de los puestos, y antes de irse.</div>
+  </div>
+
+  <figure>
+    <img src="capturas/03-pendientes.png" alt="">
+    <figcaption>Los bloques separan lo que falta hacer. El buscador de arriba filtra los tres a la vez.</figcaption>
+  </figure>
+
+  <p>Tres bloques:</p>
+  <table>
+    <thead><tr><th style="width:38%">Bloque</th><th>Qué tiene</th></tr></thead>
+    <tbody>
+      <tr><td><b>Dando vueltas</b></td><td>Les falta pasar por algún puesto. Se entra a cargar.</td></tr>
+      <tr><td><b>De días anteriores, sin terminar</b></td><td>Se abrieron otro día y siguen sin informarse.</td></tr>
+      <tr><td><b>Completas, esperando al médico laboral</b></td><td>Todo cargado. Falta la aptitud.</td></tr>
+    </tbody>
+  </table>
+
+  <p>Arriba hay un buscador: se escribe el <b>DNI</b> —con puntos o sin ellos—, el apellido o el
+  número de orden, y filtra los tres bloques a la vez. Sirve para cuando alguien pregunta por lo suyo.</p>
+
+  <div class="aviso">
+    <b>El bloque de días anteriores es el importante.</b>
+    Una orden que quedó a medias no aparece en ningún otro lado. Si nadie la mira, queda abierta
+    para siempre y el paciente nunca recibe su protocolo.
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section class="nueva">
+  <h2><span class="n">4</span>Cargar resultados</h2>
+  <p class="lead">Se entra desde Bandeja del Día o desde Pendientes, haciendo clic en la orden.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Pasar al sistema lo que los puestos anotaron a mano.</div>
+    <div class="k">Cuándo</div><div>Cuando te vuelven las planillas.</div>
+    <div class="k">Quién</div><div>En esta etapa, Recepción.</div>
+  </div>
+
+  <figure>
+    <img src="capturas/04-cargar.png" alt="">
+    <figcaption>Arriba, cada categoría con su avance: en verde las completas. Abajo, HEMOGRAMA abierto en 3 de 14, con el botón «Cargar toda en NORMAL» a la derecha y la columna Referencia mostrando el rango de varón y el de mujer.</figcaption>
+  </figure>
+
+  <p>Arriba están las categorías con su avance. Elegís una y abajo aparecen sus estudios,
+  con tres campos:</p>
+
+  <table>
+    <thead><tr><th style="width:24%">Campo</th><th style="width:38%">Qué va</th><th>Ejemplo</th></tr></thead>
+    <tbody>
+      <tr><td><b>Resultado</b></td><td>La palabra</td><td><code>NORMAL</code> · <code>ANORMAL</code> · <code>NEGATIVO</code></td></tr>
+      <tr><td><b>Valor</b></td><td>El número, cuando hay</td><td><code>47</code> · <code>15,2</code> · <code>120/80</code></td></tr>
+      <tr><td><b>Observación</b></td><td>Sólo si hace falta</td><td><code>refiere cirugía 2019</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>El atajo de todos los días</h3>
+  <p><b>«Cargar toda en NORMAL»</b> — un botón y los catorce del hemograma quedan cargados.
+  Después se corrigen sólo los que dieron distinto. Cada categoría tiene su palabra de arranque:
+  NORMAL en casi todas, NEGATIVO en toxicológico.</p>
+
+  <ul>
+    <li><b>Se guarda solo al salir del casillero.</b> No hay botón de guardar.</li>
+    <li>La coma anda: <code>15,2</code> se entiende.</li>
+    <li>Si el valor queda fuera del rango, aparece solo el cartel <b>«Fuera de rango»</b>.
+        Lo compara el sistema contra la referencia de esa persona <b>según su sexo</b>.</li>
+    <li>En algunas categorías <b>no aparecen las columnas Valor y Referencia</b>: esos estudios
+        no tienen números que comparar y se cargan sólo con la palabra.</li>
+    <li>Si hay varios estudios iguales, se seleccionan y se usa <b>«Mismo valor»</b>.</li>
+  </ul>
+
+  <div class="aviso">
+    <b>Cuando cargás el último, la orden pasa sola a Completa.</b> No hay que apretar nada.
+  </div>
+</section>
+
+<!-- ============ 5 ============ -->
+<section>
+  <h2><span class="n">5</span>La aptitud</h2>
+  <p class="lead">Pendientes del Día → «Completas, esperando al médico laboral» → clic.</p>
+
+  <figure>
+    <img src="capturas/05-aptitud.png" alt="">
+    <figcaption>A la izquierda, los estudios agrupados; a la derecha, el dictamen. Primero se elige el médico que firma.</figcaption>
+  </figure>
+
+  <p>Arriba se ve si quedó algún valor fuera de rango. Las categorías donde no pasó nada aparecen
+  plegadas y en verde; las que tienen algo se abren solas y quedan marcadas.</p>
+
+  <p>En el panel de la derecha: <b>Médico que firma</b>, <b>Apto</b> o <b>No apto</b>,
+  <b>Preexistencias</b>, <b>Incapacidad (%)</b>, <b>Especialidades / observaciones</b>,
+  y <b>Emitir protocolo</b>.</p>
+
+  <div class="aviso ojo">
+    <b>Vos transcribís lo que el médico dictaminó en la planilla, pero el protocolo sale con la matrícula de él.</b>
+    Por eso hay que decir cuál médico firma. Si el médico entra con su propio usuario, firma con la suya
+    y no se le pregunta.
+  </div>
+
+  <p><b>Registrar una preexistencia no cambia la aptitud</b>: se puede ser apto y tenerla anotada.</p>
+  <p>Si falta cargar algo, el sistema no deja emitir y ofrece un botón <b>«Ir a cargarlos»</b>
+  que lleva derecho a la categoría que falta.</p>
+
+  <div class="aviso stop">
+    <b>Después de informar, los resultados quedan bloqueados.</b>
+    No se pueden editar más. Si algo salió mal, corregilo antes de emitir.
+  </div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section>
+  <h2><span class="n">6</span>Buscar Persona</h2>
+  <p class="lead">El historial completo de alguien.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Saber si una persona está apta, cuándo vence y qué se le hizo.</div>
+    <div class="k">Cuándo</div><div>Cuando la empresa o el paciente preguntan.</div>
+  </div>
+
+  <figure>
+    <img src="capturas/06-buscar-persona.png" alt="">
+    <figcaption>El legajo de una persona: todas sus órdenes, de la más nueva a la más vieja, con estado, aptitud y vencimiento.</figcaption>
+  </figure>
+
+  <p>Al abrirla muestra las <b>últimas personas atendidas</b>, así muchas veces ya está la que buscás
+  sin escribir nada.</p>
+
+  <p>Se busca por <b>documento</b> —con puntos o sin ellos— o por <b>apellido</b>. Al elegir una persona
+  salen <b>todas</b> sus órdenes, de la más nueva a la más vieja, con estado, aptitud y vencimiento.
+  Desde ahí se imprime cualquier protocolo.</p>
+
+  <p>También se pueden <b>corregir sus datos</b>: un apellido mal tipeado o un teléfono que cambió.</p>
+</section>
+
+<!-- ============ 7 ============ -->
+<section>
+  <h2><span class="n">7</span>Listado de Órdenes</h2>
+  <p class="lead">Para el cierre del mes.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Armar lo que se le factura a cada empresa.</div>
+    <div class="k">Cuándo</div><div>A fin de mes, o cuando una empresa pide un detalle.</div>
+  </div>
+
+  <figure>
+    <img src="capturas/07-listado.png" alt="">
+    <figcaption>Los filtros arriba y el total abajo. Lo que se ve en pantalla es lo que sale en el CSV.</figcaption>
+  </figure>
+
+  <p>Se filtra por <b>fecha desde / hasta</b>, <b>empresa</b>, <b>estado</b> y <b>aptitud</b>,
+  y además hay un buscador por <b>DNI, apellido o número de orden</b>.</p>
+
+  <p>La tabla trae número, fecha, paciente, documento, empresa, estado, aptitud, cantidad de estudios
+  e importe, con el total abajo. <b>Descargar CSV</b> lo baja para Excel, <b>ya filtrado</b>:
+  lo que se ve en pantalla es lo que sale en el archivo.</p>
+
+  <div class="aviso">
+    <b>El importe queda congelado al crear la orden.</b>
+    Si el precio del básico cambia en octubre, lo facturado en septiembre sigue diciendo lo mismo.
+  </div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section class="nueva">
+  <h2><span class="n">8</span>Empresas</h2>
+  <p class="lead">Quién manda a la gente. Hoy hay 38 cargadas.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Dar de alta y corregir los datos de las empresas.</div>
+    <div class="k">Cuándo</div><div>Cuando llega una empresa nueva, o cambia un dato.</div>
+  </div>
+
+  <figure>
+    <img src="capturas/08-empresas.png" alt="">
+    <figcaption>El listado de empresas. Al dar de alta una nueva, el código se deja vacío y lo pone el sistema.</figcaption>
+  </figure>
+
+  <p>Cada empresa tiene <b>razón social</b>, <b>código</b>, <b>CUIT</b>, <b>domicilio</b> y <b>teléfono</b>.</p>
+
+  <div class="aviso">
+    <b>El código se pone solo.</b>
+    Dejalo vacío y el sistema le asigna el que sigue. Antes había que mirar cuál fue el último
+    y escribirlo, y dos altas a la vez chocaban.
+  </div>
+
+  <p>Las empresas <b>no se borran, se desactivan</b>: una empresa con órdenes viejas tiene que seguir
+  existiendo para que esas órdenes sigan diciendo de quién eran. Desactivada, deja de ofrecerse
+  al abrir una orden nueva.</p>
+</section>
+
+<!-- ============ 9 ============ -->
+<section>
+  <h2><span class="n">9</span>Estudios y Categorías</h2>
+  <p class="lead">Todo lo que el centro puede hacer. Hoy son 123 estudios en 9 categorías.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Ver y mantener el catálogo.</div>
+    <div class="k">Cuándo</div><div>Cuando aparece un estudio nuevo, o hay que cargarle los valores de referencia.</div>
+  </div>
+
+  <h3>La categoría decide quién lo carga</h3>
+  <p>Cada estudio pertenece a una categoría, y la categoría define <b>qué profesional</b> lo va a cargar:
+  HEMOGRAMA es de Laboratorio, RADIOGRAFIAS de Rayos, ESPECIALIDADES de Psicología.
+  Por eso, al crear un estudio, <b>la categoría es obligatoria</b>: sin ella el estudio queda
+  sin dueño y la orden nunca cierra.</p>
+
+  <figure>
+    <img src="capturas/09-estudios.png" alt="">
+    <figcaption>Arriba, cuántos estudios hay de cada tipo. Los avisos en color marcan lo que conviene revisar con la bioquímica.</figcaption>
+  </figure>
+
+  <h3>Los cuatro tipos de estudio</h3>
+  <p>La pantalla los agrupa según lo que el sistema puede hacer con ellos:</p>
+  <table>
+    <thead><tr><th style="width:30%">Tipo</th><th style="width:14%">Cuántos</th><th>Qué hace el sistema</th></tr></thead>
+    <tbody>
+      <tr><td><b>Compara</b></td><td class="num">15</td><td>Marca el valor cuando queda fuera de rango.</td></tr>
+      <tr><td><b>No compara</b></td><td class="num">5</td><td>Tiene referencia, pero en un formato que no se puede comparar.</td></tr>
+      <tr><td><b>Sin referencia</b></td><td class="num">10</td><td>Guarda el número, pero no lo compara con nada.</td></tr>
+      <tr><td><b>Cualitativo</b></td><td class="num">93</td><td>Se carga como NORMAL / ANORMAL.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="aviso ojo">
+    <b>Un estudio sin valores de referencia se carga igual, pero nadie avisa si el resultado está mal.</b>
+    Si la empresa manda los rangos por escrito, conviene cargarlos: «después lo completa la bioquímica»
+    es la forma más segura de que no se complete nunca.
+  </div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section>
+  <h2><span class="n">10</span>Baterías</h2>
+  <p class="lead">Qué estudios pide cada empresa, y para quién. Hoy hay 10.</p>
+
+  <div class="ficha">
+    <div class="k">Para qué</div><div>Definir los paquetes que después se eligen al abrir una orden.</div>
+    <div class="k">Cuándo</div><div>Cuando una empresa pide una combinación distinta.</div>
+  </div>
+
+  <p>Cada batería tiene una lista de estudios agrupados por categoría. Y cada estudio lleva
+  un <b>«para quién»</b>: <b>Ambos</b>, <b>Sólo varón</b> o <b>Sólo mujer</b>.
+  Al crear la orden, el sistema copia sólo los que aplican al sexo de la persona — sin que
+  nadie tilde nada.</p>
+
+  <figure>
+    <img src="capturas/10-baterias.png" alt="">
+    <figcaption>La batería con sus categorías plegables. Cada estudio lleva su pastilla de «para quién»; casi todos dicen Ambos.</figcaption>
+  </figure>
+
+  <p>Arriba se ve cuántos ítems tiene, cuántos abre a un varón, cuántos a una mujer, y
+  <b>cuánto sale en cada caso</b>.</p>
+
+  <div class="aviso ojo">
+    <b>Si el precio de varón y de mujer son distintos, el recuadro se pone en ámbar.</b>
+    A veces es correcto —la subunidad beta es de mujeres— y a veces significa que a la batería
+    le falta un estudio. Vale la pena mirarlo.
+  </div>
+
+  <p>Para armarlas hay tres atajos: <b>Duplicar</b> una que se parezca,
+  <b>Agregar categoría</b> entera, y sacar una categoría completa con la ✕.
+  También hay un buscador para encontrar un estudio dentro de la batería.</p>
+
+  <div class="aviso">
+    <b>Editar una batería no toca las órdenes ya emitidas.</b>
+    Los estudios de una orden son una copia hecha al crearla.
+  </div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section class="nueva">
+  <h2><span class="n">11</span>Agregar o quitar estudios</h2>
+  <p class="lead">Se entra desde la orden creada, o desde la pantalla de carga.</p>
+
+  <p>Sirve para corregir una orden que ya está abierta: agregar algo que la empresa pidió después,
+  o sacar un estudio que no correspondía.</p>
+
+  <div class="aviso">
+    <b>Es la forma de corregir un error de batería.</b>
+    Si te equivocaste de batería al crear la orden, no hace falta —ni se puede— borrarla:
+    se agregan y se quitan los estudios desde acá, y el importe se recalcula.
+  </div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section>
+  <h2><span class="n">12</span>Lo que el sistema no te deja hacer</h2>
+  <p class="lead">En todos los casos el motivo es el mismo: proteger lo que ya se hizo.</p>
+
+  <table>
+    <thead><tr><th style="width:42%">No se puede</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td><b>Borrar una orden</b></td>
+          <td>Una orden clínica no se elimina, se corrige. Para eso está «Agregar o quitar estudios».</td></tr>
+      <tr><td><b>Cargar el mismo documento dos veces</b></td>
+          <td>Es lo que evita tener a la misma persona cargada cuatro veces.</td></tr>
+      <tr><td><b>Editar resultados de una orden informada</b></td>
+          <td>Ya se emitió el protocolo.</td></tr>
+      <tr><td><b>Emitir sin todos los estudios cargados</b></td>
+          <td>El protocolo diría que se hizo algo que no se hizo.</td></tr>
+      <tr><td><b>Crear una orden vacía</b></td>
+          <td>Una orden sin estudios no la entiende nadie después, y no se puede borrar.</td></tr>
+      <tr><td><b>Borrar una empresa o un concepto</b></td>
+          <td>Se desactivan. Lo viejo tiene que seguir diciendo lo que decía.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Si algo no anda</h3>
+  <table>
+    <thead><tr><th style="width:42%">Pasa esto</th><th>Qué hacer</th></tr></thead>
+    <tbody>
+      <tr><td>«No hay datos» en todas las pantallas</td><td>Cerrá sesión y volvé a entrar.</td></tr>
+      <tr><td>La pantalla no carga</td><td>Avisá — puede ser el servidor.</td></tr>
+      <tr><td>No encontrás una empresa</td><td>Fijate en <b>Empresas</b> si está dada de alta.</td></tr>
+      <tr><td>No encontrás un estudio</td><td>Buscá por parte del nombre. Si no está, <b>Crear nuevo</b>.</td></tr>
+      <tr><td>Cargaste algo mal y ya se informó</td><td>Avisá al Administrador.</td></tr>
+    </tbody>
+  </table>
+
+  <footer>
+    Centro Médico Laboral del NOA S.R.L. · Módulo prelaboral · Manual de Recepción — Módulos · 11/09/2026
+  </footer>
+</section>
+
+</body>
+</html>

@@ -104,6 +104,34 @@ paso("6 · los buscadores se manejan con el teclado")
   ok(Math.min(6, Math.max(0, 2 - 1)) === 1, "si la lista se achica, no se sale del final")
 }
 
+paso("7 · el catálogo dice qué hace el sistema con cada estudio")
+{
+  const t = leer("features/catalogo/CatalogoPage.jsx")
+  ok(t.includes("function tipoDe"), "la pantalla clasifica cada estudio")
+  for (const k of ["compara", "ilegible", "sinReferencia", "cualitativo"])
+    ok(t.includes(k), `contempla el caso ${k}`)
+  ok(t.includes("Buscar en todo el catálogo"), "y se puede buscar sin adivinar la categoría")
+
+  /* La clasificación, sin pantalla. Es la que decide si un valor se
+     compara o no, así que equivocarse acá es peor que una etiqueta
+     fea: sería decirle a la clínica que algo se controla cuando no. */
+  const RE = new RegExp("^\\s*\\d+([.,]\\d+)?\\s*-\\s*\\d+([.,]\\d+)?\\s*$")
+  const tipoDe = (e) => {
+    const refs = [e.ref_h, e.ref_m].filter((r) => (r ?? "").trim() !== "")
+    if (refs.length === 0) return e.unidad ? "sinReferencia" : "cualitativo"
+    return refs.every((r) => RE.test(r)) ? "compara" : "ilegible"
+  }
+  const casos = [
+    [{ unidad: "%", ref_h: "43-53", ref_m: "38-45" }, "compara", "HEMATOCRITO"],
+    [{ unidad: "g/l", ref_h: "<1,40", ref_m: null }, "ilegible", "LDL, referencia que no se puede leer"],
+    [{ unidad: "Kg", ref_h: null, ref_m: null }, "sinReferencia", "PESO"],
+    [{ unidad: null, ref_h: null, ref_m: null }, "cualitativo", "TORAX"],
+    [{ unidad: "%", ref_h: "43-53", ref_m: "<45" }, "ilegible", "una buena y una ilegible: manda la mala"],
+  ]
+  for (const [e, esperado, nombre] of casos)
+    ok(tipoDe(e) === esperado, nombre, tipoDe(e))
+}
+
 /* ------------------------------------------------------------------
    Parte 2 · Las de la base, contra el sistema andando
    ------------------------------------------------------------------ */
