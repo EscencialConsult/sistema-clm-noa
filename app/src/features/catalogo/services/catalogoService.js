@@ -106,6 +106,26 @@ export const catalogoService = {
   },
 
   /** Cuántos estudios activos no están en ningún concepto: no se cobran. */
+  /** Todo el catálogo de una, para el resumen y el buscador.
+   *
+   *  La pantalla mostraba una categoría por vez: para saber cuántos
+   *  estudios compara el sistema había que entrar a las nueve y sumar a
+   *  mano, y para encontrar un estudio había que adivinar en cuál está.
+   *  Son 120 en total, así que traerlos todos no cuesta nada.
+   */
+  async getTodos() {
+    const { data, error } = await supabase
+      .from("estudio")
+      .select("id, codigo, nombre, unidad, ref_h, ref_m, activo, categoria:categoria_id(id, nombre), concepto_estudio(concepto_id)")
+      .order("nombre")
+
+    if (error) throw new Error(error.message)
+    return (data ?? []).map((e) => ({
+      ...e,
+      seCobra: (e.concepto_estudio ?? []).length > 0,
+    }))
+  },
+
   async contarSinConcepto() {
     const { data, error } = await supabase
       .from("estudio")

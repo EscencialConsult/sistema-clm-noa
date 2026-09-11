@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Plus, AlertTriangle, DollarSign, Ruler, X } from "lucide-react"
+import { Plus, AlertTriangle, DollarSign, Ruler, X, Search } from "lucide-react"
 import AppShell from "../../layouts/AppShell"
 import { catalogoService, REFERENCIA_COMPARABLE } from "./services/catalogoService"
 import { ETIQUETA_ROL } from "../../types/dominio"
@@ -26,6 +26,47 @@ import { ETIQUETA_ROL } from "../../types/dominio"
      entera. Enganchar el concepto es tarea del Administrador.
    --------------------------------------------------------------------- */
 
+/* ---------------------------------------------------------------------
+   Qué hace el sistema con cada estudio.
+
+   Es la pregunta que la pantalla no contestaba y hay que deducir mirando
+   tres columnas a la vez. Y es la que importa: un estudio que "no
+   compara" nunca se va a marcar fuera de rango, así que "no apareció
+   marcado" significa "nadie lo comparó", no "está bien".
+
+   Los cuatro casos salen de lo que tenga cargado, no de lo que el
+   estudio sea en la realidad. El hepatograma es numérico y está cargado
+   sin unidad ni referencia: para el sistema es cualitativo.
+   --------------------------------------------------------------------- */
+const TIPOS = {
+  compara: {
+    etiqueta: "Compara",
+    detalle: "Tiene rango: marca el valor fuera de rango según el sexo",
+    clase: "bg-success/10 text-success",
+  },
+  ilegible: {
+    etiqueta: "No compara",
+    detalle: "Tiene referencia cargada pero el sistema no la puede leer",
+    clase: "bg-danger/10 text-danger",
+  },
+  sinReferencia: {
+    etiqueta: "Sin referencia",
+    detalle: "Guarda el número y no lo compara con nada",
+    clase: "bg-warning/10 text-warning",
+  },
+  cualitativo: {
+    etiqueta: "Cualitativo",
+    detalle: "Se informa una conclusión, no un valor",
+    clase: "bg-ink-soft/10 text-ink-soft",
+  },
+}
+
+function tipoDe(e) {
+  const refs = [e.ref_h, e.ref_m].filter((r) => (r ?? "").trim() !== "")
+  if (refs.length === 0) return e.unidad ? "sinReferencia" : "cualitativo"
+  return refs.every((r) => REFERENCIA_COMPARABLE.test(r)) ? "compara" : "ilegible"
+}
+
 const CAT_VACIA = { nombre: "", orden: 99, rol_carga: "R5", valor_defecto: "NORMAL" }
 const EST_VACIO = { codigo: "", nombre: "", unidad: "", ref_h: "", ref_m: "", orden: 99 }
 const ROLES_CARGA = ["R3", "R4", "R5", "R6", "R7", "R8"]
@@ -38,6 +79,10 @@ export default function CatalogoPage() {
   const [editEst, setEditEst] = useState(null)
   const [sinConcepto, setSinConcepto] = useState(0)
   const [error, setError] = useState(null)
+  /* Todo el catálogo, para el resumen y el buscador. Son 120: traerlos
+     todos cuesta menos que hacer nueve consultas. */
+  const [todos, setTodos] = useState([])
+  const [busqueda, setBusqueda] = useState("")
 
   async function recargarCategorias() {
     try {
@@ -45,6 +90,7 @@ export default function CatalogoPage() {
       setCategorias(cats)
       setSel((s) => s ?? cats[0]?.id ?? null)
       setSinConcepto(await catalogoService.contarSinConcepto())
+      setTodos(await catalogoService.getTodos())
       setError(null)
     } catch (e) { setError(e.message) }
   }
@@ -81,6 +127,31 @@ export default function CatalogoPage() {
 
   const catActual = categorias.find((c) => c.id === sel)
 
+  /* Cuántos hay de cada tipo. Es lo que se necesita para la reunión con
+     la bioquímica: no la lista, sino cuánto falta y de qué clase. */
+  const activos = todos.filter((e) => e.activo)
+  const resumen = activos.reduce((acc, e) => {
+    const k = tipoDe(e)
+    acc[k] = (acc[k] ?? 0) + 1
+    return acc
+  }, {})
+
+  const porCategoria = activos.reduce((acc, e) => {
+    const id = e.categoria?.id
+    acc[id] = (acc[id] ?? 0) + 1
+    return acc
+  }, {})
+
+  /* El buscador cruza las nueve categorías: con 120 estudios, adivinar
+     en cuál está uno es más lento que escribir su nombre. */
+  const sinTildes = (s) =>
+    (s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  const hallados = busqueda.trim().length >= 2
+    ? todos.filter((e) =>
+        sinTildes(e.nombre).includes(sinTildes(busqueda)) ||
+        sinTildes(e.codigo).includes(sinTildes(busqueda)))
+    : null
+
   return (
     <AppShell titulo="Estudios y categorías" subtitulo="Lo que el centro ofrece">
       {error && (
@@ -98,6 +169,73 @@ export default function CatalogoPage() {
             Se pueden pedir en una orden, pero suman $0 al importe. Engancharlos a
             un concepto lo hace el Administrador.
           </span>
+        </div>
+      )}
+
+      {/* Qué hace el sistema con el catálogo, de un vistazo. Antes había
+          que entrar a las nueve categorías y sumar a mano. */}
+      {activos.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-card border-2 border-ink-soft/15 bg-white px-4 py-3">
+          <span className="text-sm font-medium text-ink">{activos.length} estudios</span>
+          <span className="text-ink-soft/40">·</span>
+          {["compara", "ilegible", "sinReferencia", "cualitativo"].map((k) =>
+            resumen[k] ? (
+              <span
+                key={k}
+                title={TIPOS[k].detalle}
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${TIPOS[k].clase}`}
+              >
+                {resumen[k]} {TIPOS[k].etiqueta.toLowerCase()}
+              </span>
+            ) : null
+          )}
+          <div className="ml-auto flex items-center gap-2 rounded-md border-2 border-ink-soft/20 px-2.5 py-1.5 focus-within:border-primary">
+            <Search size={14} className="shrink-0 text-ink-soft" />
+            <input
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Buscar en todo el catálogo…"
+              className="w-56 bg-transparent text-xs outline-none"
+            />
+            {busqueda && (
+              <button onClick={() => setBusqueda("")} className="text-ink-soft hover:text-ink">
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Resultados del buscador: reemplazan la vista por categoría
+          mientras hay algo escrito. */}
+      {hallados && (
+        <div className="mb-4 rounded-card border-2 border-primary/25 bg-white p-5">
+          <p className="mb-3 text-sm font-medium text-ink">
+            {hallados.length} resultado{hallados.length === 1 ? "" : "s"} para «{busqueda.trim()}»
+          </p>
+          {hallados.length === 0 ? (
+            <p className="text-xs text-ink-soft">Ningún estudio coincide.</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {hallados.map((e) => (
+                <li key={e.id}>
+                  <button
+                    onClick={() => { setSel(e.categoria?.id); setBusqueda("") }}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-ink-soft/5"
+                  >
+                    <span className="text-ink">{e.nombre}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${TIPOS[tipoDe(e)].clase}`}>
+                      {TIPOS[tipoDe(e)].etiqueta}
+                    </span>
+                    {!e.seCobra && (
+                      <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-medium text-warning">no se cobra</span>
+                    )}
+                    <span className="ml-auto text-xs text-ink-soft">{e.categoria?.nombre}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
 
@@ -123,7 +261,10 @@ export default function CatalogoPage() {
                     sel === c.id ? "bg-primary/5 text-primary" : "text-ink hover:bg-ink-soft/5"
                   } ${c.activo ? "" : "opacity-50"}`}
                 >
-                  <span className="block">{c.nombre}</span>
+                  <span className="flex items-baseline gap-1.5">
+                    {c.nombre}
+                    <span className="text-[11px] text-ink-soft/70">{porCategoria[c.id] ?? 0}</span>
+                  </span>
                   <span className="block text-[11px] text-ink-soft">
                     {ETIQUETA_ROL[c.rol_carga] ?? c.rol_carga} · {c.valor_defecto}
                     {!c.activo && " · inactiva"}
@@ -170,6 +311,7 @@ export default function CatalogoPage() {
               <tr className="text-[11px] text-ink-soft">
                 <th className="pb-2 font-normal">Código</th>
                 <th className="pb-2 font-normal">Estudio</th>
+                <th className="pb-2 font-normal">Qué hace el sistema</th>
                 <th className="pb-2 font-normal">Unidad</th>
                 <th className="pb-2 font-normal">Referencia varón</th>
                 <th className="pb-2 font-normal">Referencia mujer</th>
@@ -179,7 +321,7 @@ export default function CatalogoPage() {
             <tbody>
               {estudios.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-6 text-center text-xs text-ink-soft">
+                  <td colSpan={7} className="py-6 text-center text-xs text-ink-soft">
                     Esta categoría todavía no tiene estudios.
                   </td>
                 </tr>
@@ -197,6 +339,14 @@ export default function CatalogoPage() {
                         no se cobra
                       </span>
                     )}
+                  </td>
+                  <td className="py-2.5">
+                    <span
+                      title={TIPOS[tipoDe(e)].detalle}
+                      className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium ${TIPOS[tipoDe(e)].clase}`}
+                    >
+                      {TIPOS[tipoDe(e)].etiqueta}
+                    </span>
                   </td>
                   <td className="py-2.5 text-ink-soft">{e.unidad ?? "—"}</td>
                   <Referencia valor={e.ref_h} />

@@ -111,6 +111,24 @@ export const conceptosService = {
       .sort((a, b) => (a.categoria?.orden ?? 99) - (b.categoria?.orden ?? 99))
   },
 
+  /** Cuántas veces se cobró cada concepto en el último mes.
+   *
+   *  Sale de la base (migración 025) y no de una cuenta acá, porque no
+   *  alcanza con contar las órdenes que tienen todos sus estudios:
+   *  calcular_presupuesto cobra de mayor a menor precio y va marcando lo
+   *  ya cubierto, así que un concepto puede tener todos sus estudios en
+   *  la orden y no cobrarse porque otro más caro se los llevó.
+   *
+   *  No es un caso raro. Hoy el I.M.C. tiene sus estudios en 12 órdenes
+   *  y se cobra en 1: el «Básico de ley» se lo lleva. Contando a mano,
+   *  la pantalla mostraría un impacto doce veces más grande del real. */
+  async getUso(dias = 30) {
+    const desde = new Date(Date.now() - dias * 86400000).toISOString().slice(0, 10)
+    const { data, error } = await supabase.rpc("uso_de_conceptos", { p_desde: desde })
+    if (error) throw new Error(mensaje(error))
+    return Object.fromEntries((data ?? []).map((r) => [r.concepto_id, Number(r.veces)]))
+  },
+
   async buscarEstudios(texto) {
     const t = (texto ?? "").trim()
     if (t.length < 2) return []

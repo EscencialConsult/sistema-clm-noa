@@ -88,6 +88,92 @@ export const bateriasService = {
     }
   },
 
+  /** Todos los estudios de una categoría, de una sola vez.
+   *
+   *  Armar CONDUCTOR de a un estudio son noventa búsquedas. Los que ya
+   *  están se saltean en vez de fallar: si alguien agrega HEMOGRAMA
+   *  teniendo tres de sus estudios, quiere los once que faltan, no un
+   *  error. */
+  async agregarCategoria(plantillaId, categoriaId, yaPuestos = []) {
+    const { data: estudios, error: e1 } = await supabase
+      .from("estudio")
+      .select("id")
+      .eq("categoria_id", categoriaId)
+      .eq("activo", true)
+    if (e1) throw new Error(mensaje(e1))
+
+    const faltan = (estudios ?? []).filter((e) => !yaPuestos.includes(e.id))
+    if (faltan.length === 0) return 0
+
+    const { error } = await supabase.from("plantilla_item").insert(
+      faltan.map((e) => ({ plantilla_id: plantillaId, estudio_id: e.id, sexo_aplica: "A" }))
+    )
+    if (error) throw new Error(mensaje(error))
+    return faltan.length
+  },
+
+  /** Copiar una batería entera, con el «para quién» de cada ítem.
+   *
+   *  Las baterías se parecen muchísimo: casi todas son «el básico más
+   *  algo». Copiar y recortar es un clic contra cincuenta. */
+  async duplicar(plantilla) {
+    const { data: nueva, error: e1 } = await supabase
+      .from("plantilla")
+      .insert({
+        nombre: `${plantilla.nombre} (copia)`,
+        empresa_id: plantilla.empresa?.id ?? null,
+        activo: true,
+      })
+      .select()
+      .single()
+    if (e1) throw new Error(mensaje(e1))
+
+    const { data: items, error: e2 } = await supabase
+      .from("plantilla_item")
+      .select("estudio_id, sexo_aplica")
+      .eq("plantilla_id", plantilla.id)
+    if (e2) throw new Error(mensaje(e2))
+
+    if (items?.length) {
+      /* El sexo_aplica se copia tal cual. Si se perdiera, la copia
+         abriría estudios que la original no abre, y eso se descubre
+         recién cuando alguien factura de más. */
+      const { error: e3 } = await supabase.from("plantilla_item").insert(
+        items.map((i) => ({ plantilla_id: nueva.id, estudio_id: i.estudio_id, sexo_aplica: i.sexo_aplica }))
+      )
+      if (e3) throw new Error(mensaje(e3))
+    }
+    return nueva
+  },
+
+  /** Qué sale esta batería para un varón y para una mujer.
+   *
+   *  Son dos números y no uno: el importe no es proporcional a la
+   *  cantidad de estudios. Los conceptos se cobran enteros, así que un
+   *  estudio de diferencia puede valer decenas de miles. Lo calcula la
+   *  base (migración 026) con el mismo recorrido que factura. */
+  async getPresupuesto(plantillaId) {
+    const { data, error } = await supabase.rpc("presupuesto_de_bateria", { p_plantilla: plantillaId })
+    if (error) throw new Error(mensaje(error))
+    const por = Object.fromEntries((data ?? []).map((r) => [r.sexo, r]))
+    return { varon: por.M ?? null, mujer: por.F ?? null }
+  },
+
+  /** Las categorías del catálogo, para poder agregarlas enteras. */
+  async getCategorias() {
+    const { data, error } = await supabase
+      .from("categoria")
+      .select("id, nombre, estudio:estudio ( id, activo )")
+      .eq("activo", true)
+      .order("orden")
+    if (error) throw new Error(mensaje(error))
+    return (data ?? []).map((c) => ({
+      ...c,
+      total: (c.estudio ?? []).filter((e) => e.activo).length,
+      ids: (c.estudio ?? []).filter((e) => e.activo).map((e) => e.id),
+    }))
+  },
+
   async cambiarSexo(itemId, sexoAplica) {
     const { error } = await supabase
       .from("plantilla_item")
