@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Printer, Download, Share2, ChevronDown } from "lucide-react"
+import { Printer, Download, Share2, ChevronDown, ListChecks } from "lucide-react"
 
 /* ---------------------------------------------------------------------
    Un botón por documento (Hoja de ruta / Protocolo) que despliega las
@@ -16,7 +16,7 @@ import { Printer, Download, Share2, ChevronDown } from "lucide-react"
    que antes; lo que cambió es que las tres llevan al mismo lugar bueno.
    --------------------------------------------------------------------- */
 
-export default function MenuImpreso({ etiqueta, destacado, onImprimir }) {
+export default function MenuImpreso({ etiqueta, destacado, onImprimir, onElegirPaginas }) {
   const [abierto, setAbierto] = useState(false)
   const ref = useRef(null)
 
@@ -69,6 +69,18 @@ export default function MenuImpreso({ etiqueta, destacado, onImprimir }) {
           >
             <Share2 size={14} className="text-ink-soft" /> Compartir
           </button>
+          {/* Sólo la hoja de ruta tiene una página por categoría, así que
+              esta opción aparece sólo cuando quien usa el menú la ofrece.
+              El protocolo es un documento entero: no se recorta. */}
+          {onElegirPaginas && (
+            <button
+              onClick={() => { setAbierto(false); onElegirPaginas() }}
+              title="Sacar las hojas de los puestos por los que no va a pasar"
+              className="flex w-full items-center gap-2.5 border-t border-ink-soft/10 px-3 py-2 text-left text-xs text-ink hover:bg-ink-soft/5"
+            >
+              <ListChecks size={14} className="text-ink-soft" /> Elegir qué páginas…
+            </button>
+          )}
         </div>
       )}
     </div>

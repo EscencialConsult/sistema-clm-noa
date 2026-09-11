@@ -12,13 +12,23 @@ import { CabeceraImpreso, DatosOrden, TablaEstudios } from "../../../shared/impr
    mano en el puesto (ClickUp 03, criterio "las cuatro columnas en
    blanco, para escribir a mano").
 
-   Una página por categoría, no una tabla larga con todas juntas: el
-   papel real la corta en tiras, una por puesto (CU-06, alt. 5a — "la
-   hoja se corta en tiras, una por profesional"). Cada página repite el
+   Un bloque por categoría, no una tabla larga con todas juntas: el
+   papel real se corta en tiras, una por puesto (CU-06, alt. 5a — "la
+   hoja se corta en tiras, una por profesional"). Cada bloque repite el
    encabezado completo y lleva el nombre de SU categoría arriba a la
    izquierda, espejado con el N° de orden — así cada puesto recibe una
-   hoja que ya dice de qué es, en vez de una fila perdida en una tabla
+   tira que ya dice de qué es, en vez de una fila perdida en una tabla
    de varias páginas.
+
+   Los bloques se acomodan uno debajo de otro y aprovechan la hoja:
+   RADIOGRAFIAS con un solo estudio gastaba una carilla entera. Como el
+   papel se corta igual, dos categorías en una hoja son un corte más y
+   no un problema. Lo que nunca puede pasar es que una categoría quede
+   partida entre dos páginas —esa tira saldría cortada al medio—, y de
+   eso se encarga `imp-bloque` con break-inside: avoid.
+
+   Con `unaPorPagina` se vuelve al comportamiento viejo, para quien
+   prefiera no cortar.
 
    Sin firmas: a diferencia del protocolo, en la hoja de ruta no van
    (indicación de la clínica) — cada profesional carga en el sistema,
@@ -30,11 +40,25 @@ import { CabeceraImpreso, DatosOrden, TablaEstudios } from "../../../shared/impr
    captura de pantalla (calidad muy inferior a imprimir de verdad).
    --------------------------------------------------------------------- */
 
-export function HojaDeRuta({ datos }) {
+export function HojaDeRuta({ datos, unaPorPagina = false }) {
+  const ultima = datos.categorias.length - 1
   return (
     <div className="hoja-impresion">
       {datos.categorias.map((cat, i) => (
-        <div key={cat.id} className={i < datos.categorias.length - 1 ? "imp-salto-pagina" : undefined}>
+        <div
+          key={cat.id}
+          className={
+            unaPorPagina
+              ? (i < ultima ? "imp-salto-pagina" : undefined)
+              : "imp-bloque"
+          }
+        >
+          {/* La guía de corte va ARRIBA de cada bloque menos el primero:
+              así viaja con el bloque cuando éste se pasa a la página
+              siguiente, en vez de quedar colgada al pie de la anterior. */}
+          {!unaPorPagina && i > 0 && (
+            <div className="imp-corte"><span>✂ cortar aquí</span></div>
+          )}
           {/* El título sale del tipo de examen de la orden, no fijo.
               Estaba escrito "EXAMEN PRELABORAL" a mano: si recepción
               elegía Periódico o Egreso —las tres opciones que pide
@@ -53,7 +77,7 @@ export function HojaDeRuta({ datos }) {
   )
 }
 
-export async function imprimirHojaDeRuta(ordenId) {
+export async function imprimirHojaDeRuta(ordenId, { unaPorPagina = false } = {}) {
   const datos = await getDatosParaImprimir(ordenId)
-  imprimirComponente(<HojaDeRuta datos={datos} />)
+  imprimirComponente(<HojaDeRuta datos={datos} unaPorPagina={unaPorPagina} />)
 }
