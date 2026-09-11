@@ -55,13 +55,13 @@ console.log("Buscar por DNI · Listado de Órdenes y Pendientes del Día")
 
 paso("1 · el DNI se encuentra escrito de cualquier forma")
 {
-  const o = { documento: "DNI 38774102", paciente: "MAMANÍ, Rocío Belén", numero: 38035 }
+  const o = { documento: "DNI 30111222", paciente: "PEÑALOZA, Ana María", numero: 10001 }
   const casos = [
-    ["38774102", true, "como está guardado"],
-    ["38.774.102", true, "con puntos, como se dicta"],
-    ["38 774 102", true, "con espacios"],
-    ["387", true, "a medias: se va achicando mientras se tipea"],
-    ["DNI 38774102", true, "pegando el campo entero"],
+    ["30111222", true, "como está guardado"],
+    ["30.111.222", true, "con puntos, como se dicta"],
+    ["30 111 222", true, "con espacios"],
+    ["301", true, "a medias: se va achicando mientras se tipea"],
+    ["DNI 30111222", true, "pegando el campo entero"],
     ["99999999", false, "otro documento"],
   ]
   for (const [t, esperado, desc] of casos) {
@@ -71,12 +71,12 @@ paso("1 · el DNI se encuentra escrito de cualquier forma")
 
 paso("2 · también por apellido y por número de orden")
 {
-  const o = { documento: "DNI 38774102", paciente: "MAMANÍ, Rocío Belén", numero: 38035 }
-  /* Sin acento: nadie lo pone al buscar, y MAMANÍ lo lleva. */
-  ok(coincide(o, "mamani"), "por apellido sin acento", "«mamani» → MAMANÍ")
-  ok(coincide(o, "MAMANÍ"), "y con acento")
-  ok(coincide(o, "rocio"), "por nombre")
-  ok(coincide(o, "38035"), "por número de orden", "es lo que dice el papel que trae en la mano")
+  const o = { documento: "DNI 30111222", paciente: "PEÑALOZA, Ana María", numero: 10001 }
+  /* Sin acento: nadie lo pone al buscar, y PEÑALOZA lo lleva. */
+  ok(coincide(o, "penaloza"), "por apellido sin acento", "«penaloza» → PEÑALOZA")
+  ok(coincide(o, "PEÑALOZA"), "y con acento")
+  ok(coincide(o, "ana maria"), "por nombre")
+  ok(coincide(o, "10001"), "por número de orden", "es lo que dice el papel que trae en la mano")
   ok(!coincide(o, "perez"), "y no encuentra a cualquiera")
   ok(coincide(o, ""), "sin texto, coinciden todas", "no esconde nada por accidente")
   ok(coincide(o, "   "), "ni con espacios sueltos")

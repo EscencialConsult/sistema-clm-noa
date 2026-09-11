@@ -12,8 +12,8 @@
    la mitad de las búsquedas no encuentre nada, y el que busca concluye
    que la persona no está.
 
-   Por apellido se compara sin acentos: «mamani» tiene que encontrar a
-   MAMANÍ. Nadie pone el acento cuando busca.
+   Por apellido se compara sin acentos: «penaloza» tiene que encontrar a
+   PEÑALOZA. Nadie pone el acento cuando busca.
    --------------------------------------------------------------------- */
 
 const sinTildes = (s) =>
