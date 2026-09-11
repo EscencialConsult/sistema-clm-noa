@@ -146,8 +146,16 @@ services:
     build:
       context: ./app
       args:
-        # La URL con la que van a entrar los puestos, NO localhost.
-        VITE_SUPABASE_URL: ${SITE_URL}:${KONG_PUERTO_PUBLICO:-8000}
+        # «origen» = la app le pide la API al MISMO sitio del que se bajó,
+        # sea localhost, servidor-cml, la IP o un túnel. Así el mismo build
+        # sirve en todos lados y un cambio de dirección no obliga a
+        # recompilar. Ver app/src/lib/supabase.js.
+        #
+        # Antes salía de SITE_URL, y eso horneaba una dirección fija: con el
+        # .env de la clínica quedaba «http://servidor-cml:8000» dentro del
+        # bundle, irresoluble desde cualquier otro lado. Se separó porque
+        # SITE_URL la necesita GoTrue de verdad y no puede valer «origen».
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-origen}
         VITE_SUPABASE_ANON_KEY: ${ANON_KEY}
     container_name: cmlnoa-app
     restart: unless-stopped

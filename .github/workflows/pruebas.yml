@@ -184,12 +184,28 @@ jobs:
               echo "::error title=$1::$(printf '%s' "$salida" | tail -30 | sed ':a;N;$!ba;s/\n/%0A/g')"
             fi
           }
+          # El linter primero: tarda segundos y agarra la clase de error que
+          # ninguna otra batería ve — un identificador fuera de alcance deja
+          # la pantalla en blanco y el build igual da verde.
+          correr "Sin definir"         app scripts/probar-lint.mjs
           correr "Permisos por rol"    app scripts/probar-permisos.mjs
           correr "Aptitud"             app scripts/probar-aptitud.mjs
           correr "Alta de orden"       app scripts/probar-alta-orden.mjs
           correr "Informes de terceros" app scripts/probar-terceros.mjs
           correr "Ajustes de la orden"   app scripts/probar-ajustes.mjs
           correr "Firma del protocolo"  app scripts/probar-firma.mjs
+          correr "Ficha y datos"        app scripts/probar-panel-datos.mjs
+          correr "Código de empresa"    app scripts/probar-codigo-empresa.mjs
+          correr "Filtros del listado"  app scripts/probar-filtros-listado.mjs
+          correr "Columnas de carga"    app scripts/probar-columnas-carga.mjs
+          correr "Ir a cargarlo"        app scripts/probar-ir-a-cargar.mjs
+          correr "Elegir páginas"       app scripts/probar-elegir-paginas.mjs
+          correr "Hoja compacta"        app scripts/probar-hoja-compacta.mjs
+          correr "Buscar por DNI"       app scripts/probar-buscar-dni.mjs
+          correr "Conceptos"            app scripts/probar-conceptos.mjs
+          correr "Baterías"             app scripts/probar-baterias.mjs
+          correr "Tipografía"           app scripts/probar-tipografia.mjs
+          correr "Entrada por nombre"   app scripts/probar-por-nombre.mjs
           exit $fallas
 
       # Cuando algo se pone en rojo, esto es lo primero que se mira.

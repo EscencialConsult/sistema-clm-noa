@@ -2,6 +2,9 @@
 
 Sirve igual para una máquina de desarrollo y para el servidor de la clínica.
 Todo corre adentro: **no hace falta internet** una vez que las imágenes están bajadas.
+Ni siquiera para la tipografía — está en el servidor, no en Google. Hay una
+prueba que lo verifica sola (`app/scripts/probar-tipografia.mjs`): abre las
+pantallas con internet bloqueado y comprueba que no salga un solo pedido afuera.
 
 ---
 
@@ -36,51 +39,86 @@ dentro de la aplicación al compilarla (ver el recuadro más abajo).
 | **Disco externo** | Ahí van los backups de todas las noches (paso 7). Que quede conectado |
 | **Que no se suspenda** | Configurarla para que nunca entre en suspensión ni apague el disco |
 
-### La red — esto va ANTES de generar las claves
+### La red — por nombre, sin IP fija
 
-El servidor necesita una **IP fija** en la red de la clínica. Pedírsela a quien
-maneje el router, o fijarla en el adaptador.
+Los puestos entran al servidor **por su nombre**, no por su número:
 
-Después hay que decidir con qué nombre lo ven las demás PC, y escribirlo en
-`SITE_URL`. Dos opciones:
+```
+http://servidor-cml
+```
 
-| Opción | Cómo | Cuándo conviene |
-|---|---|---|
-| **La IP directa** | `SITE_URL=http://192.168.1.50` | Más simple. Si algún día cambia la IP, hay que recompilar |
-| **Un nombre** | `SITE_URL=http://servidor-cml` y una línea en el `hosts` de cada PC | Más prolijo, pero hay que tocar puesto por puesto |
+No hace falta pedirle una IP fija a nadie, ni fijarla en el adaptador. Windows
+resuelve solo el nombre de otra PC de la misma red, que es exactamente lo que
+hacen hoy para llegar a una carpeta compartida.
 
-En Windows el `hosts` está en `C:\Windows\System32\drivers\etc\hosts` y se edita
-como Administrador. La línea es:
+Son dos cosas, y las dos se hacen en el servidor:
+
+**1 · Ponerle ese nombre a la PC.** *Configuración → Sistema → Información del
+sistema → Cambiar el nombre de este equipo*, escribir `servidor-cml` y
+reiniciar. Sin espacios, sin acentos, todo en minúsculas.
+
+**2 · Dejarlo escrito en el `.env`:**
+
+```bash
+export SITE_URL=http://servidor-cml
+```
+
+Y listo. Nada más de red.
+
+> **Esto cambió, y para bien.** Antes la dirección quedaba grabada adentro del
+> programa al compilarlo: había que fijar la IP *antes* de generar las claves,
+> y si algún día cambiaba, tocaba recompilar. Ya no. La aplicación le pide los
+> datos **al mismo lugar del que la bajó el navegador**, así que funciona igual
+> entrando por `servidor-cml`, por la IP que le toque ese día, o por un enlace
+> de Cloudflare para mostrarla de afuera. **Un cambio de IP no rompe nada y no
+> obliga a recompilar.**
+
+Un solo puerto, el **80**, el común de cualquier página. Los puestos no
+necesitan llegar a ningún otro: el propio servidor reparte por dentro lo que
+va a la base y lo que va a las pantallas.
+
+#### Si alguna PC no encuentra el nombre
+
+Pasa en redes con más de un router o con Wi-Fi de invitados separada. Se
+resuelve en el puesto que falla, sin tocar el servidor: abrir
+`C:WindowsSystem32driversetchosts` **como Administrador** y agregar al
+final la IP que tenga el servidor en ese momento:
 
 ```
 192.168.1.50    servidor-cml
 ```
 
-**Fijalo antes de seguir**, con la IP real del servidor:
-
-```bash
-export SITE_URL=http://192.168.1.50
-```
-
-> **Por qué importa el orden.** La aplicación no lee esa dirección cuando
-> arranca: la trae grabada de cuando se compiló. Si generás las claves o
-> compilás con la dirección equivocada, los puestos abren la pantalla de login y
-> no pueden entrar, sin ningún error que lo explique. Se arregla corrigiendo el
-> `.env` y recompilando con `docker compose up -d --build`, pero es media hora
-> perdida y un susto al pedo.
+Esa línea sí queda atada a la IP. Si el problema aparece en varios puestos,
+conviene pedirle al del router una **reserva de DHCP** para el servidor: le da
+siempre el mismo número sin configurarle nada a la PC, y el `hosts` deja de
+moverse.
 
 ### Comprobar que se llega desde otro puesto
 
-Con el sistema ya levantado, parada **en otra PC de la clínica**:
+Con el sistema ya levantado, parada **en otra PC de la clínica**, abrir el
+navegador en:
 
-```bash
-curl http://192.168.1.50:8000/rest/v1/
+```
+http://servidor-cml
 ```
 
-Si no responde, casi siempre es el firewall de Windows del servidor: hay que
-permitir los puertos **80** y **8000** en la red privada. Mientras eso no ande,
-el sistema funciona sólo en la máquina donde está instalado — que es lo mismo
-que no servir.
+Tiene que aparecer la pantalla de login. Si aparece y **se puede entrar**, la
+red está bien: significa que el nombre resolvió y que el puerto 80 pasa.
+
+Si no carga nada, son dos causas y se distinguen desde la misma PC:
+
+```bash
+ping servidor-cml
+```
+
+| Qué pasa | Qué es | Cómo se arregla |
+|---|---|---|
+| El `ping` no encuentra el nombre | La PC no resuelve `servidor-cml` | El `hosts` de acá arriba |
+| El `ping` contesta pero el navegador no carga | El firewall del servidor | Permitir el puerto **80** en la red privada |
+
+Alcanza con el **80**. El 8000 no hace falta abrirlo: los puestos no le hablan
+nunca. Mientras esto no ande, el sistema funciona sólo en la máquina donde está
+instalado — que es lo mismo que no servir.
 
 ---
 

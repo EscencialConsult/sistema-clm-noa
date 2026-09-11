@@ -86,8 +86,8 @@ const { data: ordenId, error } = await supabase.rpc("crear_orden", {
 Sola hace: saca el número de la serie, **copia los estudios que corresponden al
 sexo de la persona**, calcula el vencimiento a doce meses y congela el importe.
 
-Con la batería de conductor: al varón le abre 55 estudios y $140.000, a la mujer
-56 y $160.000 — la diferencia es la subunidad beta. Nadie tilda nada.
+Con la batería de conductor: al varón le abre 89 estudios y a la mujer 90 — la
+diferencia es la subunidad beta. Nadie tilda nada.
 
 ### La bandeja del día
 
@@ -161,9 +161,13 @@ const { error } = await supabase.rpc("emitir_protocolo", {
 
 Si queda algún estudio sin cargar, devuelve error y no emite. Es a propósito.
 
-**`p_medico` ya no se manda.** La matrícula sale del usuario de la sesión: cada
-médico firma con la suya y no se puede informar a nombre de otro. Y sólo el
-médico laboral puede llamarla — si la llama cualquier otro rol, rebota.
+**`p_medico` volvió, y depende de quién llama** (migración 023). Si la llama el
+médico laboral, se ignora: firma con su propia matrícula y no puede informar a
+nombre de otro. Si la llama Recepción o el Administrador —que en esta fase son
+quienes transcriben el dictamen— **es obligatorio**, porque el protocolo tiene
+que salir con la matrícula de un médico y no con la de quien lo tipeó.
+
+Cualquier otro rol rebota.
 
 ---
 
@@ -192,15 +196,77 @@ eso: el componente llama al servicio, el servicio habla con la base.
 
 ---
 
+## Al recompilar el frontend en tu máquina
+
+```bash
+docker compose up -d --build app
+```
+
+Sin override y sin trucos: el mismo comando acá y en la clínica.
+
+**Esto cambió.** Antes había que anteponer `SITE_URL=http://localhost`, porque
+`docker-compose.yml` sacaba de ahí la URL de la API y la horneaba dentro del
+bundle; con el `.env` de la clínica quedaba grabado `http://servidor-cml:8000`,
+irresoluble desde tu máquina, y la pantalla cargaba bien pero no traía ni una
+empresa. El override sólo cambiaba *cuál* dirección quedaba grabada: compilar
+con `localhost` dejaba un bundle que funcionaba en tu máquina y no por nombre.
+
+Ahora el frontend no lleva ninguna dirección adentro. `VITE_SUPABASE_URL` vale
+`origen`, y con eso la app le pide la API **al mismo sitio del que se bajó**:
+`localhost`, `servidor-cml`, la IP o un túnel de Cloudflare, sin recompilar.
+Está separada de `SITE_URL` a propósito, porque esa la usa GoTrue de verdad y
+no puede valer `origen`.
+
+**Seguí sin tocar `SITE_URL` en el `.env`**: ese archivo es la configuración
+real de la clínica.
+
+Queda un efecto de rebote que conviene tener a mano: si algún comando recrea
+el contenedor `auth`, le toca una IP nueva y Kong se queda con la vieja
+cacheada. Se ve como *«An invalid response was received from the upstream
+server»* al intentar loguearte, aunque `auth` esté sano en sus logs. Se
+arregla reiniciando Kong, no `auth`:
+
+```bash
+docker restart cmlnoa-kong
+```
+
+Para comprobar que no quedó ninguna dirección grabada —tiene que salir
+`origen` y nada más—:
+
+```bash
+docker compose exec app grep -oh 'origen' /usr/share/nginx/html/assets/*.js | sort -u
+```
+
+O, mejor, la prueba que entra por nombre y mira a dónde sale cada pedido:
+
+```bash
+cd app && node scripts/probar-por-nombre.mjs
+```
+
+---
+
 ## Para probar sin romper nada
 
 ```bash
+cd app && node scripts/probar-lint.mjs           # variables fuera de alcance (pantalla en blanco)
 node scripts/verificar-frontend.js       # el frontend y la base dicen lo mismo
 node scripts/probar-casos.js             # los casos bloqueantes
 cd app && node scripts/probar-permisos.mjs   # qué puede cada rol
 cd app && node scripts/probar-aptitud.mjs
 cd app && node scripts/probar-alta-orden.mjs
 cd app && node scripts/probar-terceros.mjs
+cd app && node scripts/probar-panel-datos.mjs   # ficha, historial y corregir datos
+cd app && node scripts/probar-codigo-empresa.mjs # el código de empresa se asigna solo
+cd app && node scripts/probar-filtros-listado.mjs # filtrar por estado y aptitud
+cd app && node scripts/probar-columnas-carga.mjs  # Valor y Referencia sólo donde se mide
+cd app && node scripts/probar-ir-a-cargar.mjs     # el atajo del dictamen a la carga
+cd app && node scripts/probar-elegir-paginas.mjs  # qué páginas de la hoja de ruta
+cd app && node scripts/probar-hoja-compacta.mjs   # varias categorías por hoja
+cd app && node scripts/probar-buscar-dni.mjs      # buscar por DNI en listado y pendientes
+cd app && node scripts/probar-conceptos.mjs       # qué se cobra y qué no
+cd app && node scripts/probar-baterias.mjs        # duplicar, categorías y precio por sexo
+cd app && node scripts/probar-tipografia.mjs     # la letra sale del servidor, no de Google
+cd app && node scripts/probar-por-nombre.mjs     # se entra por nombre, sin IP grabada
 ```
 
 Cada una se crea sus propios usuarios y sus propios datos, y borra todo al
